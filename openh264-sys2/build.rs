@@ -6,6 +6,8 @@ fn ugly_cpp_import(x: &str) -> Vec<String> {
         .map(|x| x.unwrap())
         .filter(|x| x.path().to_str().unwrap().ends_with("cpp"))
         .map(|x| x.path().to_str().unwrap().to_string())
+        // Otherwise fails when compiling on Linux
+        .filter(|x| !x.contains("DllEntry.cpp"))
         .collect()
 }
 
@@ -19,6 +21,7 @@ fn main() {
         .files(ugly_cpp_import("upstream/codec/common"))
         .files(ugly_cpp_import("upstream/codec/decoder"))
         .cpp(true)
+        .warnings(false)
         .compile("libopenh264_decode.a");
 
     cc::Build::new()
@@ -31,6 +34,7 @@ fn main() {
         .files(ugly_cpp_import("upstream/codec/encoder"))
         .files(ugly_cpp_import("upstream/codec/processing"))
         .cpp(true)
+        .warnings(false)
         .compile("libopenh264_encode.a");
 
     println!("cargo:rustc-link-lib=static=openh264_encode");
