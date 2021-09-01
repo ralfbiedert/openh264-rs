@@ -1,54 +1,45 @@
-use openh264::{Decoder, DecoderConfig, Error, NativeErrorExt};
-use openh264_sys2::{ISVCDecoderVtbl, SBufferInfo, SDecodingParam, ERROR_CON_IDC, VIDEO_BITSTREAM_TYPE};
-use std::ptr::{null, null_mut};
+use image::{ColorType, Rgb};
+use openh264::{Decoder, DecoderConfig, Error};
 
 #[test]
 fn can_get_decoder() -> Result<(), Error> {
-    let frame = include_bytes!("data/test_0.h264");
-
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(&config)?;
-
-    let image = decoder.xxx_decode(&frame[..])?;
+    let _decoder = Decoder::with_config(&config)?;
 
     Ok(())
 }
 
 #[test]
-fn TODO_replace_me() -> Result<(), Error> {
-    unsafe {
-        // let mut table = null::<ISVCDecoderVtbl>();
-        let mut ptr = null::<ISVCDecoderVtbl>() as *mut *const ISVCDecoderVtbl;
-        let ptr2 = &mut ptr as *mut *mut *const ISVCDecoderVtbl;
+#[rustfmt::skip]
+#[ignore]
+fn can_decode_files() -> Result<(), Error> {
+    let sources = [
+        &include_bytes!("data/single_1920x1080_cabac.h264")[..],
+        &include_bytes!("data/single_512x512_cabac.h264")[..],
+        &include_bytes!("data/single_512x512_cavlc.h264")[..],
+    ];
 
-        openh264_sys2::WelsCreateDecoder(ptr2).ok()?;
+    for (i, src) in sources.iter().enumerate() {
+        let config = DecoderConfig::default();
+        let mut decoder = Decoder::with_config(&config)?;
 
-        dbg!((*(*ptr)).Initialize);
+        let yuv = decoder.xxx_decode(src)?;
 
-        let mut decode_param = SDecodingParam::default();
-        decode_param.uiTargetDqLayer = u8::MAX;
-        decode_param.eEcActiveIdc = ERROR_CON_IDC::ERROR_CON_FRAME_COPY_CROSS_IDR;
-        decode_param.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_TYPE::VIDEO_BITSTREAM_DEFAULT;
+        let dim = yuv.dimension_rgb();
+        let rgb_len = dim.0 * dim.1 * 3;
+        let mut rgb = vec![0; rgb_len];
 
-        let init = (*(*ptr)).Initialize.unwrap();
-        let decode = (*(*ptr)).DecodeFrame2.unwrap();
+        yuv.write_rgb8(&mut rgb)?;
 
-        init(ptr, &decode_param).ok()?;
+        let strides = yuv.strides_yuv();
+        let dim_y = yuv.dimension_y();
+        let dim_u = yuv.dimension_u();
+        let dim_v = yuv.dimension_v();
 
-        let frame = include_bytes!("data/test_0.h264");
-
-        let mut dst = [null_mut(); 3];
-        let mut buffer_info = SBufferInfo::default();
-        let state = decode(ptr, frame.as_ptr(), frame.len() as i32, &mut dst as *mut _, &mut buffer_info).ok()?;
-
-        // https://github.com/cisco/openh264/issues/1415
-        let state = decode(ptr, null(), 0, &mut dst as *mut _, &mut buffer_info).ok()?;
-
-        dbg!(state);
-        dbg!(&buffer_info.iBufferStatus);
-        dbg!(&buffer_info.UsrData.sSystemBuffer.iWidth);
-
-        openh264_sys2::WelsDestroyDecoder(ptr);
+        image::save_buffer(format!("{}_rgb.png", i), &rgb, dim.0 as u32, dim.1 as u32, ColorType::Rgb8).unwrap();
+        image::save_buffer(format!("{}_y.png", i), yuv.y_with_stride(), strides.0 as u32, dim_y.1 as u32, ColorType::L8).unwrap();
+        image::save_buffer(format!("{}_u.png", i), yuv.u_with_stride(), strides.1 as u32, dim_u.1 as u32, ColorType::L8).unwrap();
+        image::save_buffer(format!("{}_v.png", i), yuv.v_with_stride(), strides.2 as u32, dim_v.1 as u32, ColorType::L8).unwrap();
     }
 
     Ok(())

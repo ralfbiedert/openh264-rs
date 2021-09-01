@@ -1,10 +1,9 @@
 use crate::error::NativeErrorExt;
 use crate::Error;
 use openh264_sys2::{
-    ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, WelsCreateDecoder, WelsDestroyDecoder,
-    DECODER_OPTION, DECODING_STATE,
+    EVideoFormatType, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
+    WelsDestroyDecoder, DECODER_OPTION, DECODING_STATE,
 };
-use std::marker::PhantomData;
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{null, null_mut};
 
@@ -12,7 +11,7 @@ use std::ptr::{null, null_mut};
 #[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Debug)]
-pub struct DecoderRaw {
+pub struct DecoderRawAPI {
     decoder_ptr: *mut *const ISVCDecoderVtbl,
     initialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder, pParam: *const SDecodingParam) -> c_long,
     uninitialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> c_long,
@@ -29,7 +28,8 @@ pub struct DecoderRaw {
 #[rustfmt::skip]
 #[allow(clippy::too_many_arguments)]
 #[allow(non_snake_case)]
-impl DecoderRaw {
+#[allow(unused)]
+impl DecoderRawAPI {
     pub fn new() -> Result<Self, Error> {
         unsafe {
             let mut decoder_ptr = null::<ISVCDecoderVtbl>() as *mut *const ISVCDecoderVtbl;
@@ -38,7 +38,7 @@ impl DecoderRaw {
 
             let e = Error::msg("VTable missing function.");
 
-            Ok(DecoderRaw {
+            Ok(DecoderRawAPI {
                 decoder_ptr,
                 initialize: (*(*decoder_ptr)).Initialize.ok_or(e)?,
                 uninitialize: (*(*decoder_ptr)).Uninitialize.ok_or(e)?,
@@ -95,7 +95,7 @@ impl DecoderRaw {
     }
 }
 
-impl Drop for DecoderRaw {
+impl Drop for DecoderRawAPI {
     fn drop(&mut self) {
         // Safe because when we drop the pointer must have been initialized, and we aren't clone.
         unsafe {
@@ -111,16 +111,16 @@ pub struct DecoderConfig {
 
 #[derive(Debug)]
 pub struct Decoder {
-    raw: DecoderRaw,
+    raw_api: DecoderRawAPI,
 }
 
 impl Decoder {
     pub fn with_config(config: &DecoderConfig) -> Result<Self, Error> {
-        let raw = DecoderRaw::new()?;
+        let raw = DecoderRawAPI::new()?;
 
         unsafe { raw.initialize(&config.params).ok()? };
 
-        Ok(Self { raw })
+        Ok(Self { raw_api: raw })
     }
 
     pub fn xxx_decode(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
@@ -128,18 +128,29 @@ impl Decoder {
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
-            self.raw
+            self.raw_api
                 .decode_frame2(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
                 .ok()?;
 
             // Is this correct?
             // https://github.com/cisco/openh264/issues/1415
-            self.raw.decode_frame2(null(), 0, &mut dst as *mut _, &mut buffer_info).ok()?;
+            self.raw_api
+                .decode_frame2(null(), 0, &mut dst as *mut _, &mut buffer_info)
+                .ok()?;
 
-            dbg!(dst);
+            if !buffer_info.iBufferStatus == 1 {
+                return Err(Error::msg("Buffer status not valid"));
+            }
+
+            let info = buffer_info.UsrData.sSystemBuffer;
+
+            // https://github.com/cisco/openh264/issues/2379
+            let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
+            let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
+            let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
+
+            Ok(DecodedYUV { info, y, u, v })
         }
-
-        Ok(DecodedYUV { x: Default::default() })
     }
 }
 
@@ -147,11 +158,92 @@ impl Drop for Decoder {
     fn drop(&mut self) {
         // Safe because when we drop the pointer must have been initialized.
         unsafe {
-            self.raw.uninitialize();
+            self.raw_api.uninitialize();
         }
     }
 }
 
 pub struct DecodedYUV<'a> {
-    x: PhantomData<&'a ()>,
+    info: SSysMEMBuffer,
+
+    y: &'a [u8],
+    u: &'a [u8],
+    v: &'a [u8],
+}
+
+impl<'a> DecodedYUV<'a> {
+    pub fn y_with_stride(&self) -> &'a [u8] {
+        self.y
+    }
+
+    pub fn u_with_stride(&self) -> &'a [u8] {
+        self.u
+    }
+
+    pub fn v_with_stride(&self) -> &'a [u8] {
+        self.v
+    }
+
+    pub fn dimension_rgb(&self) -> (usize, usize) {
+        (self.info.iWidth as usize, self.info.iHeight as usize)
+    }
+
+    pub fn dimension_y(&self) -> (usize, usize) {
+        (self.info.iWidth as usize, self.info.iHeight as usize)
+    }
+
+    pub fn dimension_u(&self) -> (usize, usize) {
+        (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
+    }
+
+    pub fn dimension_v(&self) -> (usize, usize) {
+        (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
+    }
+
+    pub fn strides_yuv(&self) -> (usize, usize, usize) {
+        (
+            self.info.iStride[0] as usize,
+            self.info.iStride[1] as usize,
+            self.info.iStride[1] as usize,
+        )
+    }
+
+    pub fn write_rgb8(&self, target: &mut [u8]) -> Result<(), Error> {
+        let dim = self.dimension_rgb();
+        let strides = self.strides_yuv();
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, EVideoFormatType::videoFormatI420 as i32);
+
+        if target.len() != (dim.0 * dim.1 * 3) as usize {
+            return Err(Error::msg("Target RGB8 array does not match image dimensions."));
+        }
+
+        for y in 0..dim.1 {
+            for x in 0..dim.0 {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+
+                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+
+                let y = self.y[base_y] as f32;
+                let u = self.u[base_u] as f32;
+                let v = self.v[base_v] as f32;
+
+                let b = y * 1.164_383_5;
+
+                // rgb_pixel[0] = (b + u * 1.792_741_1 + -248.101) as u8;
+                // rgb_pixel[1] = (b + v - 0.213_248_61 + u * -0.532_909_33 + 76.878_08) as u8;
+                // rgb_pixel[2] = (b + v * -0.213_248_61 + u * -0.532_909_33 + 76.878_08) as u8;
+
+                rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
+                rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
+                rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+            }
+        }
+
+        Ok(())
+    }
 }

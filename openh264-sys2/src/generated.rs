@@ -20,7 +20,7 @@ pub const AUTO_REF_PIC_COUNT: i32 = -1;
 pub const UNSPECIFIED_BIT_RATE: u32 = 0;
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of video format"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EVideoFormatType {
     #[doc = "< rgb color formats"]
     videoFormatRGB = 1,
@@ -46,7 +46,7 @@ pub enum EVideoFormatType {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate  video frame type"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EVideoFrameType {
     #[doc = "< encoder not ready or parameters are invalidate"]
     videoFrameTypeInvalid = 0,
@@ -63,7 +63,7 @@ pub enum EVideoFrameType {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate  return type"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum CM_RETURN {
     #[doc = "< successful"]
     cmResultSuccess = 0,
@@ -78,7 +78,7 @@ pub enum CM_RETURN {
 }
 #[repr(i32)]
 #[doc = " @brief Enumulate the nal unit type"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ENalUnitType {
     NAL_UNKNOWN = 0,
     NAL_SLICE = 1,
@@ -94,7 +94,7 @@ pub enum ENalUnitType {
 }
 #[repr(i32)]
 #[doc = " @brief NRI: eNalRefIdc"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ENalPriority {
     NAL_PRIORITY_DISPOSABLE = 0,
     NAL_PRIORITY_LOW = 1,
@@ -106,7 +106,7 @@ pub const DEBLOCKING_IDC_1: _bindgen_ty_1 = _bindgen_ty_1::DEBLOCKING_IDC_1;
 pub const DEBLOCKING_IDC_2: _bindgen_ty_1 = _bindgen_ty_1::DEBLOCKING_IDC_2;
 #[repr(i32)]
 #[doc = " @brief eDeblockingIdc"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum _bindgen_ty_1 {
     DEBLOCKING_IDC_0 = 0,
     DEBLOCKING_IDC_1 = 1,
@@ -124,7 +124,7 @@ pub const ET_FEC_FULL: _bindgen_ty_2 = _bindgen_ty_2::ET_FEC_FULL;
 pub const ET_RFS: _bindgen_ty_2 = _bindgen_ty_2::ET_RFS;
 #[repr(i32)]
 #[doc = "@brief to do"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum _bindgen_ty_2 {
     #[doc = "< NONE Error Tools"]
     ET_NONE = 0,
@@ -147,7 +147,7 @@ pub enum _bindgen_ty_2 {
 }
 #[doc = " @brief Information of coded Slice(=NAL)(s)"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SliceInformation {
     #[doc = "< base buffer of coded slice(s)"]
     pub pBufferOfSlices: *mut ::std::os::raw::c_uchar,
@@ -181,7 +181,7 @@ pub type SliceInfo = SliceInformation;
 pub type PSliceInfo = *mut SliceInformation;
 #[doc = " @brief thresholds of the initial, maximal and minimal rate"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SRateThresholds {
     #[doc = "< frame width"]
     pub iWidth: ::std::os::raw::c_int,
@@ -204,7 +204,7 @@ pub struct SRateThresholds {
 pub type PRateThresholds = *mut SRateThresholds;
 #[doc = " @brief  Structure for decoder memery"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagSysMemBuffer {
     #[doc = "< width of decoded pic for display"]
     pub iWidth: ::std::os::raw::c_int,
@@ -254,7 +254,7 @@ extern "C" {
 }
 #[doc = " @brief Struct of OpenH264 version"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct _tagVersion {
     #[doc = "< The major version number"]
     pub uMajor: ::std::os::raw::c_uint,
@@ -269,7 +269,7 @@ pub struct _tagVersion {
 pub type OpenH264Version = _tagVersion;
 #[repr(i32)]
 #[doc = " @brief Decoding status"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum DECODING_STATE {
     #[doc = "< bit stream error-free"]
     dsErrorFree = 0,
@@ -298,7 +298,7 @@ pub enum DECODING_STATE {
 }
 #[repr(i32)]
 #[doc = " @brief Option types introduced in SVC encoder application"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ENCODER_OPTION {
     ENCODER_OPTION_DATAFORMAT = 0,
     #[doc = "< IDR period,0/-1 means no Intra period (only the first frame); lager than 0 means the desired IDR period, must be multiple of (2^temporal_layer)"]
@@ -356,7 +356,7 @@ pub enum ENCODER_OPTION {
 }
 #[repr(i32)]
 #[doc = " @brief Option types introduced in decoder application"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum DECODER_OPTION {
     #[doc = "< end of stream flag"]
     DECODER_OPTION_END_OF_STREAM = 1,
@@ -398,7 +398,7 @@ pub enum DECODER_OPTION {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of error concealment methods"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ERROR_CON_IDC {
     ERROR_CON_DISABLE = 0,
     ERROR_CON_FRAME_COPY = 1,
@@ -411,7 +411,7 @@ pub enum ERROR_CON_IDC {
 }
 #[repr(i32)]
 #[doc = " @brief Feedback that whether or not have VCL NAL in current AU"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum FEEDBACK_VCL_NAL_IN_AU {
     FEEDBACK_NON_VCL_NAL = 0,
     FEEDBACK_VCL_NAL = 1,
@@ -419,14 +419,14 @@ pub enum FEEDBACK_VCL_NAL_IN_AU {
 }
 #[repr(i32)]
 #[doc = " @brief Type of layer being encoded"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum LAYER_TYPE {
     NON_VIDEO_CODING_LAYER = 0,
     VIDEO_CODING_LAYER = 1,
 }
 #[repr(i32)]
 #[doc = " @brief Spatial layer num"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum LAYER_NUM {
     SPATIAL_LAYER_0 = 0,
     SPATIAL_LAYER_1 = 1,
@@ -435,19 +435,18 @@ pub enum LAYER_NUM {
     SPATIAL_LAYER_ALL = 4,
 }
 impl VIDEO_BITSTREAM_TYPE {
-    pub const VIDEO_BITSTREAM_DEFAULT: VIDEO_BITSTREAM_TYPE =
-        VIDEO_BITSTREAM_TYPE::VIDEO_BITSTREAM_SVC;
+    pub const VIDEO_BITSTREAM_DEFAULT: VIDEO_BITSTREAM_TYPE = VIDEO_BITSTREAM_TYPE::VIDEO_BITSTREAM_SVC;
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of video bitstream which is provided to decoder"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum VIDEO_BITSTREAM_TYPE {
     VIDEO_BITSTREAM_AVC = 0,
     VIDEO_BITSTREAM_SVC = 1,
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of key frame request"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum KEY_FRAME_REQUEST_TYPE {
     NO_RECOVERY_REQUSET = 0,
     LTR_RECOVERY_REQUEST = 1,
@@ -458,7 +457,7 @@ pub enum KEY_FRAME_REQUEST_TYPE {
 }
 #[doc = " @brief Structure for LTR recover request"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SLTRRecoverRequest {
     #[doc = "< IDR request or LTR recovery request"]
     pub uiFeedbackType: ::std::os::raw::c_uint,
@@ -471,7 +470,7 @@ pub struct SLTRRecoverRequest {
 }
 #[doc = " @brief Structure for LTR marking feedback"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SLTRMarkingFeedback {
     #[doc = "< mark failed or successful"]
     pub uiFeedbackType: ::std::os::raw::c_uint,
@@ -483,7 +482,7 @@ pub struct SLTRMarkingFeedback {
 }
 #[doc = " @brief Structure for LTR configuration"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SLTRConfig {
     #[doc = "< 1: on, 0: off"]
     pub bEnableLongTermReference: bool,
@@ -492,7 +491,7 @@ pub struct SLTRConfig {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of rate control mode"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum RC_MODES {
     #[doc = "< quality mode"]
     RC_QUALITY_MODE = 0,
@@ -508,7 +507,7 @@ pub enum RC_MODES {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of profile id"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EProfileIdc {
     PRO_UNKNOWN = 0,
     PRO_BASELINE = 66,
@@ -524,7 +523,7 @@ pub enum EProfileIdc {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of level id"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ELevelIdc {
     LEVEL_UNKNOWN = 0,
     LEVEL_1_0 = 10,
@@ -556,7 +555,7 @@ pub const WELS_LOG_LEVEL_COUNT: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_LEVEL_CO
 pub const WELS_LOG_DEFAULT: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_WARNING;
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of wels log"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum _bindgen_ty_3 {
     #[doc = "< quiet mode"]
     WELS_LOG_QUIET = 0,
@@ -576,7 +575,7 @@ pub enum _bindgen_ty_3 {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of slice mode"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum SliceModeEnum {
     #[doc = "< | SliceNum==1"]
     SM_SINGLE_SLICE = 0,
@@ -608,7 +607,7 @@ impl Default for SSliceArgument {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of video format"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EVideoFormatSPS {
     VF_COMPONENT = 0,
     VF_PAL = 1,
@@ -620,7 +619,7 @@ pub enum EVideoFormatSPS {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of color primaries"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EColorPrimaries {
     CP_RESERVED0 = 0,
     CP_BT709 = 1,
@@ -636,7 +635,7 @@ pub enum EColorPrimaries {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of transfer characteristics"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ETransferCharacteristics {
     TRC_RESERVED0 = 0,
     TRC_BT709 = 1,
@@ -658,7 +657,7 @@ pub enum ETransferCharacteristics {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of color matrix"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EColorMatrix {
     CM_GBR = 0,
     CM_BT709 = 1,
@@ -675,7 +674,7 @@ pub enum EColorMatrix {
 }
 #[repr(i32)]
 #[doc = " @brief Enumerate the type of sample aspect ratio"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ESampleAspectRatio {
     ASP_UNSPECIFIED = 0,
     ASP_1x1 = 1,
@@ -737,7 +736,7 @@ impl Default for SSpatialLayerConfig {
 }
 #[repr(i32)]
 #[doc = " @brief Encoder usage type"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EUsageType {
     #[doc = "< camera video for real-time communication"]
     CAMERA_VIDEO_REAL_TIME = 0,
@@ -749,7 +748,7 @@ pub enum EUsageType {
 }
 #[repr(i32)]
 #[doc = " @brief Enumulate the complexity mode"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ECOMPLEXITY_MODE {
     #[doc = "< the lowest compleixty,the fastest speed,"]
     LOW_COMPLEXITY = 0,
@@ -760,7 +759,7 @@ pub enum ECOMPLEXITY_MODE {
 }
 #[repr(i32)]
 #[doc = " @brief Enumulate for the stategy of SPS/PPS strategy"]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum EParameterSetStrategy {
     #[doc = "< constant id in SPS/PPS"]
     CONSTANT_ID = 0,
@@ -773,7 +772,7 @@ pub enum EParameterSetStrategy {
 }
 #[doc = " @brief SVC Encoding Parameters"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub struct TagEncParamBase {
     #[doc = "< application type; please refer to the definition of EUsageType"]
     pub iUsageType: EUsageType,
@@ -882,7 +881,7 @@ impl Default for TagEncParamExt {
 pub type SEncParamExt = TagEncParamExt;
 #[doc = " @brief Define a new struct to show the property of video bitstream."]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SVideoProperty {
     #[doc = "< size of the struct"]
     pub size: ::std::os::raw::c_uint,
@@ -896,7 +895,7 @@ impl Default for SVideoProperty {
 }
 #[doc = " @brief SVC Decoding Parameters, reserved here and potential applicable in the future"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagSVCDecodingParam {
     #[doc = "< file name of reconstructed frame used for PSNR calculation based debug"]
     pub pFileNameRestructed: *mut ::std::os::raw::c_char,
@@ -922,7 +921,7 @@ pub type SDecodingParam = TagSVCDecodingParam;
 pub type PDecodingParam = *mut TagSVCDecodingParam;
 #[doc = " @brief Bitstream inforamtion of a layer being encoded"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SLayerBSInfo {
     pub uiTemporalId: ::std::os::raw::c_uchar,
     pub uiSpatialId: ::std::os::raw::c_uchar,
@@ -964,7 +963,7 @@ impl Default for SFrameBSInfo {
 pub type PFrameBSInfo = *mut SFrameBSInfo;
 #[doc = "  @brief Structure for source picture"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Source_Picture_s {
     #[doc = "< color space type"]
     pub iColorFormat: ::std::os::raw::c_int,
@@ -988,7 +987,7 @@ impl Default for Source_Picture_s {
 pub type SSourcePicture = Source_Picture_s;
 #[doc = " @brief Structure for bit rate info"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagBitrateInfo {
     pub iLayer: LAYER_NUM,
     #[doc = "< the maximum bitrate"]
@@ -1003,7 +1002,7 @@ impl Default for TagBitrateInfo {
 pub type SBitrateInfo = TagBitrateInfo;
 #[doc = " @brief Structure for dump layer info"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagDumpLayer {
     pub iLayer: ::std::os::raw::c_int,
     pub pFileName: *mut ::std::os::raw::c_char,
@@ -1017,7 +1016,7 @@ impl Default for TagDumpLayer {
 pub type SDumpLayer = TagDumpLayer;
 #[doc = " @brief Structure for profile info in layer"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagProfileInfo {
     pub iLayer: ::std::os::raw::c_int,
     #[doc = "< the profile info"]
@@ -1032,7 +1031,7 @@ impl Default for TagProfileInfo {
 pub type SProfileInfo = TagProfileInfo;
 #[doc = " @brief  Structure for level info in layer"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagLevelInfo {
     pub iLayer: ::std::os::raw::c_int,
     #[doc = "< the level info"]
@@ -1047,7 +1046,7 @@ impl Default for TagLevelInfo {
 pub type SLevelInfo = TagLevelInfo;
 #[doc = " @brief Structure for dilivery status"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagDeliveryStatus {
     #[doc = "< 0: the previous frame isn't delivered,1: the previous frame is delivered"]
     pub bDeliveryFlag: bool,
@@ -1060,7 +1059,7 @@ pub struct TagDeliveryStatus {
 pub type SDeliveryStatus = TagDeliveryStatus;
 #[doc = " @brief The capability of decoder, for SDP negotiation"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagDecoderCapability {
     #[doc = "< profile_idc"]
     pub iProfileIdc: ::std::os::raw::c_int,
@@ -1085,7 +1084,7 @@ pub struct TagDecoderCapability {
 pub type SDecoderCapability = TagDecoderCapability;
 #[doc = " @brief Structure for parse only output"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagParserBsInfo {
     #[doc = "< total NAL number in current AU"]
     pub iNalNum: ::std::os::raw::c_int,
@@ -1113,7 +1112,7 @@ pub type SParserBsInfo = TagParserBsInfo;
 pub type PParserBsInfo = *mut TagParserBsInfo;
 #[doc = " @brief Structure for encoder statistics"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq)]
 pub struct TagVideoEncoderStatistics {
     #[doc = "< the width of encoded frame"]
     pub uiWidth: ::std::os::raw::c_uint,
@@ -1151,7 +1150,7 @@ pub struct TagVideoEncoderStatistics {
 pub type SEncoderStatistics = TagVideoEncoderStatistics;
 #[doc = " @brief  Structure for decoder statistics"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq)]
 pub struct TagVideoDecoderStatistics {
     #[doc = "< the width of encode/decode frame"]
     pub uiWidth: ::std::os::raw::c_uint,
@@ -1210,7 +1209,7 @@ pub struct TagVideoDecoderStatistics {
 pub type SDecoderStatistics = TagVideoDecoderStatistics;
 #[doc = " @brief Structure for sample aspect ratio (SAR) info in VUI"]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TagVuiSarInfo {
     #[doc = "< SAR width"]
     pub uiSarWidth: ::std::os::raw::c_uint,
@@ -1225,29 +1224,16 @@ pub type SVuiSarInfo = TagVuiSarInfo;
 pub type PVuiSarInfo = *mut TagVuiSarInfo;
 pub type ISVCEncoder = *const ISVCEncoderVtbl;
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ISVCEncoderVtbl {
     pub Initialize: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ISVCEncoder,
-            pParam: *const SEncParamBase,
-        ) -> ::std::os::raw::c_int,
+        unsafe extern "C" fn(arg1: *mut ISVCEncoder, pParam: *const SEncParamBase) -> ::std::os::raw::c_int,
     >,
-    pub InitializeExt: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ISVCEncoder,
-            pParam: *const SEncParamExt,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub GetDefaultParams: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ISVCEncoder,
-            pParam: *mut SEncParamExt,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub Uninitialize: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ISVCEncoder) -> ::std::os::raw::c_int,
-    >,
+    pub InitializeExt:
+        ::std::option::Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder, pParam: *const SEncParamExt) -> ::std::os::raw::c_int>,
+    pub GetDefaultParams:
+        ::std::option::Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder, pParam: *mut SEncParamExt) -> ::std::os::raw::c_int>,
+    pub Uninitialize: ::std::option::Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder) -> ::std::os::raw::c_int>,
     pub EncodeFrame: ::std::option::Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
@@ -1255,15 +1241,9 @@ pub struct ISVCEncoderVtbl {
             pBsInfo: *mut SFrameBSInfo,
         ) -> ::std::os::raw::c_int,
     >,
-    pub EncodeParameterSets: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ISVCEncoder,
-            pBsInfo: *mut SFrameBSInfo,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub ForceIntraFrame: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ISVCEncoder, bIDR: bool) -> ::std::os::raw::c_int,
-    >,
+    pub EncodeParameterSets:
+        ::std::option::Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder, pBsInfo: *mut SFrameBSInfo) -> ::std::os::raw::c_int>,
+    pub ForceIntraFrame: ::std::option::Option<unsafe extern "C" fn(arg1: *mut ISVCEncoder, bIDR: bool) -> ::std::os::raw::c_int>,
     pub SetOption: ::std::option::Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCEncoder,
@@ -1281,17 +1261,12 @@ pub struct ISVCEncoderVtbl {
 }
 pub type ISVCDecoder = *const ISVCDecoderVtbl;
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ISVCDecoderVtbl {
     pub Initialize: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ISVCDecoder,
-            pParam: *const SDecodingParam,
-        ) -> ::std::os::raw::c_long,
+        unsafe extern "C" fn(arg1: *mut ISVCDecoder, pParam: *const SDecodingParam) -> ::std::os::raw::c_long,
     >,
-    pub Uninitialize: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> ::std::os::raw::c_long,
-    >,
+    pub Uninitialize: ::std::option::Option<unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> ::std::os::raw::c_long>,
     pub DecodeFrame: ::std::option::Option<
         unsafe extern "C" fn(
             arg1: *mut ISVCDecoder,
@@ -1365,11 +1340,7 @@ pub struct ISVCDecoderVtbl {
     >,
 }
 pub type WelsTraceCallback = ::std::option::Option<
-    unsafe extern "C" fn(
-        ctx: *mut ::std::os::raw::c_void,
-        level: ::std::os::raw::c_int,
-        string: *const ::std::os::raw::c_char,
-    ),
+    unsafe extern "C" fn(ctx: *mut ::std::os::raw::c_void, level: ::std::os::raw::c_int, string: *const ::std::os::raw::c_char),
 >;
 extern "C" {
     #[doc = " @brief   Create encoder"]
@@ -1387,9 +1358,7 @@ extern "C" {
     #[doc = " @brief   Get the capability of decoder"]
     #[doc = "  @param   pDecCapability  decoder capability"]
     #[doc = "  @return  0 - success; otherwise - failed;"]
-    pub fn WelsGetDecoderCapability(
-        pDecCapability: *mut SDecoderCapability,
-    ) -> ::std::os::raw::c_int;
+    pub fn WelsGetDecoderCapability(pDecCapability: *mut SDecoderCapability) -> ::std::os::raw::c_int;
 }
 extern "C" {
     #[doc = " @brief   Create decoder"]
