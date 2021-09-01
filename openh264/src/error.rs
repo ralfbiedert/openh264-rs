@@ -1,4 +1,5 @@
 use openh264_sys2::DECODING_STATE;
+use std::os::raw::{c_long, c_ulong};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Error {
@@ -8,9 +9,9 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn from_native(native: std::os::raw::c_ulong) -> Self {
+    pub fn from_native(native: i64) -> Self {
         Error {
-            native: native as i64,
+            native,
             decoding_state: DECODING_STATE::dsErrorFree,
             misc: None,
         }
@@ -37,22 +38,22 @@ pub trait NativeErrorExt {
     fn ok(self) -> Result<(), Error>;
 }
 
-impl NativeErrorExt for std::os::raw::c_ulong {
+impl NativeErrorExt for c_ulong {
     fn ok(self) -> Result<(), Error> {
         if self == 0 {
             Ok(())
         } else {
-            Err(Error::from_native(self))
+            Err(Error::from_native(self as i64))
         }
     }
 }
 
-impl NativeErrorExt for i32 {
+impl NativeErrorExt for c_long {
     fn ok(self) -> Result<(), Error> {
         if self == 0 {
             Ok(())
         } else {
-            Err(Error::from_native(self as u32))
+            Err(Error::from_native(self as i64))
         }
     }
 }

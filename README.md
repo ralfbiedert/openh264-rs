@@ -1,9 +1,15 @@
 
 # OpenH264 Rust API
 
-Idiomatic(*) and low-level bindings for OpenH264.  
+Idiomatic(*) and low-level bindings for [OpenH264](https://github.com/cisco/openh264).
+
+
+
 
 *decoder only for now, encoder PRs welcome.
+
+
+
 
 
 # FAQ
