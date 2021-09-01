@@ -1,33 +1,46 @@
 
-Wrappers for OpenH264.
+# OpenH264 Rust API
 
+Idiomatic(*) and low-level bindings for OpenH264.  
+
+*decoder only for now, encoder PRs welcome.
+
+
+# FAQ
+
+- **How does `openh264-sys2` differ from `openh264-sys`?**
+
+  We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as 
+  long as the environment variable `CC` is properly set. 
+
+  
+- **I need to fix an important OpenH264 security hole, how can I update the library?**
+
+  Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is as simple as [pulling their latest source](https://github.com/cisco/openh264), 
+  copying it into that directory, and manually removing all "resource" files. We probably should have a script to strip that folder automatically ...  
+  
+
+- **I heard Rust is super-safe, will this make decoding my videos safe too?**
+
+  No. Below a thin Rust layer we rely on a _very complex_ C library, and an equally complex standard. Apart from Rust being a 
+  much nicer language to work with, depending on this  project will give you _no_ additional safety guarantees as far as video 
+  handling is concerned. FYI, this is _not_ making a statement about OpenH264, but about the realities of securing +50k lines 
+  of C against attacks.    
+
+
+- **Feature X is missing or broken, will you fix it?**
+
+  Right now I only have time implementing what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
+
+
+
+# Contributing
+
+PRs are very welcome. Feel free to submit PRs and fixes right away. You can open Issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing. 
 
 
 
 # License
 
-```
-Copyright (c) 2013, Cisco Systems
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice, this
-  list of conditions and the following disclaimer in the documentation and/or
-  other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
+- OpenH264 core library is [BSD-2](openh264-sys2/upstream/LICENSE), Cisco.
+- Wrapper code is [BSD-2](https://opensource.org/licenses/BSD-2-Clause), Ralf Biedert. 

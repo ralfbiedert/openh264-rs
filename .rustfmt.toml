@@ -1,0 +1,4 @@
+imports_granularity = "module"
+imports_layout = "horizontal"
+max_width = 130
+fn_call_width = 80

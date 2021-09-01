@@ -1,4 +1,8 @@
 [workspace]
 members = [
-    "openh264-sys2"
+    "openh264-sys2",
+    "openh264"
 ]
+
+[profile.release]
+debug = true

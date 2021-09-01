@@ -22,6 +22,9 @@ fn main() {
         .files(ugly_cpp_import("upstream/codec/decoder"))
         .cpp(true)
         .warnings(false)
+        .opt_level(2)
+        .pic(true)
+        .debug(true)
         .compile("libopenh264_decode.a");
 
     cc::Build::new()
@@ -35,9 +38,12 @@ fn main() {
         .files(ugly_cpp_import("upstream/codec/processing"))
         .cpp(true)
         .warnings(false)
+        .opt_level(2)
+        .pic(true)
+        .debug(true)
         .compile("libopenh264_encode.a");
 
     println!("cargo:rustc-link-lib=static=openh264_encode");
     println!("cargo:rustc-link-lib=static=openh264_decode");
-    println!("cargo:rerun-if-env-changed=XXXXXXXXXXXXXXX");
+    println!("cargo:rerun-if-env-changed=TOOOODOOO");
 }
