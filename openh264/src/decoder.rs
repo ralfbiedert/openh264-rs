@@ -4,8 +4,9 @@ use openh264_sys2::{
     EVideoFormatType, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
     WelsDestroyDecoder, DECODER_OPTION, DECODING_STATE,
 };
+use std::ops::Add;
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
-use std::ptr::{null, null_mut};
+use std::ptr::{addr_of_mut, null, null_mut};
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
 #[rustfmt::skip]
@@ -118,7 +119,13 @@ impl Decoder {
     pub fn with_config(config: &DecoderConfig) -> Result<Self, Error> {
         let raw = DecoderRawAPI::new()?;
 
-        unsafe { raw.initialize(&config.params).ok()? };
+        unsafe {
+            let mut x: i32 = 0;
+            raw.initialize(&config.params).ok()?;
+            raw.set_option(DECODER_OPTION::DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(x).cast())
+                // raw.set_option(DECODER_OPTION::DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(x).add(1000).cast())
+                .ok()?;
+        };
 
         Ok(Self { raw_api: raw })
     }

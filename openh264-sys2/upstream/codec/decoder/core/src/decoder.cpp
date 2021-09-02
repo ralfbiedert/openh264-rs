@@ -259,7 +259,10 @@ void DestroyPicBuff (PWelsDecoderContext pCtx, PPicBuff* ppPicBuf, CMemoryAlign*
   PPicBuff pPicBuf = NULL;
 
   ResetReorderingPictureBuffers (pCtx->pPictReoderingStatus, pCtx->pPictInfoList, false);
-  if (pCtx->pDstInfo) pCtx->pDstInfo->iBufferStatus = 0;
+
+  // Valgrind on Linux says this an invalid write, and we have spurious
+  // crashes on MacOS. Disabling this line resolves both.
+  // if (pCtx->pDstInfo) pCtx->pDstInfo->iBufferStatus = 0;
 
   if (NULL == ppPicBuf || NULL == *ppPicBuf)
     return;

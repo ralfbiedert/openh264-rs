@@ -64,3 +64,18 @@ fn decode_yuv_multi_512x512(b: &mut Bencher) {
         black_box(dim);
     });
 }
+
+#[bench]
+fn whole_decoder(b: &mut Bencher) {
+    let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
+
+    b.iter(|| {
+        let config = DecoderConfig::default();
+        let mut decoder = Decoder::with_config(&config).unwrap();
+
+        let yuv = decoder.decode_no_delay(&source[..]).unwrap();
+        let dim = yuv.dimension_rgb();
+
+        black_box(dim);
+    });
+}
