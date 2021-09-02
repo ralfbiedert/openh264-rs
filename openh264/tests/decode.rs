@@ -1,4 +1,4 @@
-use image::{ColorType, Rgb};
+use image::ColorType;
 use openh264::{Decoder, DecoderConfig, Error};
 
 #[test]
@@ -12,7 +12,7 @@ fn can_get_decoder() -> Result<(), Error> {
 #[test]
 #[rustfmt::skip]
 #[ignore]
-fn can_decode_files() -> Result<(), Error> {
+fn can_decode_single() -> Result<(), Error> {
     let sources = [
         &include_bytes!("data/single_1920x1080_cabac.h264")[..],
         &include_bytes!("data/single_512x512_cabac.h264")[..],
@@ -23,7 +23,7 @@ fn can_decode_files() -> Result<(), Error> {
         let config = DecoderConfig::default();
         let mut decoder = Decoder::with_config(&config)?;
 
-        let yuv = decoder.xxx_decode(src)?;
+        let yuv = decoder.decode_no_delay(src)?;
 
         let dim = yuv.dimension_rgb();
         let rgb_len = dim.0 * dim.1 * 3;
@@ -41,6 +41,50 @@ fn can_decode_files() -> Result<(), Error> {
         image::save_buffer(format!("{}_u.png", i), yuv.u_with_stride(), strides.1 as u32, dim_u.1 as u32, ColorType::L8).unwrap();
         image::save_buffer(format!("{}_v.png", i), yuv.v_with_stride(), strides.2 as u32, dim_v.1 as u32, ColorType::L8).unwrap();
     }
+
+    Ok(())
+}
+
+#[test]
+fn can_decode_multi_to_end() -> Result<(), Error> {
+    let src = &include_bytes!("data/multi_512x512.h264")[..];
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(&config)?;
+
+    decoder.decode_no_delay(src)?;
+
+    Ok(())
+}
+
+#[test]
+fn can_decode_multi_by_step() -> Result<(), Error> {
+    let src = &include_bytes!("data/multi_512x512.h264")[..];
+
+    let packet_lengths = [30, 2736, 2688, 2672, 2912, 3215];
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(&config)?;
+
+    let mut p = 0;
+
+    for l in packet_lengths {
+        decoder.decode_no_delay(&src[p..p + l])?;
+
+        p += l;
+    }
+
+    Ok(())
+}
+
+#[test]
+fn fails_on_truncated() -> Result<(), Error> {
+    let src = &include_bytes!("data/multi_512x512_truncated.h264")[..];
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(&config)?;
+
+    assert!(decoder.decode_no_delay(src).is_err());
 
     Ok(())
 }

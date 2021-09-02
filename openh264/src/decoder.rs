@@ -123,19 +123,26 @@ impl Decoder {
         Ok(Self { raw_api: raw })
     }
 
-    pub fn xxx_decode(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
+    /// Decodes a complete H.264 bitstream and returns the latest picture.
+    ///
+    /// This function can be called with:
+    ///
+    /// - only a complete SPS / PPS header (usually the first some 30 bytes of a H.264 stream)
+    /// - the headers and series of complete frames
+    /// - new frames after previous headers and frames were successfully decoded.
+    ///
+    /// In each case, it will return the decoded image in YUV format.
+    ///
+    /// # Errors
+    ///
+    /// The function returns and error if any of the packets is incomplete, e.g., was truncated.
+    pub fn decode_no_delay(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
         let mut dst = [null_mut(); 3];
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
             self.raw_api
-                .decode_frame2(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
-                .ok()?;
-
-            // Is this correct?
-            // https://github.com/cisco/openh264/issues/1415
-            self.raw_api
-                .decode_frame2(null(), 0, &mut dst as *mut _, &mut buffer_info)
+                .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
                 .ok()?;
 
             if !buffer_info.iBufferStatus == 1 {
@@ -231,12 +238,6 @@ impl<'a> DecodedYUV<'a> {
                 let y = self.y[base_y] as f32;
                 let u = self.u[base_u] as f32;
                 let v = self.v[base_v] as f32;
-
-                let b = y * 1.164_383_5;
-
-                // rgb_pixel[0] = (b + u * 1.792_741_1 + -248.101) as u8;
-                // rgb_pixel[1] = (b + v - 0.213_248_61 + u * -0.532_909_33 + 76.878_08) as u8;
-                // rgb_pixel[2] = (b + v * -0.213_248_61 + u * -0.532_909_33 + 76.878_08) as u8;
 
                 rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
                 rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
