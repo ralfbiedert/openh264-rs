@@ -12,16 +12,17 @@ Idiomatic(*) and low-level bindings for [OpenH264](https://github.com/cisco/open
 
 ## Platform Support
 
-Platforms the project is known to build on as-is: 
+Platforms the project is known to build on as-is:
 
-| Platform | Compiles | Unit Tests |  
+| Platform | Compiles | Unit Tests |
 | --- | --- | --- |
 | `x86_64-pc-windows-msvc` | ✅ | ✅ |
 | `x86_64-unknown-linux-gnu` | ✅ | ✅ |
+| `x86_64-apple-darwin` | ✅ | ✅ |
 | `aarch64-linux-android`<sup>1</sup> | ✅  | - |
 | `wasm32-unknown-unknown`<sup>2</sup> | ❌ | ❌ |
 
-<sup>1</sup> via `cargo build --target <platform>`, needs `CC` [set](https://cheats.rs/#cross-compilation) <br/>
+<sup>1</sup> via `cargo build --target <platform>`, needs `CXX` set, [similar to CC here](https://cheats.rs/#cross-compilation) <br/>
 <sup>2</sup> unclear if could ever work, investigation welcome
 
 
@@ -29,22 +30,22 @@ Platforms the project is known to build on as-is:
 
 - **How does `openh264-sys2` differ from `openh264-sys`?**
 
-  We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as 
-  long as the environment variable `CC` is properly set. 
+  We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as
+  long as the environment variable `CC` is properly set.
 
-  
+
 - **I need to fix an important OpenH264 security hole, how can I update the library?**
 
-  Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is as simple as [pulling their latest source](https://github.com/cisco/openh264), 
-  copying it into that directory, and manually removing all "resource" files. We probably should have a script to strip that folder automatically ...  
-  
+  Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is as simple as [pulling their latest source](https://github.com/cisco/openh264),
+  copying it into that directory, and manually removing all "resource" files. We probably should have a script to strip that folder automatically ...
+
 
 - **I heard Rust is super-safe, will this make decoding my videos safe too?**
 
-  No. Below a thin Rust layer we rely on a _very complex_ C library, and an equally complex standard. Apart from Rust being a 
-  much nicer language to work with, depending on this  project will give you _no_ additional safety guarantees as far as video 
-  handling is concerned. FYI, this is _not_ making a statement about OpenH264, but about the realities of securing +50k lines 
-  of C against attacks.    
+  No. Below a thin Rust layer we rely on a _very complex_ C library, and an equally complex standard. Apart from Rust being a
+  much nicer language to work with, depending on this  project will give you _no_ additional safety guarantees as far as video
+  handling is concerned. FYI, this is _not_ making a statement about OpenH264, but about the realities of securing +50k lines
+  of C against attacks.
 
 
 - **Feature X is missing or broken, will you fix it?**
@@ -55,13 +56,13 @@ Platforms the project is known to build on as-is:
 
 ## Contributing
 
-PRs are very welcome. Feel free to submit PRs and fixes right away. You can open issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing. 
+PRs are very welcome. Feel free to submit PRs and fixes right away. You can open issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing.
 
 Especially needed:
 
 - [ ] CI testing
 - [ ] Encoder wrapper
-- [ ] Enabling of platform specific assembly (without breaking or complicating build) 
+- [ ] Enabling of platform specific assembly (without breaking or complicating build)
 - [ ] Faster YUV to RGB conversion
 - [ ] Have script to automatically update / import OpenH264 source (or submodule?)
 - [ ] WASM investigation (either patch, or evidence it can't be fixed)
@@ -71,4 +72,4 @@ Especially needed:
 ## License
 
 - OpenH264 core library is [BSD-2](openh264-sys2/upstream/LICENSE), Cisco.
-- Wrapper code is [BSD-2](https://opensource.org/licenses/BSD-2-Clause), Ralf Biedert. 
+- Wrapper code is [BSD-2](https://opensource.org/licenses/BSD-2-Clause), Ralf Biedert.
