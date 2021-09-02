@@ -10,9 +10,22 @@ Idiomatic(*) and low-level bindings for [OpenH264](https://github.com/cisco/open
 
 
 
+## Platform Support
+
+Platforms the project is known to build on as-is: 
+
+| Platform | Compiles | Unit Tests |  
+| --- | --- | --- |
+| `x86_64-pc-windows-msvc` | ✅ | ✅ |
+| `x86_64-unknown-linux-gnu` | ✅ | ✅ |
+| `aarch64-linux-android`<sup>1</sup> | ✅  | - |
+| `wasm32-unknown-unknown`<sup>2</sup> | ❌ | ❌ |
+
+<sup>1</sup> via `cargo build --target <platform>`, needs `CC` [set](https://cheats.rs/#cross-compilation) <br/>
+<sup>2</sup> unclear if could ever work, investigation welcome
 
 
-# FAQ
+## FAQ
 
 - **How does `openh264-sys2` differ from `openh264-sys`?**
 
@@ -36,17 +49,26 @@ Idiomatic(*) and low-level bindings for [OpenH264](https://github.com/cisco/open
 
 - **Feature X is missing or broken, will you fix it?**
 
-  Right now I only have time implementing what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
+  Right now I only have time to implement what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
 
 
 
-# Contributing
+## Contributing
 
-PRs are very welcome. Feel free to submit PRs and fixes right away. You can open Issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing. 
+PRs are very welcome. Feel free to submit PRs and fixes right away. You can open issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing. 
+
+Especially needed:
+
+- [ ] CI testing
+- [ ] Encoder wrapper
+- [ ] Enabling of platform specific assembly (without breaking or complicating build) 
+- [ ] Faster YUV to RGB conversion
+- [ ] Have script to automatically update / import OpenH264 source (or submodule?)
+- [ ] WASM investigation (either patch, or evidence it can't be fixed)
+- [ ] Feedback which platforms successfully built on
 
 
-
-# License
+## License
 
 - OpenH264 core library is [BSD-2](openh264-sys2/upstream/LICENSE), Cisco.
 - Wrapper code is [BSD-2](https://opensource.org/licenses/BSD-2-Clause), Ralf Biedert. 
