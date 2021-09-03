@@ -49,9 +49,9 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("OpenH264 encountered an error. Native:")?;
         <i64 as std::fmt::Display>::fmt(&self.native, f)?;
-        f.write_str(" Decoding State:")?;
+        f.write_str(". Decoding State:")?;
         <std::os::raw::c_int as std::fmt::Display>::fmt(&self.decoding_state, f)?;
-        f.write_str(" User Message:")?;
+        f.write_str(". User Message:")?;
         self.misc.fmt(f)?;
 
         #[cfg(feature = "backtrace")]

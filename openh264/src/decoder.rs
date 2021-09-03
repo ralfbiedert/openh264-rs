@@ -2,7 +2,8 @@ use crate::error::NativeErrorExt;
 use crate::Error;
 use openh264_sys2::{
     videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
-    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_NUM_OF_THREADS, DECODING_STATE,
+    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE,
+    VIDEO_BITSTREAM_AVC,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -115,6 +116,7 @@ impl Drop for DecoderRawAPI {
 pub struct DecoderConfig {
     params: SDecodingParam,
     num_threads: i32,
+    debug: i32,
 }
 
 impl DecoderConfig {
@@ -131,6 +133,11 @@ impl DecoderConfig {
     /// If you have proof either way, please file an PR removing the `unsafe` marker, or this section.
     pub unsafe fn num_threads(mut self, num_threads: u32) -> Self {
         self.num_threads = num_threads as i32;
+        self
+    }
+
+    pub fn debug(mut self, value: bool) -> Self {
+        self.debug = if value { 0xffffff } else { 0 };
         self
     }
 }
@@ -151,10 +158,13 @@ impl Decoder {
     pub fn with_config(mut config: DecoderConfig) -> Result<Self, Error> {
         let raw = DecoderRawAPI::new()?;
 
+        // config.params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
+
+        #[rustfmt::skip]
         unsafe {
             raw.initialize(&config.params).ok()?;
-            raw.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast())
-                .ok()?;
+            raw.set_option(DECODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
+            raw.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast()).ok()?;
         };
 
         Ok(Self { raw_api: raw })
@@ -196,6 +206,52 @@ impl Decoder {
             Ok(DecodedYUV { info, y, u, v })
         }
     }
+
+    // pub fn decode_frame2(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
+    //     let mut dst = [null_mut(); 3];
+    //     let mut buffer_info = SBufferInfo::default();
+    //
+    //     unsafe {
+    //         self.raw_api
+    //             .decode_frame2(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
+    //             .ok()?;
+    //
+    //         if !buffer_info.iBufferStatus == 1 {
+    //             return Err(Error::msg("Buffer status not valid"));
+    //         }
+    //
+    //         let info = buffer_info.UsrData.sSystemBuffer;
+    //
+    //         // https://github.com/cisco/openh264/issues/2379
+    //         let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
+    //         let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
+    //         let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
+    //
+    //         Ok(DecodedYUV { info, y, u, v })
+    //     }
+    // }
+    //
+    // pub fn flush_frame(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
+    //     let mut dst = [null_mut(); 3];
+    //     let mut buffer_info = SBufferInfo::default();
+    //
+    //     unsafe {
+    //         // self.raw_api.flush_frame().ok()?;
+    //
+    //         if !buffer_info.iBufferStatus == 1 {
+    //             return Err(Error::msg("Buffer status not valid"));
+    //         }
+    //
+    //         let info = buffer_info.UsrData.sSystemBuffer;
+    //
+    //         // https://github.com/cisco/openh264/issues/2379
+    //         let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
+    //         let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
+    //         let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
+    //
+    //         Ok(DecodedYUV { info, y, u, v })
+    //     }
+    // }
 }
 
 impl Drop for Decoder {
