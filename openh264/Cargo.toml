@@ -1,12 +1,19 @@
 [package]
 name = "openh264"
-version = "0.1.0"
+description = "Idiomatic bindings for OpenH264."
+authors = ["Ralf Biedert <rb@xr.io>"]
+keywords = ["multimedia", "encoding", "video"]
+categories = ["api-bindings", "multimedia::video"]
+version = "0.1.9"
 edition = "2018"
+license = "BSD-2-Clause"
+documentation = "https://docs.rs/openh264/"
+repository = "https://github.com/ralfbiedert/openh264-rust"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-openh264-sys2 = { path = "../openh264-sys2" }
+openh264-sys2 = { path = "../openh264-sys2", version = "0.1" }
 
 [dev-dependencies]
 image = "0.23"

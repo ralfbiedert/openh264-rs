@@ -7,3 +7,4 @@
 *.meson linguist-detectable=false
 *.mk linguist-detectable=false
 *.c linguist-detectable=false
+*.toml text eol=lf

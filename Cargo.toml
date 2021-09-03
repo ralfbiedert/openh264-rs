@@ -4,5 +4,7 @@ members = [
     "openh264"
 ]
 
-[profile.release]
-debug = true
+#[profile.release]
+#debug = true
+
+
