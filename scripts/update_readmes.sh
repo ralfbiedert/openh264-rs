@@ -10,5 +10,6 @@ function update_readme() {
 }
 
 update_readme "openh264"
+update_readme "openh264-sys2"
 
 cp "$PROJECT_ROOT"/openh264/README.md "$PROJECT_ROOT"
