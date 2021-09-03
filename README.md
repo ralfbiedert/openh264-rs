@@ -59,7 +59,7 @@ If you want to improve these numbers you can submit PRs that
 - **How does `openh264-sys2` differ from `openh264-sys`?**
 
 We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as
-long as the environment variable `CC` is properly set.
+long as the environment variable `CXX` is properly set.
 
 
 - **I need to fix an important OpenH264 security hole, how can I update the library?**
