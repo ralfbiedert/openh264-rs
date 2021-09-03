@@ -4,15 +4,16 @@ use openh264_sys2::{
     EVideoFormatType, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
     WelsDestroyDecoder, DECODER_OPTION, DECODING_STATE,
 };
-use std::ops::Add;
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
+///
+/// This struct automatically handles `WelsCreateDecoder` and `WelsDestroyDecoder`.
 #[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Debug)]
-pub struct DecoderRawAPI {
+struct DecoderRawAPI {
     decoder_ptr: *mut *const ISVCDecoderVtbl,
     initialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder, pParam: *const SDecodingParam) -> c_long,
     uninitialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> c_long,
@@ -31,7 +32,7 @@ pub struct DecoderRawAPI {
 #[allow(non_snake_case)]
 #[allow(unused)]
 impl DecoderRawAPI {
-    pub fn new() -> Result<Self, Error> {
+    fn new() -> Result<Self, Error> {
         unsafe {
             let mut decoder_ptr = null::<ISVCDecoderVtbl>() as *mut *const ISVCDecoderVtbl;
 
@@ -105,26 +106,56 @@ impl Drop for DecoderRawAPI {
     }
 }
 
+/// Configuration for the [`Decoder`].
+///
+/// Setting missing? Please file a PR!
 #[derive(Default, Copy, Clone, Debug)]
 pub struct DecoderConfig {
     params: SDecodingParam,
+    num_threads: i32,
 }
 
+impl DecoderConfig {
+    /// Creates a new default encoder config.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the number of threads.
+    ///
+    /// # Safety
+    ///
+    /// Right now it seems to be unclear if setting a thread count is entirely safe.
+    /// If you have proof either way, please file an PR removing the `unsafe` marker, or this section.
+    pub unsafe fn num_threads(mut self, num_threads: u32) -> Self {
+        self.num_threads = num_threads as i32;
+        self
+    }
+}
+
+/// An [OpenH264](https://github.com/cisco/openh264) decoder, converts packets to YUV.
 #[derive(Debug)]
 pub struct Decoder {
     raw_api: DecoderRawAPI,
 }
 
 impl Decoder {
-    pub fn with_config(config: &DecoderConfig) -> Result<Self, Error> {
+    /// Create a decoder with default settings.
+    pub fn new() -> Result<Self, Error> {
+        Self::with_config(DecoderConfig::new())
+    }
+
+    /// Create a decoder with the provided configuration.
+    pub fn with_config(mut config: DecoderConfig) -> Result<Self, Error> {
         let raw = DecoderRawAPI::new()?;
 
         unsafe {
-            let mut x: i32 = 0;
             raw.initialize(&config.params).ok()?;
-            raw.set_option(DECODER_OPTION::DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(x).cast())
-                // raw.set_option(DECODER_OPTION::DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(x).add(1000).cast())
-                .ok()?;
+            raw.set_option(
+                DECODER_OPTION::DECODER_OPTION_NUM_OF_THREADS,
+                addr_of_mut!(config.num_threads).cast(),
+            )
+            .ok()?;
         };
 
         Ok(Self { raw_api: raw })
@@ -177,6 +208,7 @@ impl Drop for Decoder {
     }
 }
 
+/// Frame returned by the [`Decoder`] and provides safe data access.
 pub struct DecodedYUV<'a> {
     info: SSysMEMBuffer,
 
@@ -186,34 +218,54 @@ pub struct DecodedYUV<'a> {
 }
 
 impl<'a> DecodedYUV<'a> {
+    /// Returns the Y (luma) array, including padding.
+    ///
+    /// You can use [`strides_yuv()`](Self::strides_yuv) to compute unpadded pixel positions.
     pub fn y_with_stride(&self) -> &'a [u8] {
         self.y
     }
 
+    /// Returns the U (blue projection) array, including padding.
+    ///
+    /// You can use [`strides_yuv()`](Self::strides_yuv) to compute unpadded pixel positions.
     pub fn u_with_stride(&self) -> &'a [u8] {
         self.u
     }
 
+    /// Returns the V (red projection) array, including padding.
+    ///
+    /// You can use [`strides_yuv()`](Self::strides_yuv) to compute unpadded pixel positions.
     pub fn v_with_stride(&self) -> &'a [u8] {
         self.v
     }
 
+    /// Returns the unpadded, image size in pixels when using [`write_rgb8()`](Self::write_rgb8).
     pub fn dimension_rgb(&self) -> (usize, usize) {
         (self.info.iWidth as usize, self.info.iHeight as usize)
     }
 
+    /// Returns the unpadded Y size.
+    ///
+    /// This may or may not be smaller than the image size.
     pub fn dimension_y(&self) -> (usize, usize) {
         (self.info.iWidth as usize, self.info.iHeight as usize)
     }
 
+    /// Returns the unpadded U size.
+    ///
+    /// This is often smaller (by half) than the image size.
     pub fn dimension_u(&self) -> (usize, usize) {
         (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
     }
 
+    /// Returns the unpadded V size.
+    ///
+    /// This is often smaller (by half) than the image size.
     pub fn dimension_v(&self) -> (usize, usize) {
         (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
     }
 
+    /// Returns strides for the (Y,U,V) arrays.
     pub fn strides_yuv(&self) -> (usize, usize, usize) {
         (
             self.info.iStride[0] as usize,
@@ -222,6 +274,7 @@ impl<'a> DecodedYUV<'a> {
         )
     }
 
+    /// Writes the image into a byte buffer of size `w*h*3`.
     pub fn write_rgb8(&self, target: &mut [u8]) -> Result<(), Error> {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();

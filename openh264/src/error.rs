@@ -1,6 +1,8 @@
 use openh264_sys2::DECODING_STATE;
+use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_long, c_ulong};
 
+/// Error struct if something goes wrong.
 #[derive(Debug, Copy, Clone)]
 pub struct Error {
     native: i64,
@@ -9,7 +11,7 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn from_native(native: i64) -> Self {
+    pub(crate) fn from_native(native: i64) -> Self {
         Error {
             native,
             decoding_state: DECODING_STATE::dsErrorFree,
@@ -17,7 +19,7 @@ impl Error {
         }
     }
 
-    pub fn from_decoding_state(decoding_state: DECODING_STATE) -> Self {
+    pub(crate) fn from_decoding_state(decoding_state: DECODING_STATE) -> Self {
         Error {
             native: 0,
             decoding_state,
@@ -25,7 +27,7 @@ impl Error {
         }
     }
 
-    pub fn msg(msg: &'static str) -> Self {
+    pub(crate) fn msg(msg: &'static str) -> Self {
         Error {
             native: 0,
             decoding_state: DECODING_STATE::dsErrorFree,
@@ -34,7 +36,20 @@ impl Error {
     }
 }
 
-pub trait NativeErrorExt {
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("OpenH264 encountered an error (TODO: improve this message): ")?;
+        <i64 as std::fmt::Display>::fmt(&self.native, f)?;
+        self.decoding_state.fmt(f)?;
+        self.misc.fmt(f)?;
+        Ok(())
+    }
+}
+
+impl std::error::Error for Error {}
+
+/// Helper trait to check the various error values produced by OpenH264.
+pub(crate) trait NativeErrorExt {
     fn ok(self) -> Result<(), Error>;
 }
 

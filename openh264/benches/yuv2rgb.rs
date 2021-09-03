@@ -10,7 +10,7 @@ fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_1920x1080_cabac.h264");
 
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(&config).unwrap();
+    let mut decoder = Decoder::with_config(config).unwrap();
 
     let mut rgb = vec![0; 2000 * 2000 * 3];
     let yuv = decoder.decode_no_delay(&source[..]).unwrap();
@@ -29,7 +29,7 @@ fn convert_yuv_to_rgb_512x512(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
 
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(&config).unwrap();
+    let mut decoder = Decoder::with_config(config).unwrap();
 
     let mut rgb = vec![0; 2000 * 2000 * 3];
     let yuv = decoder.decode_no_delay(&source[..]).unwrap();
