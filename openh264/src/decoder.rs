@@ -277,16 +277,17 @@ impl<'a> DecodedYUV<'a> {
     pub fn write_rgb8(&self, target: &mut [u8]) -> Result<(), Error> {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();
+        let wanted = dim.0 * dim.1 * 3;
 
         // This needs some love, and better architecture.
         assert_eq!(self.info.iFormat, videoFormatI420 as i32);
 
-        if target.len() != (dim.0 * dim.1 * 3) as usize {
+        if target.len() != wanted as usize {
             return Err(Error::msg(&format!(
                 "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
                 dim.0,
                 dim.1,
-                (dim.0 * dim.1 * 3),
+                wanted,
                 target.len()
             )));
         }
@@ -307,6 +308,47 @@ impl<'a> DecodedYUV<'a> {
                 rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
                 rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
                 rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn write_rgba8(&self, target: &mut [u8]) -> Result<(), Error> {
+        let dim = self.dimension_rgb();
+        let strides = self.strides_yuv();
+        let wanted = dim.0 * dim.1 * 4;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+
+        if target.len() != wanted as usize {
+            return Err(Error::msg(&format!(
+                "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 4 = {}, got {}",
+                dim.0,
+                dim.1,
+                wanted,
+                target.len()
+            )));
+        }
+
+        for y in 0..dim.1 {
+            for x in 0..dim.0 {
+                let base_tgt = (y * dim.0 + x) * 4;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+
+                let rgb_pixel = &mut target[base_tgt..base_tgt + 4];
+
+                let y = self.y[base_y] as f32;
+                let u = self.u[base_u] as f32;
+                let v = self.v[base_v] as f32;
+
+                rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
+                rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
+                rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+                rgb_pixel[3] = 255;
             }
         }
 
