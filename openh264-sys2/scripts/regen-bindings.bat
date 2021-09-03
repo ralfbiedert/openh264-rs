@@ -5,7 +5,6 @@ bindgen ^
     --generate-block ^
     --no-layout-tests ^
     --no-prepend-enum-name ^
-    --default-enum-style rust ^
     --with-derive-eq ^
     --with-derive-default ^
     --with-derive-hash ^

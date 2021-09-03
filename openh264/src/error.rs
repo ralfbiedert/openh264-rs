@@ -1,4 +1,4 @@
-use openh264_sys2::DECODING_STATE;
+use openh264_sys2::{dsErrorFree, DECODING_STATE};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_long, c_ulong};
 
@@ -14,11 +14,12 @@ impl Error {
     pub(crate) fn from_native(native: i64) -> Self {
         Error {
             native,
-            decoding_state: DECODING_STATE::dsErrorFree,
+            decoding_state: dsErrorFree,
             misc: None,
         }
     }
 
+    #[allow(unused)]
     pub(crate) fn from_decoding_state(decoding_state: DECODING_STATE) -> Self {
         Error {
             native: 0,
@@ -30,7 +31,7 @@ impl Error {
     pub(crate) fn msg(msg: &'static str) -> Self {
         Error {
             native: 0,
-            decoding_state: DECODING_STATE::dsErrorFree,
+            decoding_state: dsErrorFree,
             misc: Some(msg),
         }
     }
@@ -40,7 +41,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("OpenH264 encountered an error (TODO: improve this message): ")?;
         <i64 as std::fmt::Display>::fmt(&self.native, f)?;
-        self.decoding_state.fmt(f)?;
+        <std::os::raw::c_int as std::fmt::Display>::fmt(&self.decoding_state, f)?;
         self.misc.fmt(f)?;
         Ok(())
     }
@@ -73,12 +74,27 @@ impl NativeErrorExt for c_long {
     }
 }
 
-impl NativeErrorExt for DECODING_STATE {
-    fn ok(self) -> Result<(), Error> {
-        if self == DECODING_STATE::dsErrorFree {
-            Ok(())
-        } else {
-            Err(Error::from_decoding_state(self))
-        }
+#[cfg(test)]
+mod test {
+    use crate::Error;
+    use openh264_sys2::dsRefListNullPtrs;
+
+    #[test]
+    fn errors_wont_panic() {
+        dbg!(Error::from_native(1));
+        dbg!(Error::from_decoding_state(dsRefListNullPtrs));
+        dbg!(Error::msg("hello world"));
+
+        println!("{}", Error::from_native(1));
+        println!("{}", Error::from_decoding_state(dsRefListNullPtrs));
+        println!("{}", Error::msg("hello world"));
+
+        println!("{:?}", Error::from_native(1));
+        println!("{:?}", Error::from_decoding_state(dsRefListNullPtrs));
+        println!("{:?}", Error::msg("hello world"));
+
+        println!("{:#?}", Error::from_native(1));
+        println!("{:#?}", Error::from_decoding_state(dsRefListNullPtrs));
+        println!("{:#?}", Error::msg("hello world"));
     }
 }

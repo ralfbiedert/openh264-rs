@@ -1,8 +1,8 @@
 use crate::error::NativeErrorExt;
 use crate::Error;
 use openh264_sys2::{
-    EVideoFormatType, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
-    WelsDestroyDecoder, DECODER_OPTION, DECODING_STATE,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
+    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_NUM_OF_THREADS, DECODING_STATE,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -151,11 +151,8 @@ impl Decoder {
 
         unsafe {
             raw.initialize(&config.params).ok()?;
-            raw.set_option(
-                DECODER_OPTION::DECODER_OPTION_NUM_OF_THREADS,
-                addr_of_mut!(config.num_threads).cast(),
-            )
-            .ok()?;
+            raw.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast())
+                .ok()?;
         };
 
         Ok(Self { raw_api: raw })
@@ -280,7 +277,7 @@ impl<'a> DecodedYUV<'a> {
         let strides = self.strides_yuv();
 
         // This needs some love, and better architecture.
-        assert_eq!(self.info.iFormat, EVideoFormatType::videoFormatI420 as i32);
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
 
         if target.len() != (dim.0 * dim.1 * 3) as usize {
             return Err(Error::msg("Target RGB8 array does not match image dimensions."));

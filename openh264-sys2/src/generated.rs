@@ -18,133 +18,100 @@ pub const SAVED_NALUNIT_NUM_TMP: u32 = 21;
 pub const MAX_SLICES_NUM_TMP: u32 = 35;
 pub const AUTO_REF_PIC_COUNT: i32 = -1;
 pub const UNSPECIFIED_BIT_RATE: u32 = 0;
-#[repr(i32)]
+#[doc = "< rgb color formats"]
+pub const videoFormatRGB: EVideoFormatType = 1;
+pub const videoFormatRGBA: EVideoFormatType = 2;
+pub const videoFormatRGB555: EVideoFormatType = 3;
+pub const videoFormatRGB565: EVideoFormatType = 4;
+pub const videoFormatBGR: EVideoFormatType = 5;
+pub const videoFormatBGRA: EVideoFormatType = 6;
+pub const videoFormatABGR: EVideoFormatType = 7;
+pub const videoFormatARGB: EVideoFormatType = 8;
+#[doc = "< yuv color formats"]
+pub const videoFormatYUY2: EVideoFormatType = 20;
+pub const videoFormatYVYU: EVideoFormatType = 21;
+pub const videoFormatUYVY: EVideoFormatType = 22;
+#[doc = "< the same as IYUV"]
+pub const videoFormatI420: EVideoFormatType = 23;
+pub const videoFormatYV12: EVideoFormatType = 24;
+#[doc = "< only used in SVC decoder testbed"]
+pub const videoFormatInternal: EVideoFormatType = 25;
+#[doc = "< new format for output by DXVA decoding"]
+pub const videoFormatNV12: EVideoFormatType = 26;
+pub const videoFormatVFlip: EVideoFormatType = -2147483648;
 #[doc = " @brief Enumerate the type of video format"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EVideoFormatType {
-    #[doc = "< rgb color formats"]
-    videoFormatRGB = 1,
-    videoFormatRGBA = 2,
-    videoFormatRGB555 = 3,
-    videoFormatRGB565 = 4,
-    videoFormatBGR = 5,
-    videoFormatBGRA = 6,
-    videoFormatABGR = 7,
-    videoFormatARGB = 8,
-    #[doc = "< yuv color formats"]
-    videoFormatYUY2 = 20,
-    videoFormatYVYU = 21,
-    videoFormatUYVY = 22,
-    #[doc = "< the same as IYUV"]
-    videoFormatI420 = 23,
-    videoFormatYV12 = 24,
-    #[doc = "< only used in SVC decoder testbed"]
-    videoFormatInternal = 25,
-    #[doc = "< new format for output by DXVA decoding"]
-    videoFormatNV12 = 26,
-    videoFormatVFlip = -2147483648,
-}
-#[repr(i32)]
+pub type EVideoFormatType = ::std::os::raw::c_int;
+#[doc = "< encoder not ready or parameters are invalidate"]
+pub const videoFrameTypeInvalid: EVideoFrameType = 0;
+#[doc = "< IDR frame in H.264"]
+pub const videoFrameTypeIDR: EVideoFrameType = 1;
+#[doc = "< I frame type"]
+pub const videoFrameTypeI: EVideoFrameType = 2;
+#[doc = "< P frame type"]
+pub const videoFrameTypeP: EVideoFrameType = 3;
+#[doc = "< skip the frame based encoder kernel"]
+pub const videoFrameTypeSkip: EVideoFrameType = 4;
+#[doc = "< a frame where I and P slices are mixing, not supported yet"]
+pub const videoFrameTypeIPMixed: EVideoFrameType = 5;
 #[doc = " @brief Enumerate  video frame type"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EVideoFrameType {
-    #[doc = "< encoder not ready or parameters are invalidate"]
-    videoFrameTypeInvalid = 0,
-    #[doc = "< IDR frame in H.264"]
-    videoFrameTypeIDR = 1,
-    #[doc = "< I frame type"]
-    videoFrameTypeI = 2,
-    #[doc = "< P frame type"]
-    videoFrameTypeP = 3,
-    #[doc = "< skip the frame based encoder kernel"]
-    videoFrameTypeSkip = 4,
-    #[doc = "< a frame where I and P slices are mixing, not supported yet"]
-    videoFrameTypeIPMixed = 5,
-}
-#[repr(i32)]
+pub type EVideoFrameType = ::std::os::raw::c_int;
+#[doc = "< successful"]
+pub const cmResultSuccess: CM_RETURN = 0;
+#[doc = "< parameters are invalid"]
+pub const cmInitParaError: CM_RETURN = 1;
+pub const cmUnknownReason: CM_RETURN = 2;
+#[doc = "< malloc a memory error"]
+pub const cmMallocMemeError: CM_RETURN = 3;
+#[doc = "< initial action is expected"]
+pub const cmInitExpected: CM_RETURN = 4;
+pub const cmUnsupportedData: CM_RETURN = 5;
 #[doc = " @brief Enumerate  return type"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum CM_RETURN {
-    #[doc = "< successful"]
-    cmResultSuccess = 0,
-    #[doc = "< parameters are invalid"]
-    cmInitParaError = 1,
-    cmUnknownReason = 2,
-    #[doc = "< malloc a memory error"]
-    cmMallocMemeError = 3,
-    #[doc = "< initial action is expected"]
-    cmInitExpected = 4,
-    cmUnsupportedData = 5,
-}
-#[repr(i32)]
+pub type CM_RETURN = ::std::os::raw::c_int;
+pub const NAL_UNKNOWN: ENalUnitType = 0;
+pub const NAL_SLICE: ENalUnitType = 1;
+pub const NAL_SLICE_DPA: ENalUnitType = 2;
+pub const NAL_SLICE_DPB: ENalUnitType = 3;
+pub const NAL_SLICE_DPC: ENalUnitType = 4;
+#[doc = "< ref_idc != 0"]
+pub const NAL_SLICE_IDR: ENalUnitType = 5;
+#[doc = "< ref_idc == 0"]
+pub const NAL_SEI: ENalUnitType = 6;
+pub const NAL_SPS: ENalUnitType = 7;
+pub const NAL_PPS: ENalUnitType = 8;
 #[doc = " @brief Enumulate the nal unit type"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ENalUnitType {
-    NAL_UNKNOWN = 0,
-    NAL_SLICE = 1,
-    NAL_SLICE_DPA = 2,
-    NAL_SLICE_DPB = 3,
-    NAL_SLICE_DPC = 4,
-    #[doc = "< ref_idc != 0"]
-    NAL_SLICE_IDR = 5,
-    #[doc = "< ref_idc == 0"]
-    NAL_SEI = 6,
-    NAL_SPS = 7,
-    NAL_PPS = 8,
-}
-#[repr(i32)]
+pub type ENalUnitType = ::std::os::raw::c_int;
+pub const NAL_PRIORITY_DISPOSABLE: ENalPriority = 0;
+pub const NAL_PRIORITY_LOW: ENalPriority = 1;
+pub const NAL_PRIORITY_HIGH: ENalPriority = 2;
+pub const NAL_PRIORITY_HIGHEST: ENalPriority = 3;
 #[doc = " @brief NRI: eNalRefIdc"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ENalPriority {
-    NAL_PRIORITY_DISPOSABLE = 0,
-    NAL_PRIORITY_LOW = 1,
-    NAL_PRIORITY_HIGH = 2,
-    NAL_PRIORITY_HIGHEST = 3,
-}
-pub const DEBLOCKING_IDC_0: _bindgen_ty_1 = _bindgen_ty_1::DEBLOCKING_IDC_0;
-pub const DEBLOCKING_IDC_1: _bindgen_ty_1 = _bindgen_ty_1::DEBLOCKING_IDC_1;
-pub const DEBLOCKING_IDC_2: _bindgen_ty_1 = _bindgen_ty_1::DEBLOCKING_IDC_2;
-#[repr(i32)]
+pub type ENalPriority = ::std::os::raw::c_int;
+pub const DEBLOCKING_IDC_0: ::std::os::raw::c_int = 0;
+pub const DEBLOCKING_IDC_1: ::std::os::raw::c_int = 1;
+pub const DEBLOCKING_IDC_2: ::std::os::raw::c_int = 2;
 #[doc = " @brief eDeblockingIdc"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum _bindgen_ty_1 {
-    DEBLOCKING_IDC_0 = 0,
-    DEBLOCKING_IDC_1 = 1,
-    DEBLOCKING_IDC_2 = 2,
-}
+pub type _bindgen_ty_1 = ::std::os::raw::c_int;
 pub type ERR_TOOL = ::std::os::raw::c_ushort;
-pub const ET_NONE: _bindgen_ty_2 = _bindgen_ty_2::ET_NONE;
-pub const ET_IP_SCALE: _bindgen_ty_2 = _bindgen_ty_2::ET_IP_SCALE;
-pub const ET_FMO: _bindgen_ty_2 = _bindgen_ty_2::ET_FMO;
-pub const ET_IR_R1: _bindgen_ty_2 = _bindgen_ty_2::ET_IR_R1;
-pub const ET_IR_R2: _bindgen_ty_2 = _bindgen_ty_2::ET_IR_R2;
-pub const ET_IR_R3: _bindgen_ty_2 = _bindgen_ty_2::ET_IR_R3;
-pub const ET_FEC_HALF: _bindgen_ty_2 = _bindgen_ty_2::ET_FEC_HALF;
-pub const ET_FEC_FULL: _bindgen_ty_2 = _bindgen_ty_2::ET_FEC_FULL;
-pub const ET_RFS: _bindgen_ty_2 = _bindgen_ty_2::ET_RFS;
-#[repr(i32)]
+#[doc = "< NONE Error Tools"]
+pub const ET_NONE: ::std::os::raw::c_int = 0;
+#[doc = "< IP Scalable"]
+pub const ET_IP_SCALE: ::std::os::raw::c_int = 1;
+#[doc = "< Flexible Macroblock Ordering"]
+pub const ET_FMO: ::std::os::raw::c_int = 2;
+#[doc = "< Intra Refresh in predifined 2% MB"]
+pub const ET_IR_R1: ::std::os::raw::c_int = 4;
+#[doc = "< Intra Refresh in predifined 5% MB"]
+pub const ET_IR_R2: ::std::os::raw::c_int = 8;
+#[doc = "< Intra Refresh in predifined 10% MB"]
+pub const ET_IR_R3: ::std::os::raw::c_int = 16;
+#[doc = "< Forward Error Correction in 50% redundency mode"]
+pub const ET_FEC_HALF: ::std::os::raw::c_int = 32;
+#[doc = "< Forward Error Correction in 100% redundency mode"]
+pub const ET_FEC_FULL: ::std::os::raw::c_int = 64;
+#[doc = "< Reference Frame Selection"]
+pub const ET_RFS: ::std::os::raw::c_int = 128;
 #[doc = "@brief to do"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum _bindgen_ty_2 {
-    #[doc = "< NONE Error Tools"]
-    ET_NONE = 0,
-    #[doc = "< IP Scalable"]
-    ET_IP_SCALE = 1,
-    #[doc = "< Flexible Macroblock Ordering"]
-    ET_FMO = 2,
-    #[doc = "< Intra Refresh in predifined 2% MB"]
-    ET_IR_R1 = 4,
-    #[doc = "< Intra Refresh in predifined 5% MB"]
-    ET_IR_R2 = 8,
-    #[doc = "< Intra Refresh in predifined 10% MB"]
-    ET_IR_R3 = 16,
-    #[doc = "< Forward Error Correction in 50% redundency mode"]
-    ET_FEC_HALF = 32,
-    #[doc = "< Forward Error Correction in 100% redundency mode"]
-    ET_FEC_FULL = 64,
-    #[doc = "< Reference Frame Selection"]
-    ET_RFS = 128,
-}
+pub type _bindgen_ty_2 = ::std::os::raw::c_int;
 #[doc = " @brief Information of coded Slice(=NAL)(s)"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
@@ -267,194 +234,165 @@ pub struct _tagVersion {
 }
 #[doc = " @brief Struct of OpenH264 version"]
 pub type OpenH264Version = _tagVersion;
-#[repr(i32)]
+#[doc = "< bit stream error-free"]
+pub const dsErrorFree: DECODING_STATE = 0;
+#[doc = "< need more throughput to generate a frame output,"]
+pub const dsFramePending: DECODING_STATE = 1;
+#[doc = "< layer lost at reference frame with temporal id 0"]
+pub const dsRefLost: DECODING_STATE = 2;
+#[doc = "< error bitstreams(maybe broken internal frame) the decoder cared"]
+pub const dsBitstreamError: DECODING_STATE = 4;
+#[doc = "< dependented layer is ever lost"]
+pub const dsDepLayerLost: DECODING_STATE = 8;
+#[doc = "< no parameter set NALs involved"]
+pub const dsNoParamSets: DECODING_STATE = 16;
+#[doc = "< current data error concealed specified"]
+pub const dsDataErrorConcealed: DECODING_STATE = 32;
+#[doc = "<ref picure list contains null ptrs within uiRefCount range"]
+pub const dsRefListNullPtrs: DECODING_STATE = 64;
+#[doc = "< invalid argument specified"]
+pub const dsInvalidArgument: DECODING_STATE = 4096;
+#[doc = "< initializing operation is expected"]
+pub const dsInitialOptExpected: DECODING_STATE = 8192;
+#[doc = "< out of memory due to new request"]
+pub const dsOutOfMemory: DECODING_STATE = 16384;
+#[doc = "< actual picture size exceeds size of dst pBuffer feed in decoder, so need expand its size"]
+pub const dsDstBufNeedExpan: DECODING_STATE = 32768;
 #[doc = " @brief Decoding status"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum DECODING_STATE {
-    #[doc = "< bit stream error-free"]
-    dsErrorFree = 0,
-    #[doc = "< need more throughput to generate a frame output,"]
-    dsFramePending = 1,
-    #[doc = "< layer lost at reference frame with temporal id 0"]
-    dsRefLost = 2,
-    #[doc = "< error bitstreams(maybe broken internal frame) the decoder cared"]
-    dsBitstreamError = 4,
-    #[doc = "< dependented layer is ever lost"]
-    dsDepLayerLost = 8,
-    #[doc = "< no parameter set NALs involved"]
-    dsNoParamSets = 16,
-    #[doc = "< current data error concealed specified"]
-    dsDataErrorConcealed = 32,
-    #[doc = "<ref picure list contains null ptrs within uiRefCount range"]
-    dsRefListNullPtrs = 64,
-    #[doc = "< invalid argument specified"]
-    dsInvalidArgument = 4096,
-    #[doc = "< initializing operation is expected"]
-    dsInitialOptExpected = 8192,
-    #[doc = "< out of memory due to new request"]
-    dsOutOfMemory = 16384,
-    #[doc = "< actual picture size exceeds size of dst pBuffer feed in decoder, so need expand its size"]
-    dsDstBufNeedExpan = 32768,
-}
-#[repr(i32)]
+pub type DECODING_STATE = ::std::os::raw::c_int;
+pub const ENCODER_OPTION_DATAFORMAT: ENCODER_OPTION = 0;
+#[doc = "< IDR period,0/-1 means no Intra period (only the first frame); lager than 0 means the desired IDR period, must be multiple of (2^temporal_layer)"]
+pub const ENCODER_OPTION_IDR_INTERVAL: ENCODER_OPTION = 1;
+#[doc = "< structure of Base Param"]
+pub const ENCODER_OPTION_SVC_ENCODE_PARAM_BASE: ENCODER_OPTION = 2;
+#[doc = "< structure of Extension Param"]
+pub const ENCODER_OPTION_SVC_ENCODE_PARAM_EXT: ENCODER_OPTION = 3;
+#[doc = "< maximal input frame rate, current supported range: MAX_FRAME_RATE = 30,MIN_FRAME_RATE = 1"]
+pub const ENCODER_OPTION_FRAME_RATE: ENCODER_OPTION = 4;
+pub const ENCODER_OPTION_BITRATE: ENCODER_OPTION = 5;
+pub const ENCODER_OPTION_MAX_BITRATE: ENCODER_OPTION = 6;
+pub const ENCODER_OPTION_INTER_SPATIAL_PRED: ENCODER_OPTION = 7;
+pub const ENCODER_OPTION_RC_MODE: ENCODER_OPTION = 8;
+pub const ENCODER_OPTION_RC_FRAME_SKIP: ENCODER_OPTION = 9;
+#[doc = "< 0:disable padding;1:padding"]
+pub const ENCODER_PADDING_PADDING: ENCODER_OPTION = 10;
+#[doc = "< assgin the profile for each layer"]
+pub const ENCODER_OPTION_PROFILE: ENCODER_OPTION = 11;
+#[doc = "< assgin the level for each layer"]
+pub const ENCODER_OPTION_LEVEL: ENCODER_OPTION = 12;
+#[doc = "< the number of refererence frame"]
+pub const ENCODER_OPTION_NUMBER_REF: ENCODER_OPTION = 13;
+#[doc = "< the delivery info which is a feedback from app level"]
+pub const ENCODER_OPTION_DELIVERY_STATUS: ENCODER_OPTION = 14;
+pub const ENCODER_LTR_RECOVERY_REQUEST: ENCODER_OPTION = 15;
+pub const ENCODER_LTR_MARKING_FEEDBACK: ENCODER_OPTION = 16;
+pub const ENCODER_LTR_MARKING_PERIOD: ENCODER_OPTION = 17;
+#[doc = "< 0:disable LTR;larger than 0 enable LTR; LTR number is fixed to be 2 in current encoder"]
+pub const ENCODER_OPTION_LTR: ENCODER_OPTION = 18;
+pub const ENCODER_OPTION_COMPLEXITY: ENCODER_OPTION = 19;
+#[doc = "< enable SSEI: true--enable ssei; false--disable ssei"]
+pub const ENCODER_OPTION_ENABLE_SSEI: ENCODER_OPTION = 20;
+#[doc = "< enable prefix: true--enable prefix; false--disable prefix"]
+pub const ENCODER_OPTION_ENABLE_PREFIX_NAL_ADDING: ENCODER_OPTION = 21;
+#[doc = "< different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional"]
+pub const ENCODER_OPTION_SPS_PPS_ID_STRATEGY: ENCODER_OPTION = 22;
+pub const ENCODER_OPTION_CURRENT_PATH: ENCODER_OPTION = 23;
+#[doc = "< dump layer reconstruct frame to a specified file"]
+pub const ENCODER_OPTION_DUMP_FILE: ENCODER_OPTION = 24;
+#[doc = "< trace info based on the trace level"]
+pub const ENCODER_OPTION_TRACE_LEVEL: ENCODER_OPTION = 25;
+#[doc = "< a void (*)(void* context, int level, const char* message) function which receives log messages"]
+pub const ENCODER_OPTION_TRACE_CALLBACK: ENCODER_OPTION = 26;
+#[doc = "< context info of trace callback"]
+pub const ENCODER_OPTION_TRACE_CALLBACK_CONTEXT: ENCODER_OPTION = 27;
+#[doc = "< read only"]
+pub const ENCODER_OPTION_GET_STATISTICS: ENCODER_OPTION = 28;
+#[doc = "< log interval in millisecond"]
+pub const ENCODER_OPTION_STATISTICS_LOG_INTERVAL: ENCODER_OPTION = 29;
+#[doc = "< advanced algorithmetic settings"]
+pub const ENCODER_OPTION_IS_LOSSLESS_LINK: ENCODER_OPTION = 30;
+#[doc = "< bit vary percentage"]
+pub const ENCODER_OPTION_BITS_VARY_PERCENTAGE: ENCODER_OPTION = 31;
 #[doc = " @brief Option types introduced in SVC encoder application"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ENCODER_OPTION {
-    ENCODER_OPTION_DATAFORMAT = 0,
-    #[doc = "< IDR period,0/-1 means no Intra period (only the first frame); lager than 0 means the desired IDR period, must be multiple of (2^temporal_layer)"]
-    ENCODER_OPTION_IDR_INTERVAL = 1,
-    #[doc = "< structure of Base Param"]
-    ENCODER_OPTION_SVC_ENCODE_PARAM_BASE = 2,
-    #[doc = "< structure of Extension Param"]
-    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT = 3,
-    #[doc = "< maximal input frame rate, current supported range: MAX_FRAME_RATE = 30,MIN_FRAME_RATE = 1"]
-    ENCODER_OPTION_FRAME_RATE = 4,
-    ENCODER_OPTION_BITRATE = 5,
-    ENCODER_OPTION_MAX_BITRATE = 6,
-    ENCODER_OPTION_INTER_SPATIAL_PRED = 7,
-    ENCODER_OPTION_RC_MODE = 8,
-    ENCODER_OPTION_RC_FRAME_SKIP = 9,
-    #[doc = "< 0:disable padding;1:padding"]
-    ENCODER_PADDING_PADDING = 10,
-    #[doc = "< assgin the profile for each layer"]
-    ENCODER_OPTION_PROFILE = 11,
-    #[doc = "< assgin the level for each layer"]
-    ENCODER_OPTION_LEVEL = 12,
-    #[doc = "< the number of refererence frame"]
-    ENCODER_OPTION_NUMBER_REF = 13,
-    #[doc = "< the delivery info which is a feedback from app level"]
-    ENCODER_OPTION_DELIVERY_STATUS = 14,
-    ENCODER_LTR_RECOVERY_REQUEST = 15,
-    ENCODER_LTR_MARKING_FEEDBACK = 16,
-    ENCODER_LTR_MARKING_PERIOD = 17,
-    #[doc = "< 0:disable LTR;larger than 0 enable LTR; LTR number is fixed to be 2 in current encoder"]
-    ENCODER_OPTION_LTR = 18,
-    ENCODER_OPTION_COMPLEXITY = 19,
-    #[doc = "< enable SSEI: true--enable ssei; false--disable ssei"]
-    ENCODER_OPTION_ENABLE_SSEI = 20,
-    #[doc = "< enable prefix: true--enable prefix; false--disable prefix"]
-    ENCODER_OPTION_ENABLE_PREFIX_NAL_ADDING = 21,
-    #[doc = "< different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional"]
-    ENCODER_OPTION_SPS_PPS_ID_STRATEGY = 22,
-    ENCODER_OPTION_CURRENT_PATH = 23,
-    #[doc = "< dump layer reconstruct frame to a specified file"]
-    ENCODER_OPTION_DUMP_FILE = 24,
-    #[doc = "< trace info based on the trace level"]
-    ENCODER_OPTION_TRACE_LEVEL = 25,
-    #[doc = "< a void (*)(void* context, int level, const char* message) function which receives log messages"]
-    ENCODER_OPTION_TRACE_CALLBACK = 26,
-    #[doc = "< context info of trace callback"]
-    ENCODER_OPTION_TRACE_CALLBACK_CONTEXT = 27,
-    #[doc = "< read only"]
-    ENCODER_OPTION_GET_STATISTICS = 28,
-    #[doc = "< log interval in millisecond"]
-    ENCODER_OPTION_STATISTICS_LOG_INTERVAL = 29,
-    #[doc = "< advanced algorithmetic settings"]
-    ENCODER_OPTION_IS_LOSSLESS_LINK = 30,
-    #[doc = "< bit vary percentage"]
-    ENCODER_OPTION_BITS_VARY_PERCENTAGE = 31,
-}
-#[repr(i32)]
+pub type ENCODER_OPTION = ::std::os::raw::c_int;
+#[doc = "< end of stream flag"]
+pub const DECODER_OPTION_END_OF_STREAM: DECODER_OPTION = 1;
+#[doc = "< feedback whether or not have VCL NAL in current AU for application layer"]
+pub const DECODER_OPTION_VCL_NAL: DECODER_OPTION = 2;
+#[doc = "< feedback temporal id for application layer"]
+pub const DECODER_OPTION_TEMPORAL_ID: DECODER_OPTION = 3;
+#[doc = "< feedback current decoded frame number"]
+pub const DECODER_OPTION_FRAME_NUM: DECODER_OPTION = 4;
+#[doc = "< feedback current frame belong to which IDR period"]
+pub const DECODER_OPTION_IDR_PIC_ID: DECODER_OPTION = 5;
+#[doc = "< feedback wether current frame mark a LTR"]
+pub const DECODER_OPTION_LTR_MARKING_FLAG: DECODER_OPTION = 6;
+#[doc = "< feedback frame num marked by current Frame"]
+pub const DECODER_OPTION_LTR_MARKED_FRAME_NUM: DECODER_OPTION = 7;
+#[doc = "< indicate decoder error concealment method"]
+pub const DECODER_OPTION_ERROR_CON_IDC: DECODER_OPTION = 8;
+pub const DECODER_OPTION_TRACE_LEVEL: DECODER_OPTION = 9;
+#[doc = "< a void (*)(void* context, int level, const char* message) function which receives log messages"]
+pub const DECODER_OPTION_TRACE_CALLBACK: DECODER_OPTION = 10;
+#[doc = "< context info of trace callbac"]
+pub const DECODER_OPTION_TRACE_CALLBACK_CONTEXT: DECODER_OPTION = 11;
+#[doc = "< feedback decoder statistics"]
+pub const DECODER_OPTION_GET_STATISTICS: DECODER_OPTION = 12;
+#[doc = "< feedback decoder Sample Aspect Ratio info in Vui"]
+pub const DECODER_OPTION_GET_SAR_INFO: DECODER_OPTION = 13;
+#[doc = "< get current AU profile info, only is used in GetOption"]
+pub const DECODER_OPTION_PROFILE: DECODER_OPTION = 14;
+#[doc = "< get current AU level info,only is used in GetOption"]
+pub const DECODER_OPTION_LEVEL: DECODER_OPTION = 15;
+#[doc = "< set log output interval"]
+pub const DECODER_OPTION_STATISTICS_LOG_INTERVAL: DECODER_OPTION = 16;
+#[doc = "< feedback current frame is ref pic or not"]
+pub const DECODER_OPTION_IS_REF_PIC: DECODER_OPTION = 17;
+#[doc = "< number of frames remaining in decoder buffer when pictures are required to re-ordered into display-order."]
+pub const DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER: DECODER_OPTION = 18;
+#[doc = "< number of decoding threads. The maximum thread count is equal or less than lesser of (cpu core counts and 16)."]
+pub const DECODER_OPTION_NUM_OF_THREADS: DECODER_OPTION = 19;
 #[doc = " @brief Option types introduced in decoder application"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum DECODER_OPTION {
-    #[doc = "< end of stream flag"]
-    DECODER_OPTION_END_OF_STREAM = 1,
-    #[doc = "< feedback whether or not have VCL NAL in current AU for application layer"]
-    DECODER_OPTION_VCL_NAL = 2,
-    #[doc = "< feedback temporal id for application layer"]
-    DECODER_OPTION_TEMPORAL_ID = 3,
-    #[doc = "< feedback current decoded frame number"]
-    DECODER_OPTION_FRAME_NUM = 4,
-    #[doc = "< feedback current frame belong to which IDR period"]
-    DECODER_OPTION_IDR_PIC_ID = 5,
-    #[doc = "< feedback wether current frame mark a LTR"]
-    DECODER_OPTION_LTR_MARKING_FLAG = 6,
-    #[doc = "< feedback frame num marked by current Frame"]
-    DECODER_OPTION_LTR_MARKED_FRAME_NUM = 7,
-    #[doc = "< indicate decoder error concealment method"]
-    DECODER_OPTION_ERROR_CON_IDC = 8,
-    DECODER_OPTION_TRACE_LEVEL = 9,
-    #[doc = "< a void (*)(void* context, int level, const char* message) function which receives log messages"]
-    DECODER_OPTION_TRACE_CALLBACK = 10,
-    #[doc = "< context info of trace callbac"]
-    DECODER_OPTION_TRACE_CALLBACK_CONTEXT = 11,
-    #[doc = "< feedback decoder statistics"]
-    DECODER_OPTION_GET_STATISTICS = 12,
-    #[doc = "< feedback decoder Sample Aspect Ratio info in Vui"]
-    DECODER_OPTION_GET_SAR_INFO = 13,
-    #[doc = "< get current AU profile info, only is used in GetOption"]
-    DECODER_OPTION_PROFILE = 14,
-    #[doc = "< get current AU level info,only is used in GetOption"]
-    DECODER_OPTION_LEVEL = 15,
-    #[doc = "< set log output interval"]
-    DECODER_OPTION_STATISTICS_LOG_INTERVAL = 16,
-    #[doc = "< feedback current frame is ref pic or not"]
-    DECODER_OPTION_IS_REF_PIC = 17,
-    #[doc = "< number of frames remaining in decoder buffer when pictures are required to re-ordered into display-order."]
-    DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER = 18,
-    #[doc = "< number of decoding threads. The maximum thread count is equal or less than lesser of (cpu core counts and 16)."]
-    DECODER_OPTION_NUM_OF_THREADS = 19,
-}
-#[repr(i32)]
+pub type DECODER_OPTION = ::std::os::raw::c_int;
+pub const ERROR_CON_DISABLE: ERROR_CON_IDC = 0;
+pub const ERROR_CON_FRAME_COPY: ERROR_CON_IDC = 1;
+pub const ERROR_CON_SLICE_COPY: ERROR_CON_IDC = 2;
+pub const ERROR_CON_FRAME_COPY_CROSS_IDR: ERROR_CON_IDC = 3;
+pub const ERROR_CON_SLICE_COPY_CROSS_IDR: ERROR_CON_IDC = 4;
+pub const ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE: ERROR_CON_IDC = 5;
+pub const ERROR_CON_SLICE_MV_COPY_CROSS_IDR: ERROR_CON_IDC = 6;
+pub const ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE: ERROR_CON_IDC = 7;
 #[doc = " @brief Enumerate the type of error concealment methods"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ERROR_CON_IDC {
-    ERROR_CON_DISABLE = 0,
-    ERROR_CON_FRAME_COPY = 1,
-    ERROR_CON_SLICE_COPY = 2,
-    ERROR_CON_FRAME_COPY_CROSS_IDR = 3,
-    ERROR_CON_SLICE_COPY_CROSS_IDR = 4,
-    ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE = 5,
-    ERROR_CON_SLICE_MV_COPY_CROSS_IDR = 6,
-    ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE = 7,
-}
-#[repr(i32)]
+pub type ERROR_CON_IDC = ::std::os::raw::c_int;
+pub const FEEDBACK_NON_VCL_NAL: FEEDBACK_VCL_NAL_IN_AU = 0;
+pub const FEEDBACK_VCL_NAL: FEEDBACK_VCL_NAL_IN_AU = 1;
+pub const FEEDBACK_UNKNOWN_NAL: FEEDBACK_VCL_NAL_IN_AU = 2;
 #[doc = " @brief Feedback that whether or not have VCL NAL in current AU"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FEEDBACK_VCL_NAL_IN_AU {
-    FEEDBACK_NON_VCL_NAL = 0,
-    FEEDBACK_VCL_NAL = 1,
-    FEEDBACK_UNKNOWN_NAL = 2,
-}
-#[repr(i32)]
+pub type FEEDBACK_VCL_NAL_IN_AU = ::std::os::raw::c_int;
+pub const NON_VIDEO_CODING_LAYER: LAYER_TYPE = 0;
+pub const VIDEO_CODING_LAYER: LAYER_TYPE = 1;
 #[doc = " @brief Type of layer being encoded"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum LAYER_TYPE {
-    NON_VIDEO_CODING_LAYER = 0,
-    VIDEO_CODING_LAYER = 1,
-}
-#[repr(i32)]
+pub type LAYER_TYPE = ::std::os::raw::c_int;
+pub const SPATIAL_LAYER_0: LAYER_NUM = 0;
+pub const SPATIAL_LAYER_1: LAYER_NUM = 1;
+pub const SPATIAL_LAYER_2: LAYER_NUM = 2;
+pub const SPATIAL_LAYER_3: LAYER_NUM = 3;
+pub const SPATIAL_LAYER_ALL: LAYER_NUM = 4;
 #[doc = " @brief Spatial layer num"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum LAYER_NUM {
-    SPATIAL_LAYER_0 = 0,
-    SPATIAL_LAYER_1 = 1,
-    SPATIAL_LAYER_2 = 2,
-    SPATIAL_LAYER_3 = 3,
-    SPATIAL_LAYER_ALL = 4,
-}
-impl VIDEO_BITSTREAM_TYPE {
-    pub const VIDEO_BITSTREAM_DEFAULT: VIDEO_BITSTREAM_TYPE = VIDEO_BITSTREAM_TYPE::VIDEO_BITSTREAM_SVC;
-}
-#[repr(i32)]
+pub type LAYER_NUM = ::std::os::raw::c_int;
+pub const VIDEO_BITSTREAM_AVC: VIDEO_BITSTREAM_TYPE = 0;
+pub const VIDEO_BITSTREAM_SVC: VIDEO_BITSTREAM_TYPE = 1;
+pub const VIDEO_BITSTREAM_DEFAULT: VIDEO_BITSTREAM_TYPE = 1;
 #[doc = " @brief Enumerate the type of video bitstream which is provided to decoder"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum VIDEO_BITSTREAM_TYPE {
-    VIDEO_BITSTREAM_AVC = 0,
-    VIDEO_BITSTREAM_SVC = 1,
-}
-#[repr(i32)]
+pub type VIDEO_BITSTREAM_TYPE = ::std::os::raw::c_int;
+pub const NO_RECOVERY_REQUSET: KEY_FRAME_REQUEST_TYPE = 0;
+pub const LTR_RECOVERY_REQUEST: KEY_FRAME_REQUEST_TYPE = 1;
+pub const IDR_RECOVERY_REQUEST: KEY_FRAME_REQUEST_TYPE = 2;
+pub const NO_LTR_MARKING_FEEDBACK: KEY_FRAME_REQUEST_TYPE = 3;
+pub const LTR_MARKING_SUCCESS: KEY_FRAME_REQUEST_TYPE = 4;
+pub const LTR_MARKING_FAILED: KEY_FRAME_REQUEST_TYPE = 5;
 #[doc = " @brief Enumerate the type of key frame request"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum KEY_FRAME_REQUEST_TYPE {
-    NO_RECOVERY_REQUSET = 0,
-    LTR_RECOVERY_REQUEST = 1,
-    IDR_RECOVERY_REQUEST = 2,
-    NO_LTR_MARKING_FEEDBACK = 3,
-    LTR_MARKING_SUCCESS = 4,
-    LTR_MARKING_FAILED = 5,
-}
+pub type KEY_FRAME_REQUEST_TYPE = ::std::os::raw::c_int;
 #[doc = " @brief Structure for LTR recover request"]
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
@@ -489,104 +427,82 @@ pub struct SLTRConfig {
     #[doc = "< TODO: not supported to set it arbitrary yet"]
     pub iLTRRefNum: ::std::os::raw::c_int,
 }
-#[repr(i32)]
+#[doc = "< quality mode"]
+pub const RC_QUALITY_MODE: RC_MODES = 0;
+#[doc = "< bitrate mode"]
+pub const RC_BITRATE_MODE: RC_MODES = 1;
+#[doc = "< no bitrate control,only using buffer status,adjust the video quality"]
+pub const RC_BUFFERBASED_MODE: RC_MODES = 2;
+pub const RC_TIMESTAMP_MODE: RC_MODES = 3;
+#[doc = "< this is in-building RC MODE, WILL BE DELETED after algorithm tuning!"]
+pub const RC_BITRATE_MODE_POST_SKIP: RC_MODES = 4;
+#[doc = "< rate control off mode"]
+pub const RC_OFF_MODE: RC_MODES = -1;
 #[doc = " @brief Enumerate the type of rate control mode"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum RC_MODES {
-    #[doc = "< quality mode"]
-    RC_QUALITY_MODE = 0,
-    #[doc = "< bitrate mode"]
-    RC_BITRATE_MODE = 1,
-    #[doc = "< no bitrate control,only using buffer status,adjust the video quality"]
-    RC_BUFFERBASED_MODE = 2,
-    RC_TIMESTAMP_MODE = 3,
-    #[doc = "< this is in-building RC MODE, WILL BE DELETED after algorithm tuning!"]
-    RC_BITRATE_MODE_POST_SKIP = 4,
-    #[doc = "< rate control off mode"]
-    RC_OFF_MODE = -1,
-}
-#[repr(i32)]
+pub type RC_MODES = ::std::os::raw::c_int;
+pub const PRO_UNKNOWN: EProfileIdc = 0;
+pub const PRO_BASELINE: EProfileIdc = 66;
+pub const PRO_MAIN: EProfileIdc = 77;
+pub const PRO_EXTENDED: EProfileIdc = 88;
+pub const PRO_HIGH: EProfileIdc = 100;
+pub const PRO_HIGH10: EProfileIdc = 110;
+pub const PRO_HIGH422: EProfileIdc = 122;
+pub const PRO_HIGH444: EProfileIdc = 144;
+pub const PRO_CAVLC444: EProfileIdc = 244;
+pub const PRO_SCALABLE_BASELINE: EProfileIdc = 83;
+pub const PRO_SCALABLE_HIGH: EProfileIdc = 86;
 #[doc = " @brief Enumerate the type of profile id"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EProfileIdc {
-    PRO_UNKNOWN = 0,
-    PRO_BASELINE = 66,
-    PRO_MAIN = 77,
-    PRO_EXTENDED = 88,
-    PRO_HIGH = 100,
-    PRO_HIGH10 = 110,
-    PRO_HIGH422 = 122,
-    PRO_HIGH444 = 144,
-    PRO_CAVLC444 = 244,
-    PRO_SCALABLE_BASELINE = 83,
-    PRO_SCALABLE_HIGH = 86,
-}
-#[repr(i32)]
+pub type EProfileIdc = ::std::os::raw::c_int;
+pub const LEVEL_UNKNOWN: ELevelIdc = 0;
+pub const LEVEL_1_0: ELevelIdc = 10;
+pub const LEVEL_1_B: ELevelIdc = 9;
+pub const LEVEL_1_1: ELevelIdc = 11;
+pub const LEVEL_1_2: ELevelIdc = 12;
+pub const LEVEL_1_3: ELevelIdc = 13;
+pub const LEVEL_2_0: ELevelIdc = 20;
+pub const LEVEL_2_1: ELevelIdc = 21;
+pub const LEVEL_2_2: ELevelIdc = 22;
+pub const LEVEL_3_0: ELevelIdc = 30;
+pub const LEVEL_3_1: ELevelIdc = 31;
+pub const LEVEL_3_2: ELevelIdc = 32;
+pub const LEVEL_4_0: ELevelIdc = 40;
+pub const LEVEL_4_1: ELevelIdc = 41;
+pub const LEVEL_4_2: ELevelIdc = 42;
+pub const LEVEL_5_0: ELevelIdc = 50;
+pub const LEVEL_5_1: ELevelIdc = 51;
+pub const LEVEL_5_2: ELevelIdc = 52;
 #[doc = " @brief Enumerate the type of level id"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ELevelIdc {
-    LEVEL_UNKNOWN = 0,
-    LEVEL_1_0 = 10,
-    LEVEL_1_B = 9,
-    LEVEL_1_1 = 11,
-    LEVEL_1_2 = 12,
-    LEVEL_1_3 = 13,
-    LEVEL_2_0 = 20,
-    LEVEL_2_1 = 21,
-    LEVEL_2_2 = 22,
-    LEVEL_3_0 = 30,
-    LEVEL_3_1 = 31,
-    LEVEL_3_2 = 32,
-    LEVEL_4_0 = 40,
-    LEVEL_4_1 = 41,
-    LEVEL_4_2 = 42,
-    LEVEL_5_0 = 50,
-    LEVEL_5_1 = 51,
-    LEVEL_5_2 = 52,
-}
-pub const WELS_LOG_QUIET: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_QUIET;
-pub const WELS_LOG_ERROR: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_ERROR;
-pub const WELS_LOG_WARNING: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_WARNING;
-pub const WELS_LOG_INFO: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_INFO;
-pub const WELS_LOG_DEBUG: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_DEBUG;
-pub const WELS_LOG_DETAIL: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_DETAIL;
-pub const WELS_LOG_RESV: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_RESV;
-pub const WELS_LOG_LEVEL_COUNT: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_LEVEL_COUNT;
-pub const WELS_LOG_DEFAULT: _bindgen_ty_3 = _bindgen_ty_3::WELS_LOG_WARNING;
-#[repr(i32)]
+pub type ELevelIdc = ::std::os::raw::c_int;
+#[doc = "< quiet mode"]
+pub const WELS_LOG_QUIET: ::std::os::raw::c_int = 0;
+#[doc = "< error log iLevel"]
+pub const WELS_LOG_ERROR: ::std::os::raw::c_int = 1;
+#[doc = "< Warning log iLevel"]
+pub const WELS_LOG_WARNING: ::std::os::raw::c_int = 2;
+#[doc = "< information log iLevel"]
+pub const WELS_LOG_INFO: ::std::os::raw::c_int = 4;
+#[doc = "< debug log, critical algo log"]
+pub const WELS_LOG_DEBUG: ::std::os::raw::c_int = 8;
+#[doc = "< per packet/frame log"]
+pub const WELS_LOG_DETAIL: ::std::os::raw::c_int = 16;
+#[doc = "< resversed log iLevel"]
+pub const WELS_LOG_RESV: ::std::os::raw::c_int = 32;
+pub const WELS_LOG_LEVEL_COUNT: ::std::os::raw::c_int = 6;
+#[doc = "< default log iLevel in Wels codec"]
+pub const WELS_LOG_DEFAULT: ::std::os::raw::c_int = 2;
 #[doc = " @brief Enumerate the type of wels log"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum _bindgen_ty_3 {
-    #[doc = "< quiet mode"]
-    WELS_LOG_QUIET = 0,
-    #[doc = "< error log iLevel"]
-    WELS_LOG_ERROR = 1,
-    #[doc = "< Warning log iLevel"]
-    WELS_LOG_WARNING = 2,
-    #[doc = "< information log iLevel"]
-    WELS_LOG_INFO = 4,
-    #[doc = "< debug log, critical algo log"]
-    WELS_LOG_DEBUG = 8,
-    #[doc = "< per packet/frame log"]
-    WELS_LOG_DETAIL = 16,
-    #[doc = "< resversed log iLevel"]
-    WELS_LOG_RESV = 32,
-    WELS_LOG_LEVEL_COUNT = 6,
-}
-#[repr(i32)]
+pub type _bindgen_ty_3 = ::std::os::raw::c_int;
+#[doc = "< | SliceNum==1"]
+pub const SM_SINGLE_SLICE: SliceModeEnum = 0;
+#[doc = "< | according to SliceNum        | enabled dynamic slicing for multi-thread"]
+pub const SM_FIXEDSLCNUM_SLICE: SliceModeEnum = 1;
+#[doc = "< | according to SlicesAssign    | need input of MB numbers each slice. In addition, if other constraint in SSliceArgument is presented, need to follow the constraints. Typically if MB num and slice size are both constrained, re-encoding may be involved."]
+pub const SM_RASTER_SLICE: SliceModeEnum = 2;
+#[doc = "< | according to SliceSize       | slicing according to size, the slicing will be dynamic(have no idea about slice_nums until encoding current frame)"]
+pub const SM_SIZELIMITED_SLICE: SliceModeEnum = 3;
+pub const SM_RESERVED: SliceModeEnum = 4;
 #[doc = " @brief Enumerate the type of slice mode"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum SliceModeEnum {
-    #[doc = "< | SliceNum==1"]
-    SM_SINGLE_SLICE = 0,
-    #[doc = "< | according to SliceNum        | enabled dynamic slicing for multi-thread"]
-    SM_FIXEDSLCNUM_SLICE = 1,
-    #[doc = "< | according to SlicesAssign    | need input of MB numbers each slice. In addition, if other constraint in SSliceArgument is presented, need to follow the constraints. Typically if MB num and slice size are both constrained, re-encoding may be involved."]
-    SM_RASTER_SLICE = 2,
-    #[doc = "< | according to SliceSize       | slicing according to size, the slicing will be dynamic(have no idea about slice_nums until encoding current frame)"]
-    SM_SIZELIMITED_SLICE = 3,
-    SM_RESERVED = 4,
-}
+pub type SliceModeEnum = ::std::os::raw::c_int;
 #[doc = " @brief Structure for slice argument"]
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -605,93 +521,78 @@ impl Default for SSliceArgument {
         unsafe { ::std::mem::zeroed() }
     }
 }
-#[repr(i32)]
+pub const VF_COMPONENT: EVideoFormatSPS = 0;
+pub const VF_PAL: EVideoFormatSPS = 1;
+pub const VF_NTSC: EVideoFormatSPS = 2;
+pub const VF_SECAM: EVideoFormatSPS = 3;
+pub const VF_MAC: EVideoFormatSPS = 4;
+pub const VF_UNDEF: EVideoFormatSPS = 5;
+pub const VF_NUM_ENUM: EVideoFormatSPS = 6;
 #[doc = " @brief Enumerate the type of video format"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EVideoFormatSPS {
-    VF_COMPONENT = 0,
-    VF_PAL = 1,
-    VF_NTSC = 2,
-    VF_SECAM = 3,
-    VF_MAC = 4,
-    VF_UNDEF = 5,
-    VF_NUM_ENUM = 6,
-}
-#[repr(i32)]
+pub type EVideoFormatSPS = ::std::os::raw::c_int;
+pub const CP_RESERVED0: EColorPrimaries = 0;
+pub const CP_BT709: EColorPrimaries = 1;
+pub const CP_UNDEF: EColorPrimaries = 2;
+pub const CP_RESERVED3: EColorPrimaries = 3;
+pub const CP_BT470M: EColorPrimaries = 4;
+pub const CP_BT470BG: EColorPrimaries = 5;
+pub const CP_SMPTE170M: EColorPrimaries = 6;
+pub const CP_SMPTE240M: EColorPrimaries = 7;
+pub const CP_FILM: EColorPrimaries = 8;
+pub const CP_BT2020: EColorPrimaries = 9;
+pub const CP_NUM_ENUM: EColorPrimaries = 10;
 #[doc = " @brief Enumerate the type of color primaries"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EColorPrimaries {
-    CP_RESERVED0 = 0,
-    CP_BT709 = 1,
-    CP_UNDEF = 2,
-    CP_RESERVED3 = 3,
-    CP_BT470M = 4,
-    CP_BT470BG = 5,
-    CP_SMPTE170M = 6,
-    CP_SMPTE240M = 7,
-    CP_FILM = 8,
-    CP_BT2020 = 9,
-    CP_NUM_ENUM = 10,
-}
-#[repr(i32)]
+pub type EColorPrimaries = ::std::os::raw::c_int;
+pub const TRC_RESERVED0: ETransferCharacteristics = 0;
+pub const TRC_BT709: ETransferCharacteristics = 1;
+pub const TRC_UNDEF: ETransferCharacteristics = 2;
+pub const TRC_RESERVED3: ETransferCharacteristics = 3;
+pub const TRC_BT470M: ETransferCharacteristics = 4;
+pub const TRC_BT470BG: ETransferCharacteristics = 5;
+pub const TRC_SMPTE170M: ETransferCharacteristics = 6;
+pub const TRC_SMPTE240M: ETransferCharacteristics = 7;
+pub const TRC_LINEAR: ETransferCharacteristics = 8;
+pub const TRC_LOG100: ETransferCharacteristics = 9;
+pub const TRC_LOG316: ETransferCharacteristics = 10;
+pub const TRC_IEC61966_2_4: ETransferCharacteristics = 11;
+pub const TRC_BT1361E: ETransferCharacteristics = 12;
+pub const TRC_IEC61966_2_1: ETransferCharacteristics = 13;
+pub const TRC_BT2020_10: ETransferCharacteristics = 14;
+pub const TRC_BT2020_12: ETransferCharacteristics = 15;
+pub const TRC_NUM_ENUM: ETransferCharacteristics = 16;
 #[doc = " @brief Enumerate the type of transfer characteristics"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ETransferCharacteristics {
-    TRC_RESERVED0 = 0,
-    TRC_BT709 = 1,
-    TRC_UNDEF = 2,
-    TRC_RESERVED3 = 3,
-    TRC_BT470M = 4,
-    TRC_BT470BG = 5,
-    TRC_SMPTE170M = 6,
-    TRC_SMPTE240M = 7,
-    TRC_LINEAR = 8,
-    TRC_LOG100 = 9,
-    TRC_LOG316 = 10,
-    TRC_IEC61966_2_4 = 11,
-    TRC_BT1361E = 12,
-    TRC_IEC61966_2_1 = 13,
-    TRC_BT2020_10 = 14,
-    TRC_BT2020_12 = 15,
-    TRC_NUM_ENUM = 16,
-}
-#[repr(i32)]
+pub type ETransferCharacteristics = ::std::os::raw::c_int;
+pub const CM_GBR: EColorMatrix = 0;
+pub const CM_BT709: EColorMatrix = 1;
+pub const CM_UNDEF: EColorMatrix = 2;
+pub const CM_RESERVED3: EColorMatrix = 3;
+pub const CM_FCC: EColorMatrix = 4;
+pub const CM_BT470BG: EColorMatrix = 5;
+pub const CM_SMPTE170M: EColorMatrix = 6;
+pub const CM_SMPTE240M: EColorMatrix = 7;
+pub const CM_YCGCO: EColorMatrix = 8;
+pub const CM_BT2020NC: EColorMatrix = 9;
+pub const CM_BT2020C: EColorMatrix = 10;
+pub const CM_NUM_ENUM: EColorMatrix = 11;
 #[doc = " @brief Enumerate the type of color matrix"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EColorMatrix {
-    CM_GBR = 0,
-    CM_BT709 = 1,
-    CM_UNDEF = 2,
-    CM_RESERVED3 = 3,
-    CM_FCC = 4,
-    CM_BT470BG = 5,
-    CM_SMPTE170M = 6,
-    CM_SMPTE240M = 7,
-    CM_YCGCO = 8,
-    CM_BT2020NC = 9,
-    CM_BT2020C = 10,
-    CM_NUM_ENUM = 11,
-}
-#[repr(i32)]
+pub type EColorMatrix = ::std::os::raw::c_int;
+pub const ASP_UNSPECIFIED: ESampleAspectRatio = 0;
+pub const ASP_1x1: ESampleAspectRatio = 1;
+pub const ASP_12x11: ESampleAspectRatio = 2;
+pub const ASP_10x11: ESampleAspectRatio = 3;
+pub const ASP_16x11: ESampleAspectRatio = 4;
+pub const ASP_40x33: ESampleAspectRatio = 5;
+pub const ASP_24x11: ESampleAspectRatio = 6;
+pub const ASP_20x11: ESampleAspectRatio = 7;
+pub const ASP_32x11: ESampleAspectRatio = 8;
+pub const ASP_80x33: ESampleAspectRatio = 9;
+pub const ASP_18x11: ESampleAspectRatio = 10;
+pub const ASP_15x11: ESampleAspectRatio = 11;
+pub const ASP_64x33: ESampleAspectRatio = 12;
+pub const ASP_160x99: ESampleAspectRatio = 13;
+pub const ASP_EXT_SAR: ESampleAspectRatio = 255;
 #[doc = " @brief Enumerate the type of sample aspect ratio"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ESampleAspectRatio {
-    ASP_UNSPECIFIED = 0,
-    ASP_1x1 = 1,
-    ASP_12x11 = 2,
-    ASP_10x11 = 3,
-    ASP_16x11 = 4,
-    ASP_40x33 = 5,
-    ASP_24x11 = 6,
-    ASP_20x11 = 7,
-    ASP_32x11 = 8,
-    ASP_80x33 = 9,
-    ASP_18x11 = 10,
-    ASP_15x11 = 11,
-    ASP_64x33 = 12,
-    ASP_160x99 = 13,
-    ASP_EXT_SAR = 255,
-}
+pub type ESampleAspectRatio = ::std::os::raw::c_int;
 #[doc = " @brief  Structure for spatial layer configuration"]
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -734,42 +635,33 @@ impl Default for SSpatialLayerConfig {
         unsafe { ::std::mem::zeroed() }
     }
 }
-#[repr(i32)]
+#[doc = "< camera video for real-time communication"]
+pub const CAMERA_VIDEO_REAL_TIME: EUsageType = 0;
+#[doc = "< screen content signal"]
+pub const SCREEN_CONTENT_REAL_TIME: EUsageType = 1;
+pub const CAMERA_VIDEO_NON_REAL_TIME: EUsageType = 2;
+pub const SCREEN_CONTENT_NON_REAL_TIME: EUsageType = 3;
+pub const INPUT_CONTENT_TYPE_ALL: EUsageType = 4;
 #[doc = " @brief Encoder usage type"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EUsageType {
-    #[doc = "< camera video for real-time communication"]
-    CAMERA_VIDEO_REAL_TIME = 0,
-    #[doc = "< screen content signal"]
-    SCREEN_CONTENT_REAL_TIME = 1,
-    CAMERA_VIDEO_NON_REAL_TIME = 2,
-    SCREEN_CONTENT_NON_REAL_TIME = 3,
-    INPUT_CONTENT_TYPE_ALL = 4,
-}
-#[repr(i32)]
+pub type EUsageType = ::std::os::raw::c_int;
+#[doc = "< the lowest compleixty,the fastest speed,"]
+pub const LOW_COMPLEXITY: ECOMPLEXITY_MODE = 0;
+#[doc = "< medium complexity, medium speed,medium quality"]
+pub const MEDIUM_COMPLEXITY: ECOMPLEXITY_MODE = 1;
+#[doc = "< high complexity, lowest speed, high quality"]
+pub const HIGH_COMPLEXITY: ECOMPLEXITY_MODE = 2;
 #[doc = " @brief Enumulate the complexity mode"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum ECOMPLEXITY_MODE {
-    #[doc = "< the lowest compleixty,the fastest speed,"]
-    LOW_COMPLEXITY = 0,
-    #[doc = "< medium complexity, medium speed,medium quality"]
-    MEDIUM_COMPLEXITY = 1,
-    #[doc = "< high complexity, lowest speed, high quality"]
-    HIGH_COMPLEXITY = 2,
-}
-#[repr(i32)]
+pub type ECOMPLEXITY_MODE = ::std::os::raw::c_int;
+#[doc = "< constant id in SPS/PPS"]
+pub const CONSTANT_ID: EParameterSetStrategy = 0;
+#[doc = "< SPS/PPS id increases at each IDR"]
+pub const INCREASING_ID: EParameterSetStrategy = 1;
+#[doc = "< using SPS in the existing list if possible"]
+pub const SPS_LISTING: EParameterSetStrategy = 2;
+pub const SPS_LISTING_AND_PPS_INCREASING: EParameterSetStrategy = 3;
+pub const SPS_PPS_LISTING: EParameterSetStrategy = 6;
 #[doc = " @brief Enumulate for the stategy of SPS/PPS strategy"]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
-pub enum EParameterSetStrategy {
-    #[doc = "< constant id in SPS/PPS"]
-    CONSTANT_ID = 0,
-    #[doc = "< SPS/PPS id increases at each IDR"]
-    INCREASING_ID = 1,
-    #[doc = "< using SPS in the existing list if possible"]
-    SPS_LISTING = 2,
-    SPS_LISTING_AND_PPS_INCREASING = 3,
-    SPS_PPS_LISTING = 6,
-}
+pub type EParameterSetStrategy = ::std::os::raw::c_int;
 #[doc = " @brief SVC Encoding Parameters"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
