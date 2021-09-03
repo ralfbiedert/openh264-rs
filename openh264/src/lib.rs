@@ -1,4 +1,15 @@
 //!
+//! [![Latest Version]][crates.io]
+//! [![docs]][docs.rs]
+//! ![BSD-2]
+//! [![Rust](https://img.shields.io/badge/rust-1.53%2B-blue.svg?maxAge=3600)](https://github.com/ralfbiedert/openh264-rust)
+//!
+//! [Latest Version]: https://img.shields.io/crates/v/openh264.svg
+//! [crates.io]: https://crates.io/crates/openh264
+//! [BSD-2]: https://img.shields.io/badge/license-BSD2-blue.svg
+//! [docs]: https://docs.rs/openh264/badge.svg
+//! [docs.rs]: https://docs.rs/openh264/
+//!
 //! # OpenH264 Rust API
 //!
 //! Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh264), converting<sup>*</sup> between these two in Rust:
@@ -111,6 +122,7 @@
 //!
 //! - OpenH264 core library is [BSD-2](openh264-sys2/upstream/LICENSE), Cisco.
 //! - Wrapper code is [BSD-2](https://opensource.org/licenses/BSD-2-Clause), Ralf Biedert.
+//!
 
 mod decoder;
 mod error;
