@@ -1,2 +1,8 @@
 *.h264 filter=lfs diff=lfs merge=lfs -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
+*.cpp linguist-detectable=false
+*.h linguist-detectable=false
+*.asm linguist-detectable=false
+*.meson linguist-detectable=false
+*.mk linguist-detectable=false
+*.c linguist-detectable=false
