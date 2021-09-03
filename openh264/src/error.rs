@@ -7,7 +7,7 @@ use std::os::raw::{c_long, c_ulong};
 pub struct Error {
     native: i64,
     decoding_state: DECODING_STATE,
-    misc: Option<&'static str>,
+    misc: Option<String>,
     #[cfg(feature = "backtrace")]
     backtrace: Option<std::backtrace::Backtrace>,
 }
@@ -34,11 +34,11 @@ impl Error {
         }
     }
 
-    pub(crate) fn msg(msg: &'static str) -> Self {
+    pub(crate) fn msg(msg: &str) -> Self {
         Error {
             native: 0,
             decoding_state: dsErrorFree,
-            misc: Some(msg),
+            misc: Some(msg.to_string()),
             #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }

@@ -282,7 +282,12 @@ impl<'a> DecodedYUV<'a> {
         assert_eq!(self.info.iFormat, videoFormatI420 as i32);
 
         if target.len() != (dim.0 * dim.1 * 3) as usize {
-            return Err(Error::msg("Target RGB8 array does not match image dimensions."));
+            return Err(Error::msg(&format!(
+                "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3, got {}",
+                dim.0,
+                dim.1,
+                target.len()
+            )));
         }
 
         for y in 0..dim.1 {
