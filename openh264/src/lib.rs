@@ -3,7 +3,7 @@
 //!
 //! Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh264), converting<sup>*</sup> between these two in Rust:
 //!
-//! ![image](gfx/title.jpg)
+//! ![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rust/master/gfx/title.jpg)
 //!
 //!
 //! *High-level wrapped decoder only for now, encoder PRs welcome.

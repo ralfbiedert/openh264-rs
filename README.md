@@ -3,7 +3,7 @@
 
 Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh264), converting<sup>*</sup> between these two in Rust:
 
-![image](gfx/title.jpg)
+![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rust/master/gfx/title.jpg)
 
 
 *High-level wrapped decoder only for now, encoder PRs welcome.
@@ -33,7 +33,7 @@ Test results on various platforms:
 
 Tested on a i9-9900K, Windows 10, single threaded decoding:
 
-```rust
+```
 test decode_yuv_single_1920x1080     ... bench:   9,243,380 ns/iter (+/- 497,200)
 test decode_yuv_single_512x512_cabac ... bench:   1,841,775 ns/iter (+/- 53,211)
 test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
