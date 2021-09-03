@@ -53,6 +53,11 @@ impl Display for Error {
         <std::os::raw::c_int as std::fmt::Display>::fmt(&self.decoding_state, f)?;
         f.write_str(" User Message:")?;
         self.misc.fmt(f)?;
+
+        #[cfg(feature = "backtrace")]
+        {
+            f.write_str(". Backtraces enabled.")?;
+        }
         Ok(())
     }
 }
