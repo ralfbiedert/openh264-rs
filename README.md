@@ -73,6 +73,9 @@ If you want to improve these numbers you can submit PRs that
 - [ ] better enable autovectorization converting YUV to RGB,
 - [ ] conditionally enable assembly in `build.rs` for OpenH264.
 
+### Compile Features
+
+- `backtrace` - Enable backtraces on errors (requires nightly)
 
 ### FAQ
 

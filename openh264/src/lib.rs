@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "backtrace", feature(backtrace))]
 //!
 //! [![Latest Version]][crates.io]
 //! [![docs]][docs.rs]
@@ -77,6 +78,9 @@
 //! - [ ] better enable autovectorization converting YUV to RGB,
 //! - [ ] conditionally enable assembly in `build.rs` for OpenH264.
 //!
+//! ## Compile Features
+//!
+//! - `backtrace` - Enable backtraces on errors (requires nightly)
 //!
 //! ## FAQ
 //!

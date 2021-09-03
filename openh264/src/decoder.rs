@@ -38,20 +38,22 @@ impl DecoderRawAPI {
 
             WelsCreateDecoder(&mut decoder_ptr as *mut *mut *const ISVCDecoderVtbl).ok()?;
 
-            let e = Error::msg("VTable missing function.");
+            let e = || {
+                Error::msg("VTable missing function.")
+            };
 
             Ok(DecoderRawAPI {
                 decoder_ptr,
-                initialize: (*(*decoder_ptr)).Initialize.ok_or(e)?,
-                uninitialize: (*(*decoder_ptr)).Uninitialize.ok_or(e)?,
-                decode_frame: (*(*decoder_ptr)).DecodeFrame.ok_or(e)?,
-                decode_frame_no_delay: (*(*decoder_ptr)).DecodeFrameNoDelay.ok_or(e)?,
-                decode_frame2: (*(*decoder_ptr)).DecodeFrame2.ok_or(e)?,
-                flush_frame: (*(*decoder_ptr)).FlushFrame.ok_or(e)?,
-                decode_parser: (*(*decoder_ptr)).DecodeParser.ok_or(e)?,
-                decode_frame_ex: (*(*decoder_ptr)).DecodeFrameEx.ok_or(e)?,
-                set_option: (*(*decoder_ptr)).SetOption.ok_or(e)?,
-                get_option: (*(*decoder_ptr)).GetOption.ok_or(e)?,
+                initialize: (*(*decoder_ptr)).Initialize.ok_or(e())?,
+                uninitialize: (*(*decoder_ptr)).Uninitialize.ok_or(e())?,
+                decode_frame: (*(*decoder_ptr)).DecodeFrame.ok_or(e())?,
+                decode_frame_no_delay: (*(*decoder_ptr)).DecodeFrameNoDelay.ok_or(e())?,
+                decode_frame2: (*(*decoder_ptr)).DecodeFrame2.ok_or(e())?,
+                flush_frame: (*(*decoder_ptr)).FlushFrame.ok_or(e())?,
+                decode_parser: (*(*decoder_ptr)).DecodeParser.ok_or(e())?,
+                decode_frame_ex: (*(*decoder_ptr)).DecodeFrameEx.ok_or(e())?,
+                set_option: (*(*decoder_ptr)).SetOption.ok_or(e())?,
+                get_option: (*(*decoder_ptr)).GetOption.ok_or(e())?,
             })
         }
     }

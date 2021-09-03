@@ -3,11 +3,13 @@ use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_long, c_ulong};
 
 /// Error struct if something goes wrong.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub struct Error {
     native: i64,
     decoding_state: DECODING_STATE,
     misc: Option<&'static str>,
+    #[cfg(feature = "backtrace")]
+    backtrace: Option<std::backtrace::Backtrace>,
 }
 
 impl Error {
@@ -16,6 +18,8 @@ impl Error {
             native,
             decoding_state: dsErrorFree,
             misc: None,
+            #[cfg(feature = "backtrace")]
+            backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
 
@@ -25,6 +29,8 @@ impl Error {
             native: 0,
             decoding_state,
             misc: None,
+            #[cfg(feature = "backtrace")]
+            backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
 
@@ -33,21 +39,30 @@ impl Error {
             native: 0,
             decoding_state: dsErrorFree,
             misc: Some(msg),
+            #[cfg(feature = "backtrace")]
+            backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("OpenH264 encountered an error (TODO: improve this message): ")?;
+        f.write_str("OpenH264 encountered an error. Native:")?;
         <i64 as std::fmt::Display>::fmt(&self.native, f)?;
+        f.write_str(" Decoding State:")?;
         <std::os::raw::c_int as std::fmt::Display>::fmt(&self.decoding_state, f)?;
+        f.write_str(" User Message:")?;
         self.misc.fmt(f)?;
         Ok(())
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    #[cfg(feature = "backtrace")]
+    fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
+        self.backtrace.as_ref()
+    }
+}
 
 /// Helper trait to check the various error values produced by OpenH264.
 pub(crate) trait NativeErrorExt {
