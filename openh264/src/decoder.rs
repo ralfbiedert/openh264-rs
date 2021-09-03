@@ -283,9 +283,10 @@ impl<'a> DecodedYUV<'a> {
 
         if target.len() != (dim.0 * dim.1 * 3) as usize {
             return Err(Error::msg(&format!(
-                "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3, got {}",
+                "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
                 dim.0,
                 dim.1,
+                (dim.0 * dim.1 * 3),
                 target.len()
             )));
         }
