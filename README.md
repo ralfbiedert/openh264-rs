@@ -13,6 +13,21 @@ Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh26
 
 *High-level wrapped decoder only for now, encoder PRs welcome.
 
+### Example API
+
+Here we convert the last image of a H264 stream to a RGB byte array.
+
+```rust
+use openh264::Decoder;
+
+let mut decoder = Decoder::new()?;
+let mut rgb_out = [0; 512 * 512 * 3];
+let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
+
+// Decode to YUV, then convert and write RGB.
+decoder.decode_no_delay(&h264_in[..])?.write_rgb8(&mut rgb_out)?;
+
+```
 
 ### Platform Support
 
@@ -30,7 +45,7 @@ Test results on various platforms:
 🆗 the usual shenanigans required;
 ❌ not supported.
 
-<sup>1</sup> via `cargo build --target <platform>`, needs `CXX` set, [similar to CC here](https://cheats.rs/#cross-compilation) <br/>
+<sup>1</sup> via `cargo build --target <platform>`, [needs `CXX` set](https://cheats.rs/#cross-compilation) <br/>
 <sup>2</sup> unclear if could ever work, investigation welcome
 
 
