@@ -3,6 +3,7 @@
 *.cpp linguist-detectable=false
 *.h linguist-detectable=false
 *.asm linguist-detectable=false
+*.build linguist-detectable=false
 *.meson linguist-detectable=false
 *.mk linguist-detectable=false
 *.c linguist-detectable=false
