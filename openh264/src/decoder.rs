@@ -211,52 +211,6 @@ impl Decoder {
             Ok(DecodedYUV { info, y, u, v })
         }
     }
-
-    // pub fn decode_frame2(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
-    //     let mut dst = [null_mut(); 3];
-    //     let mut buffer_info = SBufferInfo::default();
-    //
-    //     unsafe {
-    //         self.raw_api
-    //             .decode_frame2(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
-    //             .ok()?;
-    //
-    //         if !buffer_info.iBufferStatus == 1 {
-    //             return Err(Error::msg("Buffer status not valid"));
-    //         }
-    //
-    //         let info = buffer_info.UsrData.sSystemBuffer;
-    //
-    //         // https://github.com/cisco/openh264/issues/2379
-    //         let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
-    //         let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
-    //         let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
-    //
-    //         Ok(DecodedYUV { info, y, u, v })
-    //     }
-    // }
-    //
-    // pub fn flush_frame(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
-    //     let mut dst = [null_mut(); 3];
-    //     let mut buffer_info = SBufferInfo::default();
-    //
-    //     unsafe {
-    //         // self.raw_api.flush_frame().ok()?;
-    //
-    //         if !buffer_info.iBufferStatus == 1 {
-    //             return Err(Error::msg("Buffer status not valid"));
-    //         }
-    //
-    //         let info = buffer_info.UsrData.sSystemBuffer;
-    //
-    //         // https://github.com/cisco/openh264/issues/2379
-    //         let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
-    //         let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
-    //         let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
-    //
-    //         Ok(DecodedYUV { info, y, u, v })
-    //     }
-    // }
 }
 
 impl Drop for Decoder {
