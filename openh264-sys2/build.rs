@@ -25,12 +25,12 @@ fn main() {
         .opt_level(3)
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
-        .flag_if_supported("-fno-strict-aliasing")
-        .flag_if_supported("-fstack-protector-all")
-        .flag_if_supported("-fembed-bitcode")
+        // .flag_if_supported("-fno-strict-aliasing")
+        // .flag_if_supported("-fstack-protector-all")
+        // .flag_if_supported("-fembed-bitcode")
         // .flag_if_supported("-fsanitize=address")
-        .flag_if_supported("-fno-common")
-        .flag_if_supported("-undefined dynamic_lookup")
+        // .flag_if_supported("-fno-common")
+        // .flag_if_supported("-undefined dynamic_lookup")
         // .debug(true)
         .compile("libopenh264_decode.a");
 
@@ -48,12 +48,12 @@ fn main() {
         .opt_level(3)
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
-        .flag_if_supported("-fno-strict-aliasing")
-        .flag_if_supported("-fstack-protector-all")
-        .flag_if_supported("-fembed-bitcode")
+        // .flag_if_supported("-fno-strict-aliasing")
+        // .flag_if_supported("-fstack-protector-all")
+        // .flag_if_supported("-fembed-bitcode")
         // .flag_if_supported("-fsanitize=address")
-        .flag_if_supported("-fno-common")
-        .flag_if_supported("-undefined dynamic_lookup")
+        // .flag_if_supported("-fno-common")
+        // .flag_if_supported("-undefined dynamic_lookup")
         // .debug(true)
         .compile("libopenh264_encode.a");
 
