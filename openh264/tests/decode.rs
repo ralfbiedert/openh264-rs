@@ -18,7 +18,7 @@ fn can_decode_single() -> Result<(), Error> {
     ];
 
     for (_, src) in sources.iter().enumerate() {
-        let config = DecoderConfig::default().debug(true);
+        let config = unsafe { DecoderConfig::default().debug(true).num_threads(0) };
         let mut decoder = Decoder::with_config(config)?;
 
         let yuv = decoder.decode_no_delay(src)?;
@@ -37,7 +37,7 @@ fn can_decode_single() -> Result<(), Error> {
 fn can_decode_multi_to_end() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512.h264")[..];
 
-    let config = DecoderConfig::default().debug(true);
+    let config = unsafe { DecoderConfig::default().debug(true).num_threads(1) };
     let mut decoder = Decoder::with_config(config)?;
 
     decoder.decode_no_delay(src)?;
