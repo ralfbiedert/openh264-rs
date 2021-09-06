@@ -1,6 +1,5 @@
 use openh264_sys2::{dsErrorFree, DECODING_STATE};
 use std::fmt::{Debug, Display, Formatter};
-use std::os::raw::{c_long, c_ulong};
 
 /// Error struct if something goes wrong.
 #[derive(Debug)]
@@ -74,7 +73,7 @@ pub(crate) trait NativeErrorExt {
     fn ok(self) -> Result<(), Error>;
 }
 
-impl NativeErrorExt for c_ulong {
+impl NativeErrorExt for u64 {
     fn ok(self) -> Result<(), Error> {
         if self == 0 {
             Ok(())
@@ -84,7 +83,17 @@ impl NativeErrorExt for c_ulong {
     }
 }
 
-impl NativeErrorExt for c_long {
+impl NativeErrorExt for i64 {
+    fn ok(self) -> Result<(), Error> {
+        if self == 0 {
+            Ok(())
+        } else {
+            Err(Error::from_native(self as i64))
+        }
+    }
+}
+
+impl NativeErrorExt for i32 {
     fn ok(self) -> Result<(), Error> {
         if self == 0 {
             Ok(())
