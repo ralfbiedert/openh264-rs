@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Version
+      run: rustc -Vv
     - name: Build
       run: cargo build --verbose
     - name: Test

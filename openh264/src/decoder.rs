@@ -1,9 +1,7 @@
 use crate::error::NativeErrorExt;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
-    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE,
-    VIDEO_BITSTREAM_AVC,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -117,12 +115,18 @@ pub struct DecoderConfig {
     params: SDecodingParam,
     num_threads: i32,
     debug: i32,
+    error_concealment: i32,
 }
 
 impl DecoderConfig {
     /// Creates a new default encoder config.
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            params: Default::default(),
+            num_threads: 0,
+            debug: 0,
+            error_concealment: 0,
+        }
     }
 
     /// Sets the number of threads.
@@ -137,7 +141,7 @@ impl DecoderConfig {
     }
 
     pub fn debug(mut self, value: bool) -> Self {
-        self.debug = if value { 0xffffff } else { 0 };
+        self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self
     }
 }
@@ -165,6 +169,7 @@ impl Decoder {
             raw.initialize(&config.params).ok()?;
             raw.set_option(DECODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
             raw.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast()).ok()?;
+            raw.set_option(DECODER_OPTION_ERROR_CON_IDC, addr_of_mut!(config.error_concealment).cast()).ok()?;
         };
 
         Ok(Self { raw_api: raw })
