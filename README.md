@@ -121,7 +121,6 @@ PRs are very welcome. Feel free to submit PRs and fixes right away. You can open
 
 Especially needed:
 
-- [ ] CI testing
 - [ ] Encoder wrapper
 - [ ] Enabling of platform specific assembly (without breaking or complicating build)
 - [ ] Faster YUV to RGB conversion

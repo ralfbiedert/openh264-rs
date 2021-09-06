@@ -126,7 +126,6 @@
 //!
 //! Especially needed:
 //!
-//! - [ ] CI testing
 //! - [ ] Encoder wrapper
 //! - [ ] Enabling of platform specific assembly (without breaking or complicating build)
 //! - [ ] Faster YUV to RGB conversion
