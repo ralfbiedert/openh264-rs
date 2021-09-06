@@ -18,7 +18,7 @@ fn can_decode_single() -> Result<(), Error> {
     ];
 
     for (_, src) in sources.iter().enumerate() {
-        let config = DecoderConfig::default().debug(true);
+        let config = DecoderConfig::default().debug(false);
         let mut decoder = Decoder::with_config(config)?;
 
         let yuv = decoder.decode_no_delay(src)?;
@@ -37,7 +37,9 @@ fn can_decode_single() -> Result<(), Error> {
 fn can_decode_multi_to_end() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512.h264")[..];
 
-    let config = DecoderConfig::default().debug(true);
+    println!("BYTE ARRAY LENGTH {}", src.len());
+
+    let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
     decoder.decode_no_delay(src)?;
@@ -51,7 +53,7 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 
     let packet_lengths = [30, 2736, 2688, 2672, 2912, 3215];
 
-    let config = DecoderConfig::default().debug(true);
+    let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
     let mut p = 0;
@@ -69,7 +71,7 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 fn fails_on_truncated() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512_truncated.h264")[..];
 
-    let config = DecoderConfig::default().debug(true);
+    let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
     assert!(decoder.decode_no_delay(src).is_err());
