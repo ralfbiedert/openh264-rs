@@ -1,6 +1,4 @@
 
-# See https://github.com/ralfbiedert/openh264-rust/issues/1
-
 name: Rust
 
 on:
@@ -13,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  Linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
