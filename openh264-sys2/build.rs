@@ -22,7 +22,7 @@ fn main() {
         .files(ugly_cpp_import("upstream/codec/decoder"))
         .cpp(true)
         .warnings(false)
-        .opt_level(0)
+        .opt_level(3)
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
         .flag_if_supported("-fno-strict-aliasing")
@@ -30,7 +30,7 @@ fn main() {
         .flag_if_supported("-fembed-bitcode")
         .flag_if_supported("-fno-common")
         .flag_if_supported("-undefined dynamic_lookup")
-        // .debug(true)
+        .debug(false)
         .compile("libopenh264_decode.a");
 
     cc::Build::new()
@@ -44,7 +44,7 @@ fn main() {
         .files(ugly_cpp_import("upstream/codec/processing"))
         .cpp(true)
         .warnings(false)
-        .opt_level(0)
+        .opt_level(3)
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
         .flag_if_supported("-fno-strict-aliasing")
@@ -52,7 +52,7 @@ fn main() {
         .flag_if_supported("-fembed-bitcode")
         .flag_if_supported("-fno-common")
         .flag_if_supported("-undefined dynamic_lookup")
-        // .debug(true)
+        .debug(false)
         .compile("libopenh264_encode.a");
 
     println!("cargo:rustc-link-lib=static=openh264_encode");
