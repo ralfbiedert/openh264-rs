@@ -1,9 +1,22 @@
-use openh264::{Decoder, DecoderConfig, Error};
+use openh264::decoder::{Decoder, DecoderConfig};
+use openh264::Error;
 
 #[test]
 fn can_get_decoder() -> Result<(), Error> {
     let config = DecoderConfig::default();
     let _decoder = Decoder::with_config(config)?;
+
+    Ok(())
+}
+
+#[test]
+fn can_access_raw_api() -> Result<(), Error> {
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(config)?;
+
+    unsafe {
+        let _ = decoder.raw_api();
+    };
 
     Ok(())
 }

@@ -1,4 +1,5 @@
-use openh264::{Decoder, Error};
+use openh264::decoder::Decoder;
+use openh264::Error;
 
 fn main() -> Result<(), Error> {
     let h264_packets = &include_bytes!("../tests/data/multi_512x512.h264")[..];

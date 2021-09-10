@@ -73,35 +73,23 @@ pub(crate) trait NativeErrorExt {
     fn ok(self) -> Result<(), Error>;
 }
 
-impl NativeErrorExt for u64 {
-    fn ok(self) -> Result<(), Error> {
-        if self == 0 {
-            Ok(())
-        } else {
-            Err(Error::from_native(self as i64))
+macro_rules! impl_native_error {
+    ($t:ty) => {
+        impl NativeErrorExt for $t {
+            fn ok(self) -> Result<(), Error> {
+                if self == 0 {
+                    Ok(())
+                } else {
+                    Err(Error::from_native(self as i64))
+                }
+            }
         }
-    }
+    };
 }
 
-impl NativeErrorExt for i64 {
-    fn ok(self) -> Result<(), Error> {
-        if self == 0 {
-            Ok(())
-        } else {
-            Err(Error::from_native(self as i64))
-        }
-    }
-}
-
-impl NativeErrorExt for i32 {
-    fn ok(self) -> Result<(), Error> {
-        if self == 0 {
-            Ok(())
-        } else {
-            Err(Error::from_native(self as i64))
-        }
-    }
-}
+impl_native_error!(u64);
+impl_native_error!(i64);
+impl_native_error!(i32);
 
 #[cfg(test)]
 mod test {
@@ -110,20 +98,16 @@ mod test {
 
     #[test]
     fn errors_wont_panic() {
-        dbg!(Error::from_native(1));
-        dbg!(Error::from_decoding_state(dsRefListNullPtrs));
-        dbg!(Error::msg("hello world"));
+        format!("{}", Error::from_native(1));
+        format!("{}", Error::from_decoding_state(dsRefListNullPtrs));
+        format!("{}", Error::msg("hello world"));
 
-        println!("{}", Error::from_native(1));
-        println!("{}", Error::from_decoding_state(dsRefListNullPtrs));
-        println!("{}", Error::msg("hello world"));
+        format!("{:?}", Error::from_native(1));
+        format!("{:?}", Error::from_decoding_state(dsRefListNullPtrs));
+        format!("{:?}", Error::msg("hello world"));
 
-        println!("{:?}", Error::from_native(1));
-        println!("{:?}", Error::from_decoding_state(dsRefListNullPtrs));
-        println!("{:?}", Error::msg("hello world"));
-
-        println!("{:#?}", Error::from_native(1));
-        println!("{:#?}", Error::from_decoding_state(dsRefListNullPtrs));
-        println!("{:#?}", Error::msg("hello world"));
+        format!("{:#?}", Error::from_native(1));
+        format!("{:#?}", Error::from_decoding_state(dsRefListNullPtrs));
+        format!("{:#?}", Error::msg("hello world"));
     }
 }

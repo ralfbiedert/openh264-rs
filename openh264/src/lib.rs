@@ -20,7 +20,7 @@
 //! Here we convert the last image of a H264 stream to a RGB byte array.
 //!
 //! ```rust
-//! use openh264::Decoder;
+//! use openh264::decoder::Decoder;
 //! # use openh264::Error;
 //!
 //! # fn main() -> Result<(), Error> {
@@ -51,7 +51,7 @@
 //! 🆗 the usual shenanigans required;
 //! ❌ not supported.
 //!
-//! <sup>1</sup> via `cargo build --target <platform>`, [needs `CXX` set](https://cheats.rs/#cross-compilation) <br/>
+//! <sup>1</sup> via `cargo build --target <platform>`, [needs `CXX` set](https://cheats.rs/#cross-compilation) and `libc++_shared.so`. <br/>
 //! <sup>2</sup> unclear if could ever work, investigation welcome
 //!
 //!
@@ -146,8 +146,11 @@
 //! [docs]: https://docs.rs/openh264/badge.svg
 //! [docs.rs]: https://docs.rs/openh264/
 
-mod decoder;
+pub mod decoder;
+
+#[doc(hidden)]
+pub mod encoder;
+
 mod error;
 
-pub use decoder::{DecodedYUV, Decoder, DecoderConfig};
 pub use error::Error;

@@ -1,3 +1,5 @@
+//! Converts packets to images.
+
 use crate::error::NativeErrorExt;
 use crate::Error;
 use openh264_sys2::{
@@ -12,7 +14,7 @@ use std::ptr::{addr_of_mut, null, null_mut};
 #[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Debug)]
-struct DecoderRawAPI {
+pub struct DecoderRawAPI {
     decoder_ptr: *mut *const ISVCDecoderVtbl,
     initialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder, pParam: *const SDecodingParam) -> c_long,
     uninitialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> c_long,
@@ -43,59 +45,32 @@ impl DecoderRawAPI {
 
             Ok(DecoderRawAPI {
                 decoder_ptr,
-                initialize: (*(*decoder_ptr)).Initialize.ok_or(e())?,
-                uninitialize: (*(*decoder_ptr)).Uninitialize.ok_or(e())?,
-                decode_frame: (*(*decoder_ptr)).DecodeFrame.ok_or(e())?,
-                decode_frame_no_delay: (*(*decoder_ptr)).DecodeFrameNoDelay.ok_or(e())?,
-                decode_frame2: (*(*decoder_ptr)).DecodeFrame2.ok_or(e())?,
-                flush_frame: (*(*decoder_ptr)).FlushFrame.ok_or(e())?,
-                decode_parser: (*(*decoder_ptr)).DecodeParser.ok_or(e())?,
-                decode_frame_ex: (*(*decoder_ptr)).DecodeFrameEx.ok_or(e())?,
-                set_option: (*(*decoder_ptr)).SetOption.ok_or(e())?,
-                get_option: (*(*decoder_ptr)).GetOption.ok_or(e())?,
+                initialize: (*(*decoder_ptr)).Initialize.ok_or_else(e)?,
+                uninitialize: (*(*decoder_ptr)).Uninitialize.ok_or_else(e)?,
+                decode_frame: (*(*decoder_ptr)).DecodeFrame.ok_or_else(e)?,
+                decode_frame_no_delay: (*(*decoder_ptr)).DecodeFrameNoDelay.ok_or_else(e)?,
+                decode_frame2: (*(*decoder_ptr)).DecodeFrame2.ok_or_else(e)?,
+                flush_frame: (*(*decoder_ptr)).FlushFrame.ok_or_else(e)?,
+                decode_parser: (*(*decoder_ptr)).DecodeParser.ok_or_else(e)?,
+                decode_frame_ex: (*(*decoder_ptr)).DecodeFrameEx.ok_or_else(e)?,
+                set_option: (*(*decoder_ptr)).SetOption.ok_or_else(e)?,
+                get_option: (*(*decoder_ptr)).GetOption.ok_or_else(e)?,
             })
         }
     }
 
-    unsafe fn initialize(&self, pParam: *const SDecodingParam) -> c_long {
-        (self.initialize)(self.decoder_ptr, pParam)
-    }
+    // Exposing these will probably do more harm than good.
+    unsafe fn initialize(&self, pParam: *const SDecodingParam) -> c_long { (self.initialize)(self.decoder_ptr, pParam) }
+    unsafe fn uninitialize(&self, ) -> c_long { (self.uninitialize)(self.decoder_ptr) }
 
-    unsafe fn uninitialize(&self, ) -> c_long {
-        (self.uninitialize)(self.decoder_ptr)
-    }
-
-    unsafe fn decode_frame(&self, Src: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pStride: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int) -> DECODING_STATE {
-        (self.decode_frame)(self.decoder_ptr, Src, iSrcLen, ppDst, pStride, iWidth, iHeight)
-    }
-
-    unsafe fn decode_frame_no_delay(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE {
-        (self.decode_frame_no_delay)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo)
-    }
-
-    unsafe fn decode_frame2(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE {
-        (self.decode_frame2)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo)
-    }
-
-    unsafe fn flush_frame(&self, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE {
-        (self.flush_frame)(self.decoder_ptr, ppDst, pDstInfo)
-    }
-
-    unsafe fn decode_parser(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDstInfo: *mut SParserBsInfo) -> DECODING_STATE {
-        (self.decode_parser)(self.decoder_ptr, pSrc, iSrcLen, pDstInfo)
-    }
-
-    unsafe fn decode_frame_ex(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDst: *mut c_uchar, iDstStride: c_int, iDstLen: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int, iColorFormat: *mut c_int) -> DECODING_STATE {
-        (self.decode_frame_ex)(self.decoder_ptr, pSrc, iSrcLen, pDst, iDstStride, iDstLen, iWidth, iHeight, iColorFormat)
-    }
-
-    unsafe fn set_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long {
-        (self.set_option)(self.decoder_ptr, eOptionId, pOption)
-    }
-
-    unsafe fn get_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long {
-        (self.get_option)(self.decoder_ptr, eOptionId, pOption)
-    }
+    pub unsafe fn decode_frame(&self, Src: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pStride: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int) -> DECODING_STATE { (self.decode_frame)(self.decoder_ptr, Src, iSrcLen, ppDst, pStride, iWidth, iHeight) }
+    pub unsafe fn decode_frame_no_delay(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { (self.decode_frame_no_delay)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo) }
+    pub unsafe fn decode_frame2(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { (self.decode_frame2)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo) }
+    pub unsafe fn flush_frame(&self, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { (self.flush_frame)(self.decoder_ptr, ppDst, pDstInfo) }
+    pub unsafe fn decode_parser(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDstInfo: *mut SParserBsInfo) -> DECODING_STATE { (self.decode_parser)(self.decoder_ptr, pSrc, iSrcLen, pDstInfo) }
+    pub unsafe fn decode_frame_ex(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDst: *mut c_uchar, iDstStride: c_int, iDstLen: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int, iColorFormat: *mut c_int) -> DECODING_STATE { (self.decode_frame_ex)(self.decoder_ptr, pSrc, iSrcLen, pDst, iDstStride, iDstLen, iWidth, iHeight, iColorFormat) }
+    pub unsafe fn set_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long {  (self.set_option)(self.decoder_ptr, eOptionId, pOption) }
+    pub unsafe fn get_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long { (self.get_option)(self.decoder_ptr, eOptionId, pOption) }
 }
 
 impl Drop for DecoderRawAPI {
@@ -113,9 +88,9 @@ impl Drop for DecoderRawAPI {
 #[derive(Default, Copy, Clone, Debug)]
 pub struct DecoderConfig {
     params: SDecodingParam,
-    num_threads: i32,
-    debug: i32,
-    error_concealment: i32,
+    num_threads: DECODER_OPTION,
+    debug: DECODER_OPTION,
+    error_concealment: DECODER_OPTION,
 }
 
 impl DecoderConfig {
@@ -146,7 +121,7 @@ impl DecoderConfig {
     }
 }
 
-/// An [OpenH264](https://github.com/cisco/openh264) decoder, converts packets to YUV.
+/// An [OpenH264](https://github.com/cisco/openh264) decoder.
 #[derive(Debug)]
 pub struct Decoder {
     raw_api: DecoderRawAPI,
@@ -210,6 +185,35 @@ impl Decoder {
 
             Ok(DecodedYUV { info, y, u, v })
         }
+    }
+
+    /// Obtain the raw API an initialized decoder object for advanced use cases.
+    ///
+    /// When resorting to this call, please consider filing an issue / PR to safely wrap your use case.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openh264::decoder::{DecoderConfig, Decoder};
+    ///
+    /// # use openh264::Error;
+    /// #
+    /// # fn try_main() -> Result<(), Error> {
+    /// let config = DecoderConfig::default();
+    /// let mut decoder = Decoder::with_config(config)?;
+    ///
+    /// unsafe {
+    ///     let _ = decoder.raw_api();
+    /// };
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// You must not set parameters the decoder relies on, we recommend checking the source.
+    pub unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
+        &mut self.raw_api
     }
 }
 
