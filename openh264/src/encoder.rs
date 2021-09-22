@@ -3,9 +3,7 @@
 use crate::error::NativeErrorExt;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, videoFrameTypeSkip, EVideoFormatType, EVideoFrameType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase,
-    SEncParamExt, SFrameBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION,
-    ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, videoFrameTypeSkip, EVideoFormatType, EVideoFrameType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null};
@@ -31,6 +29,7 @@ pub struct EncoderRawAPI {
 
 #[rustfmt::skip]
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::missing_safety_doc)]
 #[allow(non_snake_case)]
 #[allow(unused)]
 impl EncoderRawAPI {
