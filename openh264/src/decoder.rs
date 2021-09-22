@@ -1,11 +1,10 @@
-//! Converts packets to images.
+//! Converts NAL packets to YUV images.
 
 use crate::error::NativeErrorExt;
+use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
-    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL,
-    DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -294,6 +293,7 @@ impl<'a> DecodedYUV<'a> {
         )
     }
 
+    // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*3`.
     pub fn write_rgb8(&self, target: &mut [u8]) -> Result<(), Error> {
         let dim = self.dimension_rgb();
@@ -335,6 +335,8 @@ impl<'a> DecodedYUV<'a> {
         Ok(())
     }
 
+    // TODO: Ideally we'd like to move these out into a converter in `formats`.
+    /// Writes the image into a byte buffer of size `w*h*4`.
     pub fn write_rgba8(&self, target: &mut [u8]) -> Result<(), Error> {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();
@@ -378,7 +380,7 @@ impl<'a> DecodedYUV<'a> {
 }
 
 #[cfg(feature = "encoder")]
-impl<'a> crate::encoder::YUVSource for DecodedYUV<'a> {
+impl<'a> YUVSource for DecodedYUV<'a> {
     fn width(&self) -> i32 {
         self.info.iWidth
     }

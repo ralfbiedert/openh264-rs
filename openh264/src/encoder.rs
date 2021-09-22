@@ -1,6 +1,7 @@
-//! Converts images to packets.
+//! Converts YUV / RGB images to NAL packets.
 
 use crate::error::NativeErrorExt;
+use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
     videoFormatI420, videoFrameTypeSkip, EVideoFormatType, EVideoFrameType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
@@ -108,6 +109,7 @@ impl EncoderConfig {
         }
     }
 
+    /// Sets the requested bit rate in bits per second.
     pub fn set_bitrate_bps(mut self, bps: u32) -> Self {
         self.target_bitrate = bps;
         self
@@ -150,6 +152,7 @@ impl Encoder {
         Ok(Self { params, raw_api })
     }
 
+    /// Encodes a YUV source and returns the encoded bitstream.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream, Error> {
         assert_eq!(yuv_source.width(), self.params.iPicWidth);
         assert_eq!(yuv_source.height(), self.params.iPicHeight);
@@ -173,26 +176,31 @@ impl Encoder {
 
             self.raw_api.encode_frame(&source, &mut bit_stream_info).ok()?;
 
-            // returning the first video layer
-            for layer_idx in 0..bit_stream_info.iLayerNum as usize {
-                if bit_stream_info.sLayerInfo[layer_idx].uiLayerType != VIDEO_CODING_LAYER as u8 {
-                    continue;
-                }
-                let mut size = 0;
-                for nal_idx in 0..bit_stream_info.sLayerInfo[layer_idx].iNalCount as isize {
-                    size = size + *bit_stream_info.sLayerInfo[layer_idx].pNalLengthInByte.offset(nal_idx);
-                }
-                let buffer = std::slice::from_raw_parts(bit_stream_info.sLayerInfo[layer_idx].pBsBuf, size as usize);
-                return Ok(EncodedBitStream {
-                    bit_stream: buffer,
-                    frame_type: bit_stream_info.eFrameType,
+            let num_layers = bit_stream_info.iLayerNum as usize;
+            let first_video_layer = bit_stream_info.sLayerInfo[0..num_layers]
+                .iter()
+                .filter(|x| x.uiLayerType == VIDEO_CODING_LAYER as u8)
+                .map(|x| {
+                    let mut size = 0;
+
+                    // TODO: This should have 1-2 lines explaining why the offset is computed like so:
+                    for nal_idx in 0..x.iNalCount {
+                        size += *x.pNalLengthInByte.offset(nal_idx as isize);
+                    }
+
+                    EncodedBitStream {
+                        bit_stream: std::slice::from_raw_parts(x.pBsBuf, size as usize),
+                        frame_type: x.eFrameType,
+                    }
+                })
+                .next()
+                .unwrap_or(EncodedBitStream {
+                    bit_stream: &[],
+                    frame_type: videoFrameTypeSkip,
                 });
-            }
+
+            Ok(first_video_layer)
         }
-        Ok(EncodedBitStream {
-            bit_stream: &[],
-            frame_type: videoFrameTypeSkip,
-        })
     }
 
     /// Obtain the raw API an initialized encoder object for advanced use cases.
@@ -216,176 +224,56 @@ impl Drop for Encoder {
     }
 }
 
-/// Encoding Output, currently takes only the first Video Layer
+/// Encoding output, currently takes only the first video layer.
 pub struct EncodedBitStream<'a> {
-    pub bit_stream: &'a [u8],
-    pub frame_type: EVideoFrameType,
+    bit_stream: &'a [u8],
+    frame_type: EVideoFrameType,
 }
 
-/// Allows encode to be generic over a YUV Source
-pub trait YUVSource {
-    fn width(&self) -> i32;
-    fn height(&self) -> i32;
+impl<'a> EncodedBitStream<'a> {
+    /// Obtains the bitstream as a byte slice.
+    pub fn bit_stream(&self) -> &'a [u8] {
+        self.bit_stream
+    }
 
-    fn y(&self) -> &[u8];
-    fn u(&self) -> &[u8];
-    fn v(&self) -> &[u8];
-
-    fn y_stride(&self) -> i32;
-    fn u_stride(&self) -> i32;
-    fn v_stride(&self) -> i32;
+    /// What this bitstream encodes.
+    pub fn frame_type(&self) -> FrameType {
+        FrameType::from_c_int(self.frame_type)
+    }
 }
 
-pub struct RBGYUVConverter {
-    yuv: Vec<u8>,
-    width: usize,
-    height: usize,
+/// Frame type returned by the encoder.
+///
+/// The variant documentation was directly taken from OpenH264 project.
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+pub enum FrameType {
+    /// Encoder not ready or parameters are invalidate.
+    Invalid,
+    /// IDR frame in H.264
+    IDR,
+    /// I frame type
+    I,
+    /// P frame type
+    P,
+    /// Skip the frame based encoder kernel"
+    Skip,
+    /// A frame where I and P slices are mixing, not supported yet.
+    IPMixed,
 }
 
-impl RBGYUVConverter {
-    pub fn new(width: usize, height: usize) -> Self {
-        Self {
-            yuv: vec![0u8; (3 * (width * height)) / 2],
-            width,
-            height,
+impl FrameType {
+    fn from_c_int(native: std::os::raw::c_int) -> Self {
+        use openh264_sys2::{videoFrameTypeI, videoFrameTypeIDR, videoFrameTypeIPMixed, videoFrameTypeInvalid, videoFrameTypeP};
+
+        #[allow(non_upper_case_globals)]
+        match native {
+            videoFrameTypeInvalid => Self::Invalid,
+            videoFrameTypeIDR => Self::IDR,
+            videoFrameTypeI => Self::I,
+            videoFrameTypeP => Self::P,
+            videoFrameTypeSkip => Self::Skip,
+            videoFrameTypeIPMixed => Self::IPMixed,
+            _ => Self::Invalid,
         }
-    }
-
-    pub fn convert(&mut self, rgb: &[u8]) {
-        let width = self.width;
-        let height = self.height;
-
-        assert_eq!(rgb.len(), width * height * 3);
-        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
-        assert_eq!(height % 2, 0, "height needs to be a multiple of 2");
-
-        // y is full size, u, v is quarter size
-        let pixel = |x: usize, y: usize| -> (f32, f32, f32) {
-            // two dim to single dim
-            let base_pos = (x + y * width) * 3;
-            (rgb[base_pos] as f32, rgb[base_pos + 1] as f32, rgb[base_pos + 2] as f32)
-        };
-        let write_y = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[x + y * width] = (0.2578125 * rgb.0 + 0.50390625 * rgb.1 + 0.09765625 * rgb.2 + 16.0) as u8;
-        };
-        let u_base = width * height;
-        let half_width = width / 2;
-        let write_u = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[u_base + x + y * half_width] = (-0.1484375 * rgb.0 + -0.2890625 * rgb.1 + 0.4375 * rgb.2 + 128.0) as u8;
-        };
-        let v_base = u_base + u_base / 4;
-        let write_v = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[v_base + x + y * half_width] = (0.4375 * rgb.0 + -0.3671875 * rgb.1 + -0.0703125 * rgb.2 + 128.0) as u8
-        };
-        for i in 0..width / 2 {
-            for j in 0..height / 2 {
-                let px = i * 2;
-                let py = j * 2;
-                let pix0x0 = pixel(px, py);
-                let pix0x1 = pixel(px, py + 1);
-                let pix1x0 = pixel(px + 1, py);
-                let pix1x1 = pixel(px + 1, py + 1);
-                let avg_pix = (
-                    (pix0x0.0 as u32 + pix0x1.0 as u32 + pix1x0.0 as u32 + pix1x1.0 as u32) as f32 / 4.0,
-                    (pix0x0.1 as u32 + pix0x1.1 as u32 + pix1x0.1 as u32 + pix1x1.1 as u32) as f32 / 4.0,
-                    (pix0x0.2 as u32 + pix0x1.2 as u32 + pix1x0.2 as u32 + pix1x1.2 as u32) as f32 / 4.0,
-                );
-                write_y(&mut self.yuv[..], px, py, pix0x0);
-                write_y(&mut self.yuv[..], px, py + 1, pix0x1);
-                write_y(&mut self.yuv[..], px + 1, py, pix1x0);
-                write_y(&mut self.yuv[..], px + 1, py + 1, pix1x1);
-                write_u(&mut self.yuv[..], i, j, avg_pix);
-                write_v(&mut self.yuv[..], i, j, avg_pix);
-            }
-        }
-    }
-}
-
-impl YUVSource for RBGYUVConverter {
-    fn width(&self) -> i32 {
-        self.width as i32
-    }
-
-    fn height(&self) -> i32 {
-        self.height as i32
-    }
-
-    fn y(&self) -> &[u8] {
-        &self.yuv[0..self.width * self.height]
-    }
-
-    fn u(&self) -> &[u8] {
-        let base_u = self.width * self.height;
-        &self.yuv[base_u..base_u + base_u / 4]
-    }
-
-    fn v(&self) -> &[u8] {
-        let base_u = self.width * self.height;
-        let base_v = base_u + base_u / 4;
-        &self.yuv[base_v..]
-    }
-
-    fn y_stride(&self) -> i32 {
-        self.width as i32
-    }
-
-    fn u_stride(&self) -> i32 {
-        (self.width / 2) as i32
-    }
-
-    fn v_stride(&self) -> i32 {
-        (self.width / 2) as i32
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::encoder::YUVSource;
-
-    use super::RBGYUVConverter;
-
-    #[test]
-    fn rgb_to_yuv_conversion_black_2x2() {
-        let mut converter = RBGYUVConverter::new(2, 2);
-        let rgb = [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-        converter.convert(&rgb);
-        assert_eq!(converter.y(), [16u8, 16u8, 16u8, 16u8]);
-        assert_eq!(converter.u(), [128u8]);
-        assert_eq!(converter.v(), [128u8]);
-        assert_eq!(converter.y_stride(), 2);
-        assert_eq!(converter.u_stride(), 1);
-        assert_eq!(converter.v_stride(), 1);
-    }
-
-    #[test]
-    fn rgb_to_yuv_conversion_white_4x2() {
-        let mut converter = RBGYUVConverter::new(4, 2);
-        let rgb = [
-            255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
-            255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
-        ];
-        converter.convert(&rgb);
-        assert_eq!(converter.y(), [235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8]);
-        assert_eq!(converter.u(), [128u8, 128u8]);
-        assert_eq!(converter.v(), [128u8, 128u8]);
-        assert_eq!(converter.y_stride(), 4);
-        assert_eq!(converter.u_stride(), 2);
-        assert_eq!(converter.v_stride(), 2);
-    }
-
-    #[test]
-    fn rgb_to_yuv_conversion_red_2x4() {
-        let mut converter = RBGYUVConverter::new(4, 2);
-        let rgb = [
-            255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8,
-            0u8, 255u8, 0u8, 0u8,
-        ];
-        converter.convert(&rgb);
-        assert_eq!(converter.y(), [81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8]);
-        assert_eq!(converter.u(), [90u8, 90u8]);
-        assert_eq!(converter.v(), [239u8, 239u8]);
-        assert_eq!(converter.y_stride(), 4);
-        assert_eq!(converter.u_stride(), 2);
-        assert_eq!(converter.v_stride(), 2);
     }
 }

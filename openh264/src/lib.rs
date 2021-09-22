@@ -146,12 +146,13 @@
 //! [docs]: https://docs.rs/openh264/badge.svg
 //! [docs.rs]: https://docs.rs/openh264/
 
+mod error;
+pub mod formats;
+
 #[cfg(feature = "decoder")]
 pub mod decoder;
 
 #[cfg(feature = "encoder")]
 pub mod encoder;
-
-mod error;
 
 pub use error::Error;

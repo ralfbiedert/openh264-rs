@@ -2,7 +2,7 @@
 
 extern crate test;
 
-use openh264::{Decoder, DecoderConfig};
+use openh264::decoder::{Decoder, DecoderConfig};
 use test::Bencher;
 
 #[bench]
