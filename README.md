@@ -12,14 +12,14 @@ Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh26
 ![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rust/master/gfx/title2.jpg)
 
 
-*High-level wrapped decoder only for now, encoder PRs welcome.
+*High-level wrapped decoder and encoder.
 
 ### Example API
 
 Here we convert the last image of a H264 stream to a RGB byte array.
 
 ```rust
-use openh264::Decoder;
+use openh264::decoder::Decoder;
 
 let mut decoder = Decoder::new()?;
 let mut rgb_out = [0; 512 * 512 * 3];
@@ -46,7 +46,7 @@ Test results on various platforms:
 🆗 the usual shenanigans required;
 ❌ not supported.
 
-<sup>1</sup> via `cargo build --target <platform>`, [needs `CXX` set](https://cheats.rs/#cross-compilation) <br/>
+<sup>1</sup> via `cargo build --target <platform>`, [needs `CXX` set](https://cheats.rs/#cross-compilation) and `libc++_shared.so`. <br/>
 <sup>2</sup> unclear if could ever work, investigation welcome
 
 
@@ -121,7 +121,7 @@ PRs are very welcome. Feel free to submit PRs and fixes right away. You can open
 
 Especially needed:
 
-- [ ] Encoder wrapper
+- [ ] BT.601 / BT.709 YUV <-> RGB Conversion
 - [ ] Enabling of platform specific assembly (without breaking or complicating build)
 - [ ] Faster YUV to RGB conversion
 - [ ] Have script to automatically update / import OpenH264 source (or submodule?)
