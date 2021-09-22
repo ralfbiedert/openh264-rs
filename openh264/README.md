@@ -60,10 +60,10 @@ test decode_yuv_single_512x512_cabac ... bench:   1,841,775 ns/iter (+/- 53,211)
 test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
 test whole_decoder                   ... bench:   2,874,107 ns/iter (+/- 62,643)
 
-test encode_first_512x512_from_yuv ... bench:   6,420,605 ns/iter (+/- 1,003,485)
+test encode_first_512x512_from_yuv   ... bench:   6,420,605 ns/iter (+/- 1,003,485)
 
-test convert_yuv_to_rgb_1920x1080 ... bench:   7,226,290 ns/iter (+/- 110,871)
-test convert_yuv_to_rgb_512x512   ... bench:     907,340 ns/iter (+/- 28,296)
+test convert_yuv_to_rgb_1920x1080    ... bench:   7,226,290 ns/iter (+/- 110,871)
+test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 ```
 
 If you want to improve these numbers you can submit PRs that
