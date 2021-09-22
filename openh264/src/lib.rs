@@ -13,7 +13,7 @@
 //! ![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rust/master/gfx/title2.jpg)
 //!
 //!
-//! *High-level wrapped decoder only for now, encoder PRs welcome.
+//! *High-level wrapped decoder and encoder.
 //!
 //! ## Example API
 //!
@@ -126,7 +126,7 @@
 //!
 //! Especially needed:
 //!
-//! - [ ] Encoder wrapper
+//! - [ ] BT.601 / BT.709 YUV <-> RGB Conversion
 //! - [ ] Enabling of platform specific assembly (without breaking or complicating build)
 //! - [ ] Faster YUV to RGB conversion
 //! - [ ] Have script to automatically update / import OpenH264 source (or submodule?)
@@ -146,9 +146,10 @@
 //! [docs]: https://docs.rs/openh264/badge.svg
 //! [docs.rs]: https://docs.rs/openh264/
 
+#[cfg(feature = "decoder")]
 pub mod decoder;
 
-#[doc(hidden)]
+#[cfg(feature = "encoder")]
 pub mod encoder;
 
 mod error;

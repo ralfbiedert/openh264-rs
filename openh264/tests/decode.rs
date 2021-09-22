@@ -1,3 +1,5 @@
+#![cfg(feature = "decoder")]
+
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::Error;
 
