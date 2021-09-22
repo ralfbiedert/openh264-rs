@@ -65,11 +65,8 @@
 //! test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
 //! test whole_decoder                   ... bench:   2,874,107 ns/iter (+/- 62,643)
 //!
-//! test result: ok. 0 passed; 0 failed; 0 ignored; 5 measured; 0 filtered out; finished in 14.26s
+//! test encode_first_512x512_from_yuv ... bench:   6,420,605 ns/iter (+/- 1,003,485)
 //!
-//! Running unittests (target\release\deps\yuv2rgb-5a3aaabbb6bf3e8a.exe)
-//!
-//! running 2 tests
 //! test convert_yuv_to_rgb_1920x1080 ... bench:   7,226,290 ns/iter (+/- 110,871)
 //! test convert_yuv_to_rgb_512x512   ... bench:     907,340 ns/iter (+/- 28,296)
 //! ```
