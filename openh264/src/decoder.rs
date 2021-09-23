@@ -31,6 +31,7 @@ pub struct DecoderRawAPI {
 
 #[rustfmt::skip]
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::missing_safety_doc)]
 #[allow(non_snake_case)]
 #[allow(unused)]
 impl DecoderRawAPI {
