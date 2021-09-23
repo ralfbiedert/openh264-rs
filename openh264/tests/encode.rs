@@ -27,7 +27,7 @@ fn encode() -> Result<(), Error> {
     assert_eq!(stream.frame_type(), FrameType::IDR);
     assert_eq!(stream.num_layers(), 2);
 
-    // Test NAL headers available
+    // Test NAL headers available.
     let layer = stream.layer(0).unwrap();
     assert!(!layer.is_video());
     assert_eq!(layer.nal_count(), 2);
