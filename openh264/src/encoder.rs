@@ -239,6 +239,26 @@ impl<'a> EncodedBitStream<'a> {
             None
         }
     }
+
+    /// Writes the current bitstream into the given Vec.
+    pub fn write_vec(&self, dst: &mut Vec<u8>) {
+        for l in 0..self.num_layers() {
+            let layer = self.layer(l).unwrap();
+
+            for n in 0..layer.nal_count() {
+                let nal = layer.nal_unit(n).unwrap();
+
+                dst.extend_from_slice(nal)
+            }
+        }
+    }
+
+    /// Convenience method returning a Vec.
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut rval = Vec::new();
+        self.write_vec(&mut rval);
+        rval
+    }
 }
 
 /// An encoded layer, contains the Network Abstraction Layer inputs.

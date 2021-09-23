@@ -108,22 +108,10 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let stream = encoder.encode(&converter)?;
 
-    let mut all_data = Vec::new();
-
-    // TODO we should have nicer code converting a stream into "just bytes" as part of `EncodedBitStream`.
-    for l in 0..stream.num_layers() {
-        let layer = stream.layer(l).unwrap();
-
-        for n in 0..layer.nal_count() {
-            let nal = layer.nal_unit(n).unwrap();
-
-            all_data.extend_from_slice(nal)
-        }
-    }
-
+    let src = stream.to_vec();
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
-    decoder.decode_no_delay(&all_data)?;
+    decoder.decode_no_delay(&src)?;
 
     Ok(())
 }
