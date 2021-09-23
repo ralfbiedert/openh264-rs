@@ -52,8 +52,6 @@ fn can_decode_single() -> Result<(), Error> {
 fn can_decode_multi_to_end() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512.h264")[..];
 
-    println!("BYTE ARRAY LENGTH {}", src.len());
-
     let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
@@ -110,19 +108,22 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let stream = encoder.encode(&converter)?;
 
-    let src: Vec<u8> = stream
-        .layers
-        .iter()
-        .map(|layer| {
-            let nal_src: Vec<u8> = layer.nal_units.iter().map(|f| Vec::from(*f)).flatten().collect();
-            nal_src
-        })
-        .flatten()
-        .collect();
+    let mut all_data = Vec::new();
+
+    // TODO we should have nicer code converting a stream into "just bytes" as part of `EncodedBitStream`.
+    for l in 0..stream.num_layers() {
+        let layer = stream.layer(l).unwrap();
+
+        for n in 0..layer.nal_count() {
+            let nal = layer.nal_unit(n).unwrap();
+
+            all_data.extend_from_slice(nal)
+        }
+    }
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
-    decoder.decode_no_delay(&src)?;
+    decoder.decode_no_delay(&all_data)?;
 
     Ok(())
 }

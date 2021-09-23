@@ -24,18 +24,25 @@ fn encode() -> Result<(), Error> {
 
     let stream = encoder.encode(&converter)?;
 
-    assert_eq!(stream.frame_type, FrameType::IDR);
-    assert_eq!(stream.layers.len(), 2);
-    assert_eq!(stream.layers[0].is_video, false);
-    assert_eq!(stream.layers[0].nal_units.len(), 2);
-    assert_eq!(&stream.layers[0].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
-    assert_eq!(&stream.layers[0].nal_units[1][..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
-    assert_eq!(stream.layers[1].is_video, true);
-    assert_eq!(stream.layers[1].nal_units.len(), 1);
-    assert_eq!(&stream.layers[1].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
-    // Test length reasonable.
-    assert!(stream.layers[1].nal_units[0].len() > 1000);
-    assert!(stream.layers[1].nal_units[0].len() < 100_000);
+    assert_eq!(stream.frame_type(), FrameType::IDR);
+    assert_eq!(stream.num_layers(), 2);
+
+    // Test NAL headers available
+    let layer = stream.layer(0).unwrap();
+    assert!(!layer.is_video());
+    assert_eq!(layer.nal_count(), 2);
+    assert_eq!(&layer.nal_unit(0).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
+    assert_eq!(&layer.nal_unit(1).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
+
+    let layer = stream.layer(1).unwrap();
+    assert!(layer.is_video());
+    assert_eq!(layer.nal_count(), 1);
+
+    // Test video unit has good header and reasonable length.
+    let video_unit = layer.nal_unit(0).unwrap();
+    assert_eq!(&video_unit[..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
+    assert!(video_unit.len() > 1000);
+    assert!(video_unit.len() < 100_000);
 
     Ok(())
 }
@@ -56,18 +63,25 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let stream = encoder.encode(&yuv)?;
 
-    assert_eq!(stream.frame_type, FrameType::IDR);
-    assert_eq!(stream.layers.len(), 2);
-    assert_eq!(stream.layers[0].is_video, false);
-    assert_eq!(stream.layers[0].nal_units.len(), 2);
-    assert_eq!(&stream.layers[0].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
-    assert_eq!(&stream.layers[0].nal_units[1][..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
-    assert_eq!(stream.layers[1].is_video, true);
-    assert_eq!(stream.layers[1].nal_units.len(), 1);
-    assert_eq!(&stream.layers[1].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
-    // Test length reasonable.
-    assert!(stream.layers[1].nal_units[0].len() > 1000);
-    assert!(stream.layers[1].nal_units[0].len() < 100_000);
+    assert_eq!(stream.frame_type(), FrameType::IDR);
+    assert_eq!(stream.num_layers(), 2);
+
+    // Test NAL headers available
+    let layer = stream.layer(0).unwrap();
+    assert!(!layer.is_video());
+    assert_eq!(layer.nal_count(), 2);
+    assert_eq!(&layer.nal_unit(0).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
+    assert_eq!(&layer.nal_unit(1).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
+
+    let layer = stream.layer(1).unwrap();
+    assert!(layer.is_video());
+    assert_eq!(layer.nal_count(), 1);
+
+    // Test video unit has good header and reasonable length.
+    let video_unit = layer.nal_unit(0).unwrap();
+    assert_eq!(&video_unit[..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
+    assert!(video_unit.len() > 1000);
+    assert!(video_unit.len() < 100_000);
 
     Ok(())
 }
