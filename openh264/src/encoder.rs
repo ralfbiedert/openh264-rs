@@ -4,8 +4,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, videoFrameTypeSkip, EVideoFormatType, EVideoFrameType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
+use smallvec::SmallVec;
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null};
 
@@ -177,29 +178,29 @@ impl Encoder {
             self.raw_api.encode_frame(&source, &mut bit_stream_info).ok()?;
 
             let num_layers = bit_stream_info.iLayerNum as usize;
-            let first_video_layer = bit_stream_info.sLayerInfo[0..num_layers]
+            let layers: SmallVec<[Layer; 4]> = bit_stream_info.sLayerInfo[0..num_layers]
                 .iter()
-                .filter(|x| x.uiLayerType == VIDEO_CODING_LAYER as u8)
-                .map(|x| {
-                    let mut size = 0;
-
-                    // TODO: This should have 1-2 lines explaining why the offset is computed like so:
-                    for nal_idx in 0..x.iNalCount {
-                        size += *x.pNalLengthInByte.offset(nal_idx as isize);
+                .map(|layer| {
+                    let mut offset = 0;
+                    let mut nal_units = SmallVec::<[&[u8]; 4]>::new();
+                    for nal_idx in 0..layer.iNalCount {
+                        // pNalLengthInByte is a c_int C array containing the nal unit sizes
+                        let size = *layer.pNalLengthInByte.offset(nal_idx as isize) as usize;
+                        let nal_unit = std::slice::from_raw_parts(layer.pBsBuf.offset(offset as isize), size);
+                        nal_units.push(nal_unit);
+                        offset += size;
                     }
-
-                    EncodedBitStream {
-                        bit_stream: std::slice::from_raw_parts(x.pBsBuf, size as usize),
-                        frame_type: x.eFrameType,
+                    Layer {
+                        nal_units,
+                        is_video: layer.uiLayerType == VIDEO_CODING_LAYER as u8,
                     }
                 })
-                .next()
-                .unwrap_or(EncodedBitStream {
-                    bit_stream: &[],
-                    frame_type: videoFrameTypeSkip,
-                });
+                .collect();
 
-            Ok(first_video_layer)
+            Ok(EncodedBitStream {
+                layers,
+                frame_type: FrameType::from_c_int(bit_stream_info.eFrameType),
+            })
         }
     }
 
@@ -224,22 +225,20 @@ impl Drop for Encoder {
     }
 }
 
-/// Encoding output, currently takes only the first video layer.
-pub struct EncodedBitStream<'a> {
-    bit_stream: &'a [u8],
-    frame_type: EVideoFrameType,
+/// A Encoded Layer, contains the Network Abstraction Layer inputs
+pub struct Layer<'a> {
+    /// Network Abstraction Layer Units for a given layer
+    pub nal_units: SmallVec<[&'a [u8]; 4]>,
+    /// Set to true if the layer contains video data, false otherwise
+    pub is_video: bool,
 }
 
-impl<'a> EncodedBitStream<'a> {
+/// Encoding output, currently takes only the first video layer.
+pub struct EncodedBitStream<'a> {
     /// Obtains the bitstream as a byte slice.
-    pub fn bit_stream(&self) -> &'a [u8] {
-        self.bit_stream
-    }
-
+    pub layers: SmallVec<[Layer<'a>; 4]>,
     /// What this bitstream encodes.
-    pub fn frame_type(&self) -> FrameType {
-        FrameType::from_c_int(self.frame_type)
-    }
+    pub frame_type: FrameType,
 }
 
 /// Frame type returned by the encoder.
@@ -263,7 +262,9 @@ pub enum FrameType {
 
 impl FrameType {
     fn from_c_int(native: std::os::raw::c_int) -> Self {
-        use openh264_sys2::{videoFrameTypeI, videoFrameTypeIDR, videoFrameTypeIPMixed, videoFrameTypeInvalid, videoFrameTypeP};
+        use openh264_sys2::{
+            videoFrameTypeI, videoFrameTypeIDR, videoFrameTypeIPMixed, videoFrameTypeInvalid, videoFrameTypeP, videoFrameTypeSkip
+        };
 
         #[allow(non_upper_case_globals)]
         match native {

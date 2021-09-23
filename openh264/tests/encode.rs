@@ -1,13 +1,8 @@
 #![cfg(feature = "encoder")]
 
-#[cfg(feature = "decoder")]
-use openh264::decoder::{Decoder, DecoderConfig};
-
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
 use openh264::formats::RBGYUVConverter;
 use openh264::Error;
-use std::fs::File;
-use std::io::Write;
 
 #[test]
 fn can_get_encoder() -> Result<(), Error> {
@@ -29,18 +24,27 @@ fn encode() -> Result<(), Error> {
 
     let stream = encoder.encode(&converter)?;
 
-    assert_eq!(stream.frame_type(), FrameType::IDR);
-
+    assert_eq!(stream.frame_type, FrameType::IDR);
+    assert_eq!(stream.layers.len(), 2);
+    assert_eq!(stream.layers[0].is_video, false);
+    assert_eq!(stream.layers[0].nal_units.len(), 2);
+    assert_eq!(&stream.layers[0].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
+    assert_eq!(&stream.layers[0].nal_units[1][..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
+    assert_eq!(stream.layers[1].is_video, true);
+    assert_eq!(stream.layers[1].nal_units.len(), 1);
+    assert_eq!(&stream.layers[1].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
     // Test length reasonable.
-    assert!(stream.bit_stream().len() > 1000);
-    assert!(stream.bit_stream().len() < 100_000);
+    assert!(stream.layers[1].nal_units[0].len() > 1000);
+    assert!(stream.layers[1].nal_units[0].len() < 100_000);
 
     Ok(())
 }
 
 #[test]
-#[cfg(all(feature = "decoder", feature = "encoder"))]
+#[cfg(feature = "decoder")]
 fn what_goes_around_comes_around() -> Result<(), Error> {
+    use openh264::decoder::{Decoder, DecoderConfig};
+
     let src = &include_bytes!("data/single_512x512_cavlc.h264")[..];
 
     let config = DecoderConfig::default();
@@ -52,21 +56,18 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let stream = encoder.encode(&yuv)?;
 
-    assert_eq!(stream.frame_type(), FrameType::IDR);
-
+    assert_eq!(stream.frame_type, FrameType::IDR);
+    assert_eq!(stream.layers.len(), 2);
+    assert_eq!(stream.layers[0].is_video, false);
+    assert_eq!(stream.layers[0].nal_units.len(), 2);
+    assert_eq!(&stream.layers[0].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
+    assert_eq!(&stream.layers[0].nal_units[1][..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
+    assert_eq!(stream.layers[1].is_video, true);
+    assert_eq!(stream.layers[1].nal_units.len(), 1);
+    assert_eq!(&stream.layers[1].nal_units[0][..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
     // Test length reasonable.
-    assert!(stream.bit_stream().len() > 1000);
-    assert!(stream.bit_stream().len() < 100_000);
-
-    // TODO: This fails right now as the encoded stream does not contain (or make available) the SPS / PPS.
-
-    // let mut f = File::create("debug.h264").unwrap();
-    // f.write_all(stream.bit_stream());
-
-    // Test we can re-decode what we have encoded.
-    // let config = DecoderConfig::default();
-    // let mut decoder = Decoder::with_config(config)?;
-    // let yuv = decoder.decode_no_delay(stream.bit_stream())?;
+    assert!(stream.layers[1].nal_units[0].len() > 1000);
+    assert!(stream.layers[1].nal_units[0].len() < 100_000);
 
     Ok(())
 }

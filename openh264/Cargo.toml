@@ -15,8 +15,9 @@ repository = "https://github.com/ralfbiedert/openh264-rust"
 [features]
 default = ["decoder", "encoder"]
 decoder = ["openh264-sys2/decoder"]
-encoder = ["openh264-sys2/encoder"]
+encoder = ["smallvec", "openh264-sys2/encoder"]
 backtrace = []
 
 [dependencies]
 openh264-sys2 = { path = "../openh264-sys2", version = "0.1", default-features = false }
+smallvec = { version = "1.6", optional = true }

@@ -93,3 +93,36 @@ fn fails_on_truncated() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[test]
+#[cfg(feature = "encoder")]
+fn what_goes_around_comes_around() -> Result<(), Error> {
+    use openh264::encoder::{Encoder, EncoderConfig};
+    use openh264::formats::RBGYUVConverter;
+
+    let src = &include_bytes!("data/lenna_128x128.rgb")[..];
+
+    let config = EncoderConfig::new(128, 128);
+    let mut encoder = Encoder::with_config(config)?;
+    let mut converter = RBGYUVConverter::new(128, 128);
+
+    converter.convert(src);
+
+    let stream = encoder.encode(&converter)?;
+
+    let src: Vec<u8> = stream
+        .layers
+        .iter()
+        .map(|layer| {
+            let nal_src: Vec<u8> = layer.nal_units.iter().map(|f| Vec::from(*f)).flatten().collect();
+            nal_src
+        })
+        .flatten()
+        .collect();
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(config)?;
+    decoder.decode_no_delay(&src)?;
+
+    Ok(())
+}
