@@ -30,7 +30,6 @@
 //! let yuv = decoder.decode(&h264_in[..])?;
 //! # Ok(())
 //! # }
-//!
 //! ```
 //!
 //!
@@ -52,7 +51,6 @@
 //! let bitstream = encoder.encode(&yuv)?;
 //! # Ok(())
 //! # }
-//!
 //! ```
 //!
 //! ## Platform Support
