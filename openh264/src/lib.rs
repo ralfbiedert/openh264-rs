@@ -37,9 +37,8 @@
 //! And **encode** the same YUV back to H.264:
 //! ```rust
 //! # use openh264::decoder::Decoder;
-//! use openh264::encoder::{Encoder, EncoderConfig};
 //! # use openh264::Error;
-//! #
+//! use openh264::encoder::{Encoder, EncoderConfig};
 //! # fn main() -> Result<(), Error> {
 //! # let mut decoder = Decoder::new()?;
 //! # let mut rgb_out = [0; 512 * 512 * 3];
@@ -49,7 +48,7 @@
 //! let config = EncoderConfig::new(512, 512);
 //! let mut encoder = Encoder::with_config(config)?;
 //!
-//! // Encode YUV back into H.264
+//! // Encode YUV back into H.264.
 //! let bitstream = encoder.encode(&yuv)?;
 //! # Ok(())
 //! # }

@@ -33,6 +33,7 @@ impl Error {
         }
     }
 
+    /// Creates a new [`Error`] with a custom message.
     pub fn msg(msg: &str) -> Self {
         Error {
             native: 0,

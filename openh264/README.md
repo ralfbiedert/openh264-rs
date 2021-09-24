@@ -31,12 +31,11 @@ let yuv = decoder.decode(&h264_in[..])?;
 And **encode** the same YUV back to H.264:
 ```rust
 use openh264::encoder::{Encoder, EncoderConfig};
-#
 
 let config = EncoderConfig::new(512, 512);
 let mut encoder = Encoder::with_config(config)?;
 
-// Encode YUV back into H.264
+// Encode YUV back into H.264.
 let bitstream = encoder.encode(&yuv)?;
 
 ```
