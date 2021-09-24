@@ -1,4 +1,5 @@
 #![cfg(feature = "encoder")]
+#![allow(clippy::bool_assert_comparison)]
 
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
 use openh264::formats::RBGYUVConverter;
@@ -29,13 +30,13 @@ fn encode() -> Result<(), Error> {
 
     // Test NAL headers available.
     let layer = stream.layer(0).unwrap();
-    assert!(!layer.is_video());
+    assert_eq!(layer.is_video(), false);
     assert_eq!(layer.nal_count(), 2);
     assert_eq!(&layer.nal_unit(0).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
     assert_eq!(&layer.nal_unit(1).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
 
     let layer = stream.layer(1).unwrap();
-    assert!(layer.is_video());
+    assert_eq!(layer.is_video(), true);
     assert_eq!(layer.nal_count(), 1);
 
     // Test video unit has good header and reasonable length.
@@ -68,13 +69,13 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     // Test NAL headers available
     let layer = stream.layer(0).unwrap();
-    assert!(!layer.is_video());
+    assert_eq!(layer.is_video(), false);
     assert_eq!(layer.nal_count(), 2);
     assert_eq!(&layer.nal_unit(0).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x67u8]);
     assert_eq!(&layer.nal_unit(1).unwrap()[..5], &[0u8, 0u8, 0u8, 1u8, 0x68u8]);
 
     let layer = stream.layer(1).unwrap();
-    assert!(layer.is_video());
+    assert_eq!(layer.is_video(), true);
     assert_eq!(layer.nal_count(), 1);
 
     // Test video unit has good header and reasonable length.

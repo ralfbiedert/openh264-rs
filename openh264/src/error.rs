@@ -33,7 +33,7 @@ impl Error {
         }
     }
 
-    pub(crate) fn msg(msg: &str) -> Self {
+    pub fn msg(msg: &str) -> Self {
         Error {
             native: 0,
             decoding_state: dsErrorFree,
