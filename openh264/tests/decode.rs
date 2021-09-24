@@ -36,7 +36,7 @@ fn can_decode_single() -> Result<(), Error> {
         let config = DecoderConfig::default().debug(false);
         let mut decoder = Decoder::with_config(config)?;
 
-        let yuv = decoder.decode_no_delay(src)?;
+        let yuv = decoder.decode(src)?;
 
         let dim = yuv.dimension_rgb();
         let rgb_len = dim.0 * dim.1 * 3;
@@ -55,7 +55,7 @@ fn can_decode_multi_to_end() -> Result<(), Error> {
     let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
-    decoder.decode_no_delay(src)?;
+    decoder.decode(src)?;
 
     Ok(())
 }
@@ -72,7 +72,7 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
     let mut p = 0;
 
     for l in packet_lengths {
-        decoder.decode_no_delay(&src[p..p + l])?;
+        decoder.decode(&src[p..p + l])?;
 
         p += l;
     }
@@ -87,7 +87,7 @@ fn fails_on_truncated() -> Result<(), Error> {
     let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
-    assert!(decoder.decode_no_delay(src).is_err());
+    assert!(decoder.decode(src).is_err());
 
     Ok(())
 }
@@ -111,7 +111,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     let src = stream.to_vec();
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
-    decoder.decode_no_delay(&src)?;
+    decoder.decode(&src)?;
 
     Ok(())
 }

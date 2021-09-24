@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "backtrace", feature(backtrace))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //!
 //! [![Latest Version]][crates.io]
 //! [![docs]][docs.rs]
@@ -29,7 +30,7 @@
 //! let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 //!
 //! // Decode to YUV, then convert and write RGB.
-//! decoder.decode_no_delay(&h264_in[..])?.write_rgb8(&mut rgb_out)?;
+//! decoder.decode(&h264_in[..])?.write_rgb8(&mut rgb_out)?;
 //! # Ok(())
 //! # }
 //!
@@ -60,13 +61,17 @@
 //! Tested on a i9-9900K, Windows 10, single threaded decoding:
 //!
 //! ```text
+//! -- Decoder --
 //! test decode_yuv_single_1920x1080     ... bench:   9,243,380 ns/iter (+/- 497,200)
 //! test decode_yuv_single_512x512_cabac ... bench:   1,841,775 ns/iter (+/- 53,211)
 //! test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
 //! test whole_decoder                   ... bench:   2,874,107 ns/iter (+/- 62,643)
 //!
-//! test encode_first_512x512_from_yuv   ... bench:   6,420,605 ns/iter (+/- 1,003,485)
+//! -- Encoder --
+//! test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
+//! test encode_1920x1080_from_yuv       ... bench:  38,657,620 ns/iter (+/- 793,310)
 //!
+//! -- Color Conversion --
 //! test convert_yuv_to_rgb_1920x1080    ... bench:   7,226,290 ns/iter (+/- 110,871)
 //! test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 //! ```
@@ -147,9 +152,11 @@ mod error;
 pub mod formats;
 
 #[cfg(feature = "decoder")]
+#[cfg_attr(docsrs, doc(cfg(feature = "decoder")))]
 pub mod decoder;
 
 #[cfg(feature = "encoder")]
+#[cfg_attr(docsrs, doc(cfg(feature = "encoder")))]
 pub mod encoder;
 
 pub use error::Error;

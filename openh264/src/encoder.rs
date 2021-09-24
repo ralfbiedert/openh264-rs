@@ -7,7 +7,7 @@ use openh264_sys2::{
     videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_uchar, c_void};
-use std::ptr::{addr_of_mut, null};
+use std::ptr::{addr_of_mut, null, null_mut};
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
 ///
@@ -134,6 +134,7 @@ impl Encoder {
         let raw_api = EncoderRawAPI::new()?;
         let mut params = SEncParamExt::default();
 
+        #[rustfmt::skip]
         unsafe {
             raw_api.get_default_params(&mut params).ok()?;
             params.iPicWidth = config.width as c_int;
@@ -142,12 +143,9 @@ impl Encoder {
             params.iTargetBitrate = config.target_bitrate as c_int;
             params.bEnableDenoise = config.enable_denoise;
             raw_api.initialize_ext(&params).ok()?;
-            raw_api
-                .set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast())
-                .ok()?;
-            raw_api
-                .set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(config.data_format).cast())
-                .ok()?;
+
+            raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
+            raw_api.set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(config.data_format).cast()).ok()?;
         };
 
         Ok(Self {
@@ -158,26 +156,31 @@ impl Encoder {
     }
 
     /// Encodes a YUV source and returns the encoded bitstream.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the source image dimension don't match the configured format.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream, Error> {
         assert_eq!(yuv_source.width(), self.params.iPicWidth);
         assert_eq!(yuv_source.height(), self.params.iPicHeight);
 
-        let mut source = SSourcePicture::default();
-
-        source.iColorFormat = videoFormatI420;
-        source.iPicWidth = self.params.iPicWidth;
-        source.iPicHeight = self.params.iPicHeight;
-        source.iStride[0] = yuv_source.y_stride();
-        source.iStride[1] = yuv_source.u_stride();
-        source.iStride[2] = yuv_source.v_stride();
+        // Converting *const u8 to *mut u8 should be fine because the encoder _should_
+        // only read these arrays (TOOD: needs verification).
+        let source = SSourcePicture {
+            iColorFormat: videoFormatI420,
+            iStride: [yuv_source.y_stride(), yuv_source.u_stride(), yuv_source.v_stride(), 0],
+            pData: [
+                yuv_source.y().as_ptr() as *mut c_uchar,
+                yuv_source.u().as_ptr() as *mut c_uchar,
+                yuv_source.v().as_ptr() as *mut c_uchar,
+                null_mut(),
+            ],
+            iPicWidth: self.params.iPicWidth,
+            iPicHeight: self.params.iPicHeight,
+            ..Default::default()
+        };
 
         unsafe {
-            // Converting *const u8 to *mut u8 should be fine because the encoder _should_
-            // only read these arrays (TOOD: needs verification).
-            source.pData[0] = yuv_source.y().as_ptr() as *mut c_uchar;
-            source.pData[1] = yuv_source.u().as_ptr() as *mut c_uchar;
-            source.pData[2] = yuv_source.v().as_ptr() as *mut c_uchar;
-
             self.raw_api.encode_frame(&source, &mut self.bit_stream_info).ok()?;
 
             Ok(EncodedBitStream {
@@ -186,9 +189,9 @@ impl Encoder {
         }
     }
 
-    /// Obtain the raw API an initialized encoder object for advanced use cases.
+    /// Obtain the raw API for advanced use cases.
     ///
-    /// When resorting to this call, please consider filing an issue / PR to safely wrap your use case.
+    /// When resorting to this call, please consider filing an issue / PR.
     ///
     /// # Safety
     ///
@@ -253,7 +256,7 @@ impl<'a> EncodedBitStream<'a> {
         }
     }
 
-    /// Convenience method returning a Vec.
+    /// Convenience method returning a Vec containing the encoded bitstream.
     pub fn to_vec(&self) -> Vec<u8> {
         let mut rval = Vec::new();
         self.write_vec(&mut rval);
@@ -286,15 +289,13 @@ impl<'a> Layer<'a> {
             let slice = unsafe {
                 // Fast forward through all NALs we didn't request
                 // TODO: We can probably do this math a bit more efficiently, not counting up all the time.
-                if i > 0 {
-                    // pNalLengthInByte is a c_int C array containing the nal unit sizes
-                    for nal_idx in 0..i {
-                        let size = (*self.layer_info.pNalLengthInByte.add(nal_idx)) as usize;
-                        offset += size;
-                    }
+                // pNalLengthInByte is a c_int C array containing the nal unit sizes
+                for nal_idx in 0..i {
+                    let size = *self.layer_info.pNalLengthInByte.add(nal_idx) as usize;
+                    offset += size;
                 }
 
-                let size = (*self.layer_info.pNalLengthInByte.add(i)) as usize;
+                let size = *self.layer_info.pNalLengthInByte.add(i) as usize;
                 std::slice::from_raw_parts(self.layer_info.pBsBuf.add(offset), size)
             };
 

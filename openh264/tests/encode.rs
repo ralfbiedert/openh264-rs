@@ -56,7 +56,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
-    let yuv = decoder.decode_no_delay(src)?;
+    let yuv = decoder.decode(src)?;
 
     let config = EncoderConfig::new(512, 512);
     let mut encoder = Encoder::with_config(config)?;

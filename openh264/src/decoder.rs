@@ -152,7 +152,7 @@ impl Decoder {
         Ok(Self { raw_api: raw })
     }
 
-    /// Decodes a complete H.264 bitstream and returns the latest picture.
+    /// Decodes a series of H.264 NAL packets and returns the latest picture.
     ///
     /// This function can be called with:
     ///
@@ -165,7 +165,7 @@ impl Decoder {
     /// # Errors
     ///
     /// The function returns and error if any of the packets is incomplete, e.g., was truncated.
-    pub fn decode_no_delay(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
+    pub fn decode(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
         let mut dst = [null_mut(); 3];
         let mut buffer_info = SBufferInfo::default();
 
@@ -189,9 +189,13 @@ impl Decoder {
         }
     }
 
-    /// Obtain the raw API an initialized decoder object for advanced use cases.
+    /// Obtain the raw API for advanced use cases.
     ///
-    /// When resorting to this call, please consider filing an issue / PR to safely wrap your use case.
+    /// When resorting to this call, please consider filing an issue / PR.
+    ///
+    /// # Safety
+    ///
+    /// You must not set parameters the decoder relies on, we recommend checking the source.
     ///
     /// # Example
     ///
@@ -210,10 +214,6 @@ impl Decoder {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// # Safety
-    ///
-    /// You must not set parameters the decoder relies on, we recommend checking the source.
     pub unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
         &mut self.raw_api
     }
@@ -296,6 +296,10 @@ impl<'a> DecodedYUV<'a> {
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*3`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the target image dimension don't match the configured format.
     pub fn write_rgb8(&self, target: &mut [u8]) -> Result<(), Error> {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();
@@ -338,6 +342,10 @@ impl<'a> DecodedYUV<'a> {
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*4`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the target image dimension don't match the configured format.
     pub fn write_rgba8(&self, target: &mut [u8]) -> Result<(), Error> {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();

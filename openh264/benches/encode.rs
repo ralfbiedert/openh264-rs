@@ -12,7 +12,7 @@ fn encode_512x512_from_yuv(b: &mut Bencher) {
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config).unwrap();
-    let yuv = decoder.decode_no_delay(source).unwrap();
+    let yuv = decoder.decode(source).unwrap();
 
     b.iter(|| {
         let config = EncoderConfig::new(512, 512);
@@ -30,7 +30,7 @@ fn encode_1920x1080_from_yuv(b: &mut Bencher) {
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config).unwrap();
-    let yuv = decoder.decode_no_delay(source).unwrap();
+    let yuv = decoder.decode(source).unwrap();
 
     b.iter(|| {
         let config = EncoderConfig::new(1920, 1080);

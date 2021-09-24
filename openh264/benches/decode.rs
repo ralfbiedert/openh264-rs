@@ -13,7 +13,7 @@ fn decode_yuv_single_512x512_cavlc(b: &mut Bencher) {
     let mut decoder = Decoder::with_config(config).unwrap();
 
     b.iter(|| {
-        let yuv = decoder.decode_no_delay(&source[..]).unwrap();
+        let yuv = decoder.decode(&source[..]).unwrap();
         let dim = yuv.dimension_rgb();
 
         black_box(dim);
@@ -28,7 +28,7 @@ fn decode_yuv_single_512x512_cabac(b: &mut Bencher) {
     let mut decoder = Decoder::with_config(config).unwrap();
 
     b.iter(|| {
-        let yuv = decoder.decode_no_delay(&source[..]).unwrap();
+        let yuv = decoder.decode(&source[..]).unwrap();
         let dim = yuv.dimension_rgb();
 
         black_box(dim);
@@ -43,7 +43,7 @@ fn decode_yuv_single_1920x1080(b: &mut Bencher) {
     let mut decoder = Decoder::with_config(config).unwrap();
 
     b.iter(|| {
-        let yuv = decoder.decode_no_delay(&source[..]).unwrap();
+        let yuv = decoder.decode(&source[..]).unwrap();
         let dim = yuv.dimension_rgb();
 
         black_box(dim);
@@ -58,7 +58,7 @@ fn decode_yuv_multi_512x512(b: &mut Bencher) {
     let mut decoder = Decoder::with_config(config).unwrap();
 
     b.iter(|| {
-        let yuv = decoder.decode_no_delay(&source[..]).unwrap();
+        let yuv = decoder.decode(&source[..]).unwrap();
         let dim = yuv.dimension_rgb();
 
         black_box(dim);
@@ -73,7 +73,7 @@ fn whole_decoder(b: &mut Bencher) {
         let config = DecoderConfig::default();
         let mut decoder = Decoder::with_config(config).unwrap();
 
-        let yuv = decoder.decode_no_delay(&source[..]).unwrap();
+        let yuv = decoder.decode(&source[..]).unwrap();
         let dim = yuv.dimension_rgb();
 
         black_box(dim);
