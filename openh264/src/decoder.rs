@@ -110,13 +110,14 @@ impl DecoderConfig {
     ///
     /// # Safety
     ///
-    /// Right now it seems to be unclear if setting a thread count is entirely safe.
-    /// If you have proof either way, please file an PR removing the `unsafe` marker, or this section.
+    /// This setting is only supported on some platforms and is known to segfault on others. You should consult with
+    /// the upstream OpenH264 project where and when it is safe to set this.
     pub unsafe fn num_threads(mut self, num_threads: u32) -> Self {
         self.num_threads = num_threads as i32;
         self
     }
 
+    /// Enables detailed console logging inside OpenH264.
     pub fn debug(mut self, value: bool) -> Self {
         self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self

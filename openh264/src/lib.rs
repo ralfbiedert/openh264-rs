@@ -9,17 +9,14 @@
 //!
 //! # OpenH264 Rust API
 //!
-//! Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh264), converting<sup>*</sup> between these two in Rust:
+//! Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh264), converting between these two in Rust:
 //!
 //! ![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rust/master/gfx/title2.jpg)
 //!
 //!
-//! *High-level wrapped decoder and encoder.
-//!
 //! ## Example API
 //!
-//! Here we convert the last image of a H264 stream to a RGB byte array.
-//!
+//! **Decode** some H.264 bitstream to YUV:
 //! ```rust
 //! use openh264::decoder::Decoder;
 //! # use openh264::Error;
@@ -29,8 +26,31 @@
 //! let mut rgb_out = [0; 512 * 512 * 3];
 //! let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 //!
-//! // Decode to YUV, then convert and write RGB.
-//! decoder.decode(&h264_in[..])?.write_rgb8(&mut rgb_out)?;
+//! // Decode H.264 bitstream to YUV.
+//! let yuv = decoder.decode(&h264_in[..])?;
+//! # Ok(())
+//! # }
+//!
+//! ```
+//!
+//!
+//! And **encode** the same YUV back to H.264:
+//! ```rust
+//! # use openh264::decoder::Decoder;
+//! use openh264::encoder::{Encoder, EncoderConfig};
+//! # use openh264::Error;
+//! #
+//! # fn main() -> Result<(), Error> {
+//! # let mut decoder = Decoder::new()?;
+//! # let mut rgb_out = [0; 512 * 512 * 3];
+//! # let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
+//! # let yuv = decoder.decode(&h264_in[..])?;
+//!
+//! let config = EncoderConfig::new(512, 512);
+//! let mut encoder = Encoder::with_config(config)?;
+//!
+//! // Encode YUV back into H.264
+//! let bitstream = encoder.encode(&yuv)?;
 //! # Ok(())
 //! # }
 //!
@@ -68,8 +88,8 @@
 //! test whole_decoder                   ... bench:   2,874,107 ns/iter (+/- 62,643)
 //!
 //! -- Encoder --
-//! test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
 //! test encode_1920x1080_from_yuv       ... bench:  38,657,620 ns/iter (+/- 793,310)
+//! test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
 //!
 //! -- Color Conversion --
 //! test convert_yuv_to_rgb_1920x1080    ... bench:   7,226,290 ns/iter (+/- 110,871)
@@ -83,6 +103,8 @@
 //!
 //! ## Compile Features
 //!
+//! - `decoder` - Enable the decoder. Used by default.
+//! - `encoder` - Enable the encoder. Used by default.
 //! - `backtrace` - Enable backtraces on errors (requires nightly)
 //!
 //! ## FAQ

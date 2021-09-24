@@ -84,7 +84,7 @@ impl Drop for EncoderRawAPI {
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct EncoderConfig {
     width: u32,
     height: u32,
@@ -265,6 +265,7 @@ impl<'a> EncodedBitStream<'a> {
 }
 
 /// An encoded layer, contains the Network Abstraction Layer inputs.
+#[derive(Debug)]
 pub struct Layer<'a> {
     /// Native layer info.
     layer_info: &'a SLayerBSInfo,

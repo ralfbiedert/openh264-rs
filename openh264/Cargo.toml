@@ -20,3 +20,7 @@ backtrace = []
 
 [dependencies]
 openh264-sys2 = { path = "../openh264-sys2", version = "0.1", default-features = false }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
