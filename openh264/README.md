@@ -24,7 +24,6 @@ let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 
 // Decode H.264 bitstream to YUV.
 let yuv = decoder.decode(&h264_in[..])?;
-
 ```
 
 
@@ -37,7 +36,6 @@ let mut encoder = Encoder::with_config(config)?;
 
 // Encode YUV back into H.264.
 let bitstream = encoder.encode(&yuv)?;
-
 ```
 
 ### Platform Support
@@ -62,34 +60,34 @@ Test results on various platforms:
 
 ### Performance
 
-Tested on a i9-9900K, Windows 10, single threaded decoding:
+Tested on a i9-9900K, Windows 10, single threaded de- and encoding:
 
 ```
--- Decoder --
+-- Default --
 test decode_yuv_single_1920x1080     ... bench:   9,243,380 ns/iter (+/- 497,200)
 test decode_yuv_single_512x512_cabac ... bench:   1,841,775 ns/iter (+/- 53,211)
 test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
-test whole_decoder                   ... bench:   2,874,107 ns/iter (+/- 62,643)
-
--- Encoder --
 test encode_1920x1080_from_yuv       ... bench:  38,657,620 ns/iter (+/- 793,310)
 test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
+
+-- Feature `asm` --
+test decode_yuv_single_1920x1080     ... bench:   4,265,260 ns/iter (+/- 89,438)
+test decode_yuv_single_512x512_cabac ... bench:     901,025 ns/iter (+/- 21,902)
+test decode_yuv_single_512x512_cavlc ... bench:   1,618,880 ns/iter (+/- 53,713)
+test encode_1920x1080_from_yuv       ... bench:  13,455,160 ns/iter (+/- 862,042)
+test encode_512x512_from_yuv         ... bench:   4,011,700 ns/iter (+/- 2,094,471)
 
 -- Color Conversion --
 test convert_yuv_to_rgb_1920x1080    ... bench:   7,226,290 ns/iter (+/- 110,871)
 test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 ```
 
-If you want to improve these numbers you can submit PRs that
-
-- [ ] better enable autovectorization converting YUV to RGB,
-- [ ] conditionally enable assembly in `build.rs` for OpenH264.
-
 ### Compile Features
 
 - `decoder` - Enable the decoder. Used by default.
 - `encoder` - Enable the encoder. Used by default.
 - `backtrace` - Enable backtraces on errors (requires nightly)
+- `asm` - Enable assembly. Only supported on `x86` and `ARM`, requires `nasm` installed.
 
 ### FAQ
 
@@ -135,13 +133,17 @@ PRs are very welcome. Feel free to submit PRs and fixes right away. You can open
 Especially needed:
 
 - [ ] BT.601 / BT.709 YUV <-> RGB Conversion
-- [ ] Enabling of platform specific assembly (without breaking or complicating build)
 - [ ] Faster YUV to RGB conversion
 - [ ] Have script to automatically update / import OpenH264 source (or submodule?)
 - [ ] WASM investigation (either patch, or evidence it can't be fixed)
 - [ ] Submit patches upstream
 - [ ] Feedback which platforms successfully built on
 
+
+### Changelog
+
+- **v0.2** - Add encoder; `asm` feature for 2x - 3x performance.
+- **v0.1** - Initial release, decoder only.
 
 ### License
 

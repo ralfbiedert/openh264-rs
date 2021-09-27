@@ -1,7 +1,10 @@
+use cc::Build;
 use std::path::Path;
 use walkdir::WalkDir;
 
-// if this gets more complicated, we might want to inline the list of files available in meson
+/// Finds all files with an extension, ignoring some.
+///
+/// TODO: If this gets more complicated, we might want to inline the list of files available in meson.
 fn glob_import<P: AsRef<Path>>(root: P, extenstion: &str, exclude: &str) -> Vec<String> {
     WalkDir::new(root)
         .into_iter()
@@ -12,36 +15,11 @@ fn glob_import<P: AsRef<Path>>(root: P, extenstion: &str, exclude: &str) -> Vec<
         .collect()
 }
 
-fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
-    let mut debug = false;
-    let mut opt_level = 3;
-
-    if std::env::var("PROFILE").unwrap().contains("debug") {
-        debug = true;
-        opt_level = 0;
-    }
-
-    let mut cc_build = cc::Build::new();
-    cc_build
-        .include("upstream/codec/api/svc/")
-        .include("upstream/codec/common/inc/")
-        .cpp(true)
-        .warnings(false)
-        .opt_level(opt_level)
-        .files(glob_import(root, ".cpp", "DllEntry.cpp")) // Otherwise fails when compiling on Linux
-        .pic(true)
-        // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
-        .flag_if_supported("-fno-strict-aliasing")
-        .flag_if_supported("-fstack-protector-all")
-        .flag_if_supported("-fembed-bitcode")
-        .flag_if_supported("-fno-common")
-        .flag_if_supported("-undefined dynamic_lookup")
-        .debug(debug);
-
-    for include in includes {
-        cc_build.include(include);
-    }
-
+/// Attempts to compile assembly units and links them to the current compilation build.
+///
+/// TODO: Ideally automatically use nasm when we have it, without any option.
+#[allow(unused)]
+fn try_compile_nasm(cc_build: &mut Build, root: &str) {
     #[cfg(feature = "asm")]
     {
         let target = std::env::var("TARGET").unwrap();
@@ -78,7 +56,7 @@ fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
                 (extension, "HAVE_NEON", "arm", "HAVE_NEON", "arm_arch_common_macro.S")
             }
         } else {
-            panic!("");
+            panic!("Failure to evaluate build logic for target. Only `x86` and `ARM` are supported for now.");
         };
 
         if is_x86 {
@@ -94,8 +72,8 @@ fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
                 }
             } else {
                 println!(
-                    "cargo:warning=failed to build asm files, please check that NASM is available on the path and is at a recent version"
-                );
+                        "cargo:warning=Failed to build asm files, please check that NASM is available on the path and is at a recent version."
+                    );
             }
         } else {
             cc_build
@@ -104,6 +82,40 @@ fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
                 .files(glob_import(root, extension, exclude));
         }
     }
+}
+
+/// Builds an OpenH264 sub-library and adds it to the project.
+fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]) {
+    let mut debug = false;
+    let mut opt_level = 3;
+
+    if std::env::var("PROFILE").unwrap().contains("debug") {
+        debug = true;
+        opt_level = 0;
+    }
+
+    let mut cc_build = cc::Build::new();
+    cc_build
+        .include("upstream/codec/api/svc/")
+        .include("upstream/codec/common/inc/")
+        .cpp(true)
+        .warnings(false)
+        .opt_level(opt_level)
+        .files(glob_import(root, ".cpp", "DllEntry.cpp")) // Otherwise fails when compiling on Linux
+        .pic(true)
+        // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
+        .flag_if_supported("-fno-strict-aliasing")
+        .flag_if_supported("-fstack-protector-all")
+        .flag_if_supported("-fembed-bitcode")
+        .flag_if_supported("-fno-common")
+        .flag_if_supported("-undefined dynamic_lookup")
+        .debug(debug);
+
+    for include in includes {
+        cc_build.include(include);
+    }
+
+    try_compile_nasm(&mut cc_build, root);
 
     cc_build.compile(format!("libopenh264_{}.a", name).as_str());
 
@@ -111,8 +123,8 @@ fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
 }
 
 fn main() {
-    add_openh264_lib("common", "upstream/codec/common", &[]);
-    add_openh264_lib(
+    compile_and_add_openh264_static_lib("common", "upstream/codec/common", &[]);
+    compile_and_add_openh264_static_lib(
         "processing",
         "upstream/codec/processing",
         &[
@@ -122,14 +134,14 @@ fn main() {
     );
 
     #[cfg(feature = "decoder")]
-    add_openh264_lib(
+    compile_and_add_openh264_static_lib(
         "decoder",
         "upstream/codec/decoder",
         &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
     );
 
     #[cfg(feature = "encoder")]
-    add_openh264_lib(
+    compile_and_add_openh264_static_lib(
         "encoder",
         "upstream/codec/encoder",
         &[
