@@ -16,10 +16,10 @@ license = "BSD-2-Clause"
 default = ["decoder", "encoder"]
 decoder = []
 encoder = []
-asm = []
+asm = ["nasm-rs"]
 #static_cpp = []
 
 [build-dependencies]
 cc = { version = "1.0", features = ["parallel"] }
-nasm-rs = { version = "0.2", features = ["parallel"] }
 walkdir = "2.3"
+nasm-rs = { version = "0.2", features = ["parallel"], optional = true }
