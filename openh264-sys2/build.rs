@@ -2,8 +2,8 @@ use std::path::Path;
 use walkdir::WalkDir;
 
 // if this gets more complicated, we might want to inline the list of files available in meson
-fn glob_import<P: AsRef<Path>>(x: P, extenstion: &str, exclude: &str) -> Vec<String> {
-    WalkDir::new(x)
+fn glob_import<P: AsRef<Path>>(root: P, extenstion: &str, exclude: &str) -> Vec<String> {
+    WalkDir::new(root)
         .into_iter()
         .map(|x| x.unwrap())
         .filter(|x| x.path().to_str().unwrap().ends_with(extenstion))
