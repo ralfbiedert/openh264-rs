@@ -46,7 +46,7 @@ impl RBGYUVConverter {
         };
 
         let write_v = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[v_base + x + y * half_width] = (0.4375 * rgb.0 + -0.3671875 * rgb.1 + -0.0703125 * rgb.2 + 128.0) as u8
+            yuv[v_base + x + y * half_width] = (0.4375 * rgb.0 + -0.3671875 * rgb.1 + -0.0703125 * rgb.2 + 128.0) as u8;
         };
 
         for i in 0..width / 2 {
