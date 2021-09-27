@@ -42,7 +42,8 @@ fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
         cc_build.include(include);
     }
 
-    if cfg!(feature = "asm") {
+    #[cfg(feature = "asm")]
+    {
         let target = std::env::var("TARGET").unwrap();
 
         let is_64bits = target.starts_with("x86_64") || target.starts_with("aarch64");
@@ -119,25 +120,25 @@ fn main() {
             "upstream/codec/processing/interface/",
         ],
     );
-    if cfg!(feature = "decoder") {
-        add_openh264_lib(
-            "decoder",
-            "upstream/codec/decoder",
-            &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
-        );
-    }
-    if cfg!(feature = "encoder") {
-        add_openh264_lib(
-            "encoder",
-            "upstream/codec/encoder",
-            &[
-                "upstream/codec/encoder/core/inc/",
-                "upstream/codec/encoder/plus/inc/",
-                "upstream/codec/processing/interface/",
-            ],
-        );
-    }
-    if !cfg!(feature = "decoder") && !cfg!(feature = "encoder") {
-        panic!("at least one of 'decoder' or 'encoder' feature must be enabled");
-    }
+
+    #[cfg(feature = "decoder")]
+    add_openh264_lib(
+        "decoder",
+        "upstream/codec/decoder",
+        &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
+    );
+
+    #[cfg(feature = "encoder")]
+    add_openh264_lib(
+        "encoder",
+        "upstream/codec/encoder",
+        &[
+            "upstream/codec/encoder/core/inc/",
+            "upstream/codec/encoder/plus/inc/",
+            "upstream/codec/processing/interface/",
+        ],
+    );
+
+    #[cfg(not(any(feature = "decoder", feature = "encoder")))]
+    panic!("at least one of 'decoder' or 'encoder' feature must be enabled");
 }
