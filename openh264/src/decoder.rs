@@ -101,7 +101,7 @@ impl DecoderConfig {
         Self {
             params: Default::default(),
             num_threads: 0,
-            debug: 0,
+            debug: WELS_LOG_QUIET,
             error_concealment: 0,
         }
     }

@@ -23,7 +23,7 @@
 //!
 //! # fn main() -> Result<(), Error> {
 //! let mut decoder = Decoder::new()?;
-//! let mut rgb_out = [0; 512 * 512 * 3];
+//! let mut rgb_out = vec![0; 512 * 512 * 3];
 //! let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 //!
 //! // Decode H.264 bitstream to YUV.
@@ -40,7 +40,7 @@
 //! use openh264::encoder::{Encoder, EncoderConfig};
 //! # fn main() -> Result<(), Error> {
 //! # let mut decoder = Decoder::new()?;
-//! # let mut rgb_out = [0; 512 * 512 * 3];
+//! # let mut rgb_out = vec![0; 512 * 512 * 3];
 //! # let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 //! # let yuv = decoder.decode(&h264_in[..])?;
 //!
@@ -157,7 +157,7 @@
 //!
 //! ## Changelog
 //!
-//! - **v0.2** - Add encoder; `asm` feature for 2x - 3x performance.
+//! - **v0.2** - Added encoder; `asm` feature for 2x - 3x speed boost.
 //! - **v0.1** - Initial release, decoder only.
 //!
 //! ## License
