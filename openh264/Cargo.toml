@@ -4,7 +4,7 @@ description = "Idiomatic bindings for OpenH264."
 authors = ["Ralf Biedert <rb@xr.io>"]
 keywords = ["multimedia", "encoding", "video"]
 categories = ["api-bindings", "multimedia::video"]
-version = "0.2.4"
+version = "0.2.5"
 edition = "2018"
 license = "BSD-2-Clause"
 documentation = "https://docs.rs/openh264/"
@@ -20,7 +20,7 @@ asm = ["openh264-sys2/asm"]
 backtrace = []
 
 [dependencies]
-openh264-sys2 = { path = "../openh264-sys2", version = "0.1", default-features = false }
+openh264-sys2 = { path = "../openh264-sys2", version = "0.2.5", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true
