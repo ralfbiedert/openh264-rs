@@ -1,7 +1,8 @@
 use std::path::Path;
 use walkdir::WalkDir;
 
-fn ugly_import<P: AsRef<Path>>(x: P, extenstion: &str, exclude: &str) -> Vec<String> {
+// if this gets more complicated, we might want to inline the list of files available in meson
+fn glob_import<P: AsRef<Path>>(x: P, extenstion: &str, exclude: &str) -> Vec<String> {
     WalkDir::new(x)
         .into_iter()
         .map(|x| x.unwrap())
@@ -11,7 +12,7 @@ fn ugly_import<P: AsRef<Path>>(x: P, extenstion: &str, exclude: &str) -> Vec<Str
         .collect()
 }
 
-fn build_lib(name: &str, root: &str, includes: &[&str]) {
+fn add_openh264_lib(name: &str, root: &str, includes: &[&str]) {
     let mut debug = false;
     let mut opt_level = 3;
 
@@ -27,7 +28,7 @@ fn build_lib(name: &str, root: &str, includes: &[&str]) {
         .cpp(true)
         .warnings(false)
         .opt_level(opt_level)
-        .files(ugly_import(root, "cpp", "DllEntry.cpp")) // Otherwise fails when compiling on Linux
+        .files(glob_import(root, ".cpp", "DllEntry.cpp")) // Otherwise fails when compiling on Linux
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
         .flag_if_supported("-fno-strict-aliasing")
@@ -79,23 +80,27 @@ fn build_lib(name: &str, root: &str, includes: &[&str]) {
             panic!("");
         };
 
-        cc_build.define(cpp_define, None);
-
         if is_x86 {
-            let objs = nasm_rs::Build::new()
+            if let Ok(objs) = nasm_rs::Build::new()
                 .include(format!("upstream/codec/common/{}/", asm_dir))
                 .define(asm_define, None)
-                .files(ugly_import(root, extension, exclude))
+                .files(glob_import(root, extension, exclude))
                 .compile_objects()
-                .unwrap();
-            for obj in &objs {
-                cc_build.object(obj);
+            {
+                cc_build.define(cpp_define, None);
+                for obj in &objs {
+                    cc_build.object(obj);
+                }
+            } else {
+                println!(
+                    "cargo:warning=failed to build asm files, please check that NASM is available on the path and is at a recent version"
+                );
             }
         } else {
             cc_build
                 .include(format!("upstream/codec/common/{}/", asm_dir))
                 .define(asm_define, None)
-                .files(ugly_import(root, extension, exclude));
+                .files(glob_import(root, extension, exclude));
         }
     }
 
@@ -105,8 +110,8 @@ fn build_lib(name: &str, root: &str, includes: &[&str]) {
 }
 
 fn main() {
-    build_lib("common", "upstream/codec/common", &[]);
-    build_lib(
+    add_openh264_lib("common", "upstream/codec/common", &[]);
+    add_openh264_lib(
         "processing",
         "upstream/codec/processing",
         &[
@@ -115,14 +120,14 @@ fn main() {
         ],
     );
     if cfg!(feature = "decoder") {
-        build_lib(
+        add_openh264_lib(
             "decoder",
             "upstream/codec/decoder",
             &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
         );
     }
     if cfg!(feature = "encoder") {
-        build_lib(
+        add_openh264_lib(
             "encoder",
             "upstream/codec/encoder",
             &[
