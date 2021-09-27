@@ -44,7 +44,7 @@ impl EncoderRawAPI {
                 Error::msg("VTable missing function.")
             };
 
-            Ok(EncoderRawAPI {
+            Ok(Self {
                 encoder_ptr,
                 initialize: (*(*encoder_ptr)).Initialize.ok_or_else(e)?,
                 initialize_ext: (*(*encoder_ptr)).InitializeExt.ok_or_else(e)?,
@@ -160,7 +160,7 @@ impl Encoder {
     /// # Panics
     ///
     /// Panics if the source image dimension don't match the configured format.
-    pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream, Error> {
+    pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream<'_>, Error> {
         assert_eq!(yuv_source.width(), self.params.iPicWidth);
         assert_eq!(yuv_source.height(), self.params.iPicHeight);
 
@@ -333,13 +333,10 @@ pub enum FrameType {
 
 impl FrameType {
     fn from_c_int(native: std::os::raw::c_int) -> Self {
-        use openh264_sys2::{
-            videoFrameTypeI, videoFrameTypeIDR, videoFrameTypeIPMixed, videoFrameTypeInvalid, videoFrameTypeP, videoFrameTypeSkip
-        };
+        use openh264_sys2::{videoFrameTypeI, videoFrameTypeIDR, videoFrameTypeIPMixed, videoFrameTypeP, videoFrameTypeSkip};
 
         #[allow(non_upper_case_globals)]
         match native {
-            videoFrameTypeInvalid => Self::Invalid,
             videoFrameTypeIDR => Self::IDR,
             videoFrameTypeI => Self::I,
             videoFrameTypeP => Self::P,

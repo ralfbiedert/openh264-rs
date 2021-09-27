@@ -166,7 +166,7 @@ impl Decoder {
     /// # Errors
     ///
     /// The function returns and error if any of the packets is incomplete, e.g., was truncated.
-    pub fn decode(&mut self, packet: &[u8]) -> Result<DecodedYUV, Error> {
+    pub fn decode(&mut self, packet: &[u8]) -> Result<DecodedYUV<'_>, Error> {
         let mut dst = [null_mut(); 3];
         let mut buffer_info = SBufferInfo::default();
 
