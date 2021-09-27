@@ -11,7 +11,7 @@ fn ugly_import<P: AsRef<Path>>(x: P, extenstion: &str, exclude: &str) -> Vec<Str
         .collect()
 }
 
-fn build_library(name: &str, root: &str, extra_inclues: &[&str]) {
+fn build_lib(name: &str, root: &str, includes: &[&str]) {
     let mut debug = false;
     let mut opt_level = 3;
 
@@ -37,7 +37,7 @@ fn build_library(name: &str, root: &str, extra_inclues: &[&str]) {
         .flag_if_supported("-undefined dynamic_lookup")
         .debug(debug);
 
-    for include in extra_inclues {
+    for include in includes {
         cc_build.include(include);
     }
 
@@ -105,24 +105,24 @@ fn build_library(name: &str, root: &str, extra_inclues: &[&str]) {
 }
 
 fn main() {
-    build_library("common", "upstream/codec/common", &[]);
+    build_lib("common", "upstream/codec/common", &[]);
+    build_lib(
+        "processing",
+        "upstream/codec/processing",
+        &[
+            "upstream/codec/processing/src/common/",
+            "upstream/codec/processing/interface/",
+        ],
+    );
     if cfg!(feature = "decoder") {
-        build_library(
+        build_lib(
             "decoder",
             "upstream/codec/decoder",
             &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
         );
     }
     if cfg!(feature = "encoder") {
-        build_library(
-            "processing",
-            "upstream/codec/processing",
-            &[
-                "upstream/codec/processing/src/common/",
-                "upstream/codec/processing/interface/",
-            ],
-        );
-        build_library(
+        build_lib(
             "encoder",
             "upstream/codec/encoder",
             &[
@@ -131,5 +131,8 @@ fn main() {
                 "upstream/codec/processing/interface/",
             ],
         );
+    }
+    if !cfg!(feature = "decoder") && !cfg!(feature = "encoder") {
+        panic!("at least one of 'decoder' or 'encoder' feature must be enabled");
     }
 }
