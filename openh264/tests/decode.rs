@@ -1,7 +1,7 @@
 #![cfg(feature = "decoder")]
 
 use openh264::decoder::{Decoder, DecoderConfig};
-use openh264::Error;
+use openh264::{nal_units, Error};
 
 #[test]
 fn can_get_decoder() -> Result<(), Error> {
@@ -64,17 +64,11 @@ fn can_decode_multi_to_end() -> Result<(), Error> {
 fn can_decode_multi_by_step() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512.h264")[..];
 
-    let packet_lengths = [30, 2736, 2688, 2672, 2912, 3215];
-
     let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
 
-    let mut p = 0;
-
-    for l in packet_lengths {
-        decoder.decode(&src[p..p + l])?;
-
-        p += l;
+    for packet in nal_units(src) {
+        decoder.decode(packet)?;
     }
 
     Ok(())
