@@ -17,13 +17,15 @@ Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh26
 **Decode** some H.264 bitstream to YUV:
 ```rust
 use openh264::decoder::Decoder;
+use openh264::nal_units;
 
-let mut decoder = Decoder::new()?;
-let mut rgb_out = vec![0; 512 * 512 * 3];
 let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
+let mut decoder = Decoder::new()?;
 
-// Decode H.264 bitstream to YUV.
-let yuv = decoder.decode(&h264_in[..])?;
+// Split H.264 into NAL units and decode each.
+for packet in nal_units(h264_in) {
+    let yuv = decoder.decode(packet)?;
+}
 ```
 
 
@@ -93,28 +95,41 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 
 - **How does `openh264-sys2` differ from `openh264-sys`?**
 
-We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as
-long as the environment variable `CXX` is properly set.
+  We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as
+  long as the environment variable `CXX` is properly set.
 
 
 - **I need to fix an important OpenH264 security hole, how can I update the library?**
 
-Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is (almost, see below) as simple as [pulling their latest source](https://github.com/cisco/openh264),
-copying it into that directory, and manually removing all "resource" files. We probably should have a script to strip that folder automatically ...
+  Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is (almost, see below) as simple as [pulling their latest source](https://github.com/cisco/openh264),
+  copying it into that directory, and manually removing all "resource" files. We probably should have a script to strip that folder automatically ...
 
 
 - **I heard Rust is super-safe, will this make decoding my videos safe too?**
 
-No. Below a thin Rust layer we rely on a _very complex_ C library, and an equally complex standard. Apart from Rust being a
-much nicer language to work with, depending on this  project will give you _no_ additional safety guarantees as far as video
-handling is concerned. FYI, this is _not_ making a statement about OpenH264, but about the realities of securing +50k lines
-of C against attacks.
+  No. Below a thin Rust layer we rely on a _very complex_ C library, and an equally complex standard. Apart from Rust being a
+  much nicer language to work with, depending on this  project will give you _no_ additional safety guarantees as far as video
+  handling is concerned. FYI, this is _not_ making a statement about OpenH264, but about the realities of securing +50k lines
+  of C against attacks.
 
 
 - **Feature X is missing or broken, will you fix it?**
 
-Right now I only have time to implement what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
+  Right now I only have time to implement what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
 
+
+- **Decoder::decode() returned an error, is this a bug?**
+
+  Maybe. Probably not. Some encoders can write data OpenH264 doesn't understand, and if _all_ frames fail this could either
+  be your encoder doing exotic things, OpenH264 not having implemented a certain feature, or
+  us having a bug.
+
+  However, if only _some_ frames fail the most likely reasons are your endoder injecting _some_ special
+  packets or simply transmission errors. In other words, unless you have a very controlled setup you simply should not terminate on
+  the first error(s), but simply continue decoding and hope for the decoder to recover.
+
+  FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV for some input then it would be a bug
+  if we can't. However, any stream / frame it fails on is pretty much a _wontfix_ for us.
 
 ### OpenH264 Patches Applied
 
