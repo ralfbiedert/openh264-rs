@@ -39,7 +39,7 @@ fn nth_nal_index(stream: &[u8], nth: usize) -> Option<usize> {
 ///
 /// This function will return an iterator returning packets:
 /// ```text
-///      [001.......][001......][001...]
+///      [001.......][001....][001.....]
 /// ```
 ///
 /// In other words, any incomplete data at the beginning of the buffer is skipped,

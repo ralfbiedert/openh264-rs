@@ -139,11 +139,11 @@
 //!   be your encoder doing exotic things, OpenH264 not having implemented a certain feature, or
 //!   us having a bug.
 //!
-//!   However, if only _some_ frames fail the most likely reasons are your endoder injecting _some_ special
-//!   packets or simply transmission errors. In other words, unless you have a very controlled setup you simply should not terminate on
+//!   If only _some_ frames fail the most likely reasons are your endoder injecting _some_ special
+//!   packets or transmission errors. In other words, unless you have a very controlled setup you should not terminate on
 //!   the first error(s), but simply continue decoding and hope for the decoder to recover.
 //!
-//!   FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV for some input then it would be a bug
+//!   FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV it would be a bug
 //!   if we can't. However, any stream / frame it fails on is pretty much a _wontfix_ for us.
 //!
 //! ## OpenH264 Patches Applied
