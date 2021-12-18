@@ -115,7 +115,7 @@
 //!
 //! - **Which exact OpenH264 version does this use?**
 //!
-//! See [this file](https://github.com/ralfbiedert/openh264-rust/tree/master/openh264-sys2/upstream/VERSION) for the upstream URL and Git hash used on lastest master.
+//!   See [this file](https://github.com/ralfbiedert/openh264-rust/tree/master/openh264-sys2/upstream/VERSION) for the upstream URL and Git hash used on lastest master.
 //!
 //! - **I need to fix an important OpenH264 security hole, how can I update the library?**
 //!
