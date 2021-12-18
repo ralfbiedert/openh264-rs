@@ -17,3 +17,10 @@ cp "$VANILLA_UPSTREAM/LICENSE" "$OUR_UPSTREAM"
 rm -rf "$OUR_UPSTREAM/codec/build"
 find "$OUR_UPSTREAM" -name "*.d" -delete
 find "$OUR_UPSTREAM" -name "*.o" -delete
+
+# Update version info
+pushd "$VANILLA_UPSTREAM"
+rm -f "$OUR_UPSTREAM/VERSION"
+git config --get remote.origin.url >> "$OUR_UPSTREAM/VERSION"
+git rev-parse HEAD >> "$OUR_UPSTREAM/VERSION"
+popd

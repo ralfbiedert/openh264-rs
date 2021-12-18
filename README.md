@@ -98,11 +98,15 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
   We directly ship OpenH264 source code and provide simple, hand-crafted compilation via `cc` in `build.rs`. Our`openh264-sys2` crate should compile via `cargo build` out of the box on most platforms, and cross-compile via `cargo build --target ...` as
   long as the environment variable `CXX` is properly set.
 
+- **Which exact OpenH264 version does this use?**
+
+See [this file](https://github.com/ralfbiedert/openh264-rust/tree/master/openh264-sys2/upstream/VERSION) for the upstream URL and Git hash used on lastest master.
 
 - **I need to fix an important OpenH264 security hole, how can I update the library?**
 
   Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is (almost, see below) as simple as [pulling their latest source](https://github.com/cisco/openh264),
-  copying it into that directory, and manually removing all "resource" files.
+  and running `update_openh264.sh`.
+
 
 - **I heard Rust is super-safe, will this make decoding my videos safe too?**
 
@@ -130,16 +134,6 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
   FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV it would be a bug
   if we can't. However, any stream / frame it fails on is pretty much a _wontfix_ for us.
 
-### OpenH264 Patches Applied
-
-Ideally the embedded upstream should be pristine. That said, the following
-patches have been applied to fix Valgrind issues and crashes on some platforms:
-
-- `decoder.cpp` - removed `if (pCtx->pDstInfo) pCtx->pDstInfo->iBufferStatus = 0;` which seems to write to previously deallocated memory.
-
-Help with upstreaming them would be appreciated.
-
-
 ### Contributing
 
 PRs are very welcome. Feel free to submit PRs and fixes right away. You can open issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing.
@@ -148,8 +142,8 @@ Especially needed:
 
 - [ ] BT.601 / BT.709 YUV <-> RGB Conversion
 - [ ] Faster YUV to RGB conversion
+- [ ] Have script to automatically update / import OpenH264 source (or submodule?)
 - [ ] WASM investigation (either patch, or evidence it can't be fixed)
-- [ ] Submit patches upstream
 - [ ] Feedback which platforms successfully built on
 
 
