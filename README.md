@@ -102,8 +102,7 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 - **I need to fix an important OpenH264 security hole, how can I update the library?**
 
   Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is (almost, see below) as simple as [pulling their latest source](https://github.com/cisco/openh264),
-  copying it into that directory, and manually removing all "resource" files. We probably should have a script to strip that folder automatically ...
-
+  copying it into that directory, and manually removing all "resource" files.
 
 - **I heard Rust is super-safe, will this make decoding my videos safe too?**
 
@@ -149,7 +148,6 @@ Especially needed:
 
 - [ ] BT.601 / BT.709 YUV <-> RGB Conversion
 - [ ] Faster YUV to RGB conversion
-- [ ] Have script to automatically update / import OpenH264 source (or submodule?)
 - [ ] WASM investigation (either patch, or evidence it can't be fixed)
 - [ ] Submit patches upstream
 - [ ] Feedback which platforms successfully built on
