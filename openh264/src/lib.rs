@@ -119,8 +119,8 @@
 //!
 //! - **I need to fix an important OpenH264 security hole, how can I update the library?**
 //!
-//!   Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is (almost, see below) as simple as [pulling their latest source](https://github.com/cisco/openh264),
-//!   and running `update_openh264.sh`.
+//!   Cisco's OpenH264 library is contained in `openh264-sys2/upstream`. Updating is as simple as [pulling their latest source](https://github.com/cisco/openh264),
+//!   and running `update_openh264.sh` (and, if APIs changed, `regen-bindings.bat`).
 //!
 //!
 //! - **I heard Rust is super-safe, will this make decoding my videos safe too?**
@@ -142,8 +142,8 @@
 //!   be your encoder doing exotic things, OpenH264 not having implemented a certain feature, or
 //!   us having a bug.
 //!
-//!   If only _some_ frames fail the most likely reasons are your endoder injecting _some_ special
-//!   packets or transmission errors. In other words, unless you have a very controlled setup you should not terminate on
+//!   If only _some_ frames fail the most likely reasons are your encoder injecting _some_ special
+//!   packets or transmission errors. In other words, unless you have a controlled setup you should not terminate on
 //!   the first error(s), but simply continue decoding and hope for the decoder to recover.
 //!
 //!   FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV it would be a bug
