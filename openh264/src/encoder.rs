@@ -115,6 +115,7 @@ impl EncoderConfig {
         self
     }
 
+    /// Enables detailed console logging inside OpenH264.
     pub fn debug(mut self, value: bool) -> Self {
         self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self

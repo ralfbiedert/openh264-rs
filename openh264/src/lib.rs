@@ -65,7 +65,7 @@
 //! | `x86_64-unknown-linux-gnu` | ✅ | ✅ |
 //! | `x86_64-apple-darwin` | ✅ | ✅ |
 //! | `aarch64-linux-android` | 🆗<sup>1</sup>  | - |
-//! | `wasm32-unknown-unknown` | ❌<sup>1,2</sup> | - |
+//! | `wasm32-unknown-unknown` | ❌<sup>2</sup> | - |
 //!
 //! ✅ works out of the box;
 //! 🆗 the usual shenanigans required;

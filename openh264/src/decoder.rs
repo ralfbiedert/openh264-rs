@@ -106,12 +106,16 @@ impl DecoderConfig {
         }
     }
 
-    /// Sets the number of threads.
+    /// Sets the number of threads; this will probably segfault, see below.<sup>⚠️</sup>
     ///
     /// # Safety
     ///
-    /// This setting is only supported on some platforms and is known to segfault on others. You should consult with
-    /// the upstream OpenH264 project where and when it is safe to set this.
+    /// This setting might work on some platforms but will probably just segfault.
+    /// Consider this a _highly_ experimental option we only expose to test if and
+    /// where threading actually works. Ultimately you should consult with the upstream
+    /// OpenH264 project where and when it is safe to set this.
+    ///
+    /// See [this issue](https://github.com/ralfbiedert/openh264-rust/issues/10) for details.
     pub unsafe fn num_threads(mut self, num_threads: u32) -> Self {
         self.num_threads = num_threads as i32;
         self
