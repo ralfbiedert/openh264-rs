@@ -86,21 +86,12 @@ fn try_compile_nasm(cc_build: &mut Build, root: &str) {
 
 /// Builds an OpenH264 sub-library and adds it to the project.
 fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]) {
-    let mut debug = false;
-    let mut opt_level = 3;
-
-    if std::env::var("PROFILE").unwrap().contains("debug") {
-        debug = true;
-        opt_level = 0;
-    }
-
     let mut cc_build = cc::Build::new();
     cc_build
         .include("upstream/codec/api/svc/")
         .include("upstream/codec/common/inc/")
         .cpp(true)
         .warnings(false)
-        .opt_level(opt_level)
         .files(glob_import(root, ".cpp", "DllEntry.cpp")) // Otherwise fails when compiling on Linux
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
@@ -108,8 +99,7 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
         .flag_if_supported("-fstack-protector-all")
         .flag_if_supported("-fembed-bitcode")
         .flag_if_supported("-fno-common")
-        .flag_if_supported("-undefined dynamic_lookup")
-        .debug(debug);
+        .flag_if_supported("-undefined dynamic_lookup");
 
     for include in includes {
         cc_build.include(include);
