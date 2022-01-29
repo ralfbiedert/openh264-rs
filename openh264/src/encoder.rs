@@ -158,6 +158,9 @@ impl Encoder {
 
     /// Encodes a YUV source and returns the encoded bitstream.
     ///
+    /// The first source the Encoder encodes will return a keyframe ("I" frame); subsequent calls to this function will produce "difference" frames.
+    /// Keyframes should be produced regularly (typically, on every scene change and at least once per second).
+    ///
     /// # Panics
     ///
     /// Panics if the source image dimension don't match the configured format.
