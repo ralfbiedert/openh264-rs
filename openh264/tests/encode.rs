@@ -49,6 +49,28 @@ fn encode() -> Result<(), Error> {
 }
 
 #[test]
+fn encoder_sps_pps() -> Result<(), Error> {
+    let src = &include_bytes!("data/lenna_128x128.rgb")[..];
+
+    let config = EncoderConfig::new(128, 128);
+    let mut encoder = Encoder::with_config(config)?;
+    let mut converter = RBGYUVConverter::new(128, 128);
+
+    converter.convert(src);
+
+    let stream = encoder.encode(&converter)?;
+
+    let layer_0 = stream.layer(0).unwrap();
+    let raw_sps = layer_0.nal_unit(0).unwrap();
+    let raw_pps = layer_0.nal_unit(1).unwrap();
+
+    assert!(!raw_sps.is_empty());
+    assert!(!raw_pps.is_empty());
+
+    Ok(())
+}
+
+#[test]
 #[cfg(feature = "decoder")]
 fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::decoder::{Decoder, DecoderConfig};
