@@ -1,7 +1,7 @@
 REM Using Bindgen 0.58.1
 
 bindgen ^
-    ..\upstream\codec\api\svc\codec_api.h ^
+    ..\openh264-sys2\upstream\codec\api\svc\codec_api.h ^
     --generate-block ^
     --no-layout-tests ^
     --no-prepend-enum-name ^
@@ -10,6 +10,6 @@ bindgen ^
     --with-derive-hash ^
     --with-derive-ord ^
     --use-array-pointers-in-arguments ^
-    -o ../src/generated.rs
+    -o ../openh264-sys2/src/generated.rs
 
 pause
