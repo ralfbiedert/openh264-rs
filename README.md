@@ -142,7 +142,6 @@ Especially needed:
 
 - [ ] BT.601 / BT.709 YUV <-> RGB Conversion
 - [ ] Faster YUV to RGB conversion
-- [ ] Have script to automatically update / import OpenH264 source (or submodule?)
 - [ ] WASM investigation (either patch, or evidence it can't be fixed)
 - [ ] Feedback which platforms successfully built on
 
