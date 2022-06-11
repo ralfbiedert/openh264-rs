@@ -158,6 +158,10 @@ impl Encoder {
 
     /// Encodes a YUV source and returns the encoded bitstream.
     ///
+    /// The returned bitstream consists of one or more NAL units or packets. The first packets contain
+    /// initialization information. Subsequent packages then contain, amongst others, keyframes
+    /// ("I frames") or delta frames. The interval at which they are produced depends on the encoder settings.
+    ///
     /// # Panics
     ///
     /// Panics if the source image dimension don't match the configured format.
