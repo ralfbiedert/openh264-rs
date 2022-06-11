@@ -88,7 +88,7 @@ fn try_compile_nasm(cc_build: &mut Build, root: &str) {
 fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]) {
     let mut cc_build = cc::Build::new();
     cc_build
-        .include("upstream/codec/api/svc/")
+        .include("upstream/codec/api/wels/")
         .include("upstream/codec/common/inc/")
         .cpp(true)
         .warnings(false)
