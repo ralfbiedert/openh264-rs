@@ -147,7 +147,7 @@ impl_bitstream_length!(u32);
 #[cfg(test)]
 mod test {
     use super::nal_units;
-    use crate::utils::{to_bitstream_with_001, BitstreamLength};
+    use crate::utils::to_bitstream_with_001;
 
     #[test]
     fn splits_at_nal() {
@@ -186,13 +186,6 @@ mod test {
         assert_eq!(split.next().unwrap(), &[0, 0, 1, 2, 3]);
         assert_eq!(split.next().unwrap(), &[0, 0, 1]);
         assert!(split.next().is_none());
-    }
-
-    #[test]
-    fn bitstream_length() {
-        let result = u32::read(&[1, 0, 0, 0, 5]).unwrap();
-        assert_eq!(result.0, 5);
-        assert_eq!(result.1, &[5]);
     }
 
     #[test]
