@@ -191,4 +191,4 @@ pub mod decoder;
 pub mod encoder;
 
 pub use error::Error;
-pub use utils::nal_units;
+pub use utils::{nal_units, to_bitstream_with_001, BitstreamLength};
