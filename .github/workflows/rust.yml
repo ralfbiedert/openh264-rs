@@ -22,6 +22,6 @@ jobs:
     - name: Version
       run: rustc -Vv
     - name: Build
-      run: cargo build --verbose
+      run: cargo +nightly build --verbose
     - name: Test
-      run: cargo test --verbose -- --test-threads=1 --nocapture
+      run: cargo +nightly test --verbose -- --test-threads=1 --nocapture
