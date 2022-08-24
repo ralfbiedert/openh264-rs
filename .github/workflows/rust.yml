@@ -17,6 +17,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         lfs: true
+    - name: Install latest Rust Nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+#         override: true
+#         components: rustfmt, clippy
     - name: LFS Checkout
       run: git lfs checkout
     - name: Version
