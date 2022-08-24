@@ -17,7 +17,6 @@ default = ["decoder", "encoder"]
 decoder = ["openh264-sys2/decoder"]
 encoder = ["openh264-sys2/encoder"]
 asm = ["openh264-sys2/asm"]
-backtrace = []
 
 [dependencies]
 openh264-sys2 = { path = "../openh264-sys2", version = "0.2.5", default-features = false }

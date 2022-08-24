@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "backtrace", feature(backtrace))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 //!
 //! [![Latest Version]][crates.io]
@@ -103,7 +102,6 @@
 //!
 //! - `decoder` - Enable the decoder. Used by default.
 //! - `encoder` - Enable the encoder. Used by default.
-//! - `backtrace` - Enable backtraces on errors (requires nightly)
 //! - `asm` - Enable assembly. Only supported on `x86` and `ARM`, requires `nasm` installed.
 //!
 //! ## FAQ
