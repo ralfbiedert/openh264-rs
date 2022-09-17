@@ -112,4 +112,10 @@ mod test {
         format!("{:#?}", Error::from_decoding_state(dsRefListNullPtrs));
         format!("{:#?}", Error::msg("hello world"));
     }
+
+    #[test]
+    #[cfg(feature = "backtrace")]
+    fn backtrace_works() {
+        let _ = Error::from_native(1).backtrace.expect("Must have backtrace");
+    }
 }
