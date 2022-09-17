@@ -4,7 +4,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -81,6 +81,36 @@ impl Drop for EncoderRawAPI {
     }
 }
 
+/// Specifies the mode used by the encoder to control the rate.
+#[derive(Copy, Clone, Debug)]
+pub enum RateControlMode {
+    Quality,
+    Bitrate,
+    Bufferbased,
+    Timestamp,
+    BitrateModePostSkip,
+    Off,
+}
+
+impl Default for RateControlMode {
+    fn default() -> Self {
+        Self::Quality
+    }
+}
+
+impl RateControlMode {
+    fn to_c(&self) -> RC_MODES {
+        match self {
+            RateControlMode::Quality => openh264_sys2::RC_QUALITY_MODE,
+            RateControlMode::Bitrate => openh264_sys2::RC_BITRATE_MODE,
+            RateControlMode::Bufferbased => openh264_sys2::RC_BUFFERBASED_MODE,
+            RateControlMode::Timestamp => openh264_sys2::RC_TIMESTAMP_MODE,
+            RateControlMode::BitrateModePostSkip => openh264_sys2::RC_BITRATE_MODE_POST_SKIP,
+            RateControlMode::Off => openh264_sys2::RC_OFF_MODE,
+        }
+    }
+}
+
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -94,6 +124,7 @@ pub struct EncoderConfig {
     debug: i32,
     data_format: EVideoFormatType,
     max_frame_rate: f32,
+    rate_control_mode: RateControlMode,
 }
 
 impl EncoderConfig {
@@ -108,6 +139,7 @@ impl EncoderConfig {
             debug: 0,
             data_format: videoFormatI420,
             max_frame_rate: 0.0,
+            rate_control_mode: Default::default(),
         }
     }
 
@@ -134,6 +166,12 @@ impl EncoderConfig {
         self.max_frame_rate = value;
         self
     }
+
+    /// Sets the requested rate control mode.
+    pub fn rate_control_mode(mut self, value: RateControlMode) -> Self {
+        self.rate_control_mode = value;
+        self
+    }
 }
 
 /// An [OpenH264](https://github.com/cisco/openh264) encoder.
@@ -154,6 +192,7 @@ impl Encoder {
             raw_api.get_default_params(&mut params).ok()?;
             params.iPicWidth = config.width as c_int;
             params.iPicHeight = config.height as c_int;
+            params.iRCMode = config.rate_control_mode.to_c();
             params.bEnableFrameSkip = config.enable_skip_frame;
             params.iTargetBitrate = config.target_bitrate as c_int;
             params.bEnableDenoise = config.enable_denoise;
