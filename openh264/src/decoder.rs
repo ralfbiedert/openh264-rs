@@ -4,7 +4,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
+    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL,
+    DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -171,7 +173,7 @@ impl Decoder {
     ///
     /// The function returns and error if any of the packets is incomplete, e.g., was truncated.
     pub fn decode(&mut self, packet: &[u8]) -> Result<DecodedYUV<'_>, Error> {
-        let mut dst = [null_mut(); 3];
+        let mut dst = [null_mut::<u8>(); 3];
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
@@ -184,6 +186,12 @@ impl Decoder {
             }
 
             let info = buffer_info.UsrData.sSystemBuffer;
+
+            if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
+                return Err(Error::msg(
+                    "Decoder returned null buffers. This is a bug on our side, a bug in OpenH264, or a configuration error on yours.",
+                ));
+            }
 
             // https://github.com/cisco/openh264/issues/2379
             let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
@@ -234,6 +242,7 @@ impl Drop for Decoder {
 }
 
 /// Frame returned by the [`Decoder`] and provides safe data access.
+#[derive(Debug)]
 pub struct DecodedYUV<'a> {
     info: SSysMEMBuffer,
 
