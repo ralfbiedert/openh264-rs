@@ -24,7 +24,9 @@ let mut decoder = Decoder::new()?;
 
 // Split H.264 into NAL units and decode each.
 for packet in nal_units(h264_in) {
-    let yuv = decoder.decode(packet)?;
+    // On the first few frames this may fail, so you should check the result
+    // a few packets before giving up.
+    let maybe_yuv = decoder.decode(packet);
 }
 ```
 
@@ -88,7 +90,6 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 
 - `decoder` - Enable the decoder. Used by default.
 - `encoder` - Enable the encoder. Used by default.
-- `backtrace` - Enable backtraces on errors (requires nightly)
 - `asm` - Enable assembly. Only supported on `x86` and `ARM`, requires `nasm` installed.
 
 ### FAQ
