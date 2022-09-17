@@ -3,31 +3,39 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [ '**' ]
   pull_request:
-    branches: [ master ]
+    branches: [ '**' ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Linux:
-    runs-on: ubuntu-latest
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [ubuntu-latest, windows-latest, macos-latest]
+        toolchain:
+          - stable
+          - nightly
+    runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v2
       with:
         lfs: true
     - name: Install latest Rust Nightly
+      id: actions-rs
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
-#         override: true
-#         components: rustfmt, clippy
+        profile: minimal
+        toolchain: ${{ matrix.toolchain }}
+        override: true
     - name: LFS Checkout
       run: git lfs checkout
     - name: Version
       run: rustc -Vv
     - name: Build
-      run: cargo +nightly build --verbose
+      run: cargo build --verbose
     - name: Test
-      run: cargo +nightly test --verbose -- --test-threads=1 --nocapture
+      run: cargo test --verbose -- --test-threads=1 --nocapture
