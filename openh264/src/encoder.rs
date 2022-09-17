@@ -93,6 +93,7 @@ pub struct EncoderConfig {
     enable_denoise: bool,
     debug: i32,
     data_format: EVideoFormatType,
+    max_frame_rate: f32,
 }
 
 impl EncoderConfig {
@@ -106,6 +107,7 @@ impl EncoderConfig {
             enable_denoise: false,
             debug: 0,
             data_format: videoFormatI420,
+            max_frame_rate: 0.0,
         }
     }
 
@@ -123,6 +125,11 @@ impl EncoderConfig {
 
     pub fn enable_skip_frame(mut self, value: bool) -> Self {
         self.enable_skip_frame = value;
+        self
+    }
+
+    pub fn max_frame_rate(mut self, value: f32) -> Self {
+        self.max_frame_rate = value;
         self
     }
 }
@@ -148,6 +155,7 @@ impl Encoder {
             params.bEnableFrameSkip = config.enable_skip_frame;
             params.iTargetBitrate = config.target_bitrate as c_int;
             params.bEnableDenoise = config.enable_denoise;
+            params.fMaxFrameRate = config.max_frame_rate;
             raw_api.initialize_ext(&params).ok()?;
 
             raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
