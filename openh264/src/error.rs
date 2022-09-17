@@ -7,6 +7,7 @@ pub struct Error {
     native: i64,
     decoding_state: DECODING_STATE,
     misc: Option<String>,
+    #[cfg(feature = "backtrace")]
     backtrace: Option<std::backtrace::Backtrace>,
 }
 
@@ -16,6 +17,7 @@ impl Error {
             native,
             decoding_state: dsErrorFree,
             misc: None,
+            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
@@ -26,6 +28,7 @@ impl Error {
             native: 0,
             decoding_state,
             misc: None,
+            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
@@ -36,11 +39,13 @@ impl Error {
             native: 0,
             decoding_state: dsErrorFree,
             misc: Some(msg.to_string()),
+            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
 
     /// Returns the backtrace, if available.
+    #[cfg(feature = "backtrace")]
     pub fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
         self.backtrace.as_ref()
     }
