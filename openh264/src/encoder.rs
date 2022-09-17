@@ -123,6 +123,7 @@ impl EncoderConfig {
         self
     }
 
+    /// Set whether frames can be skipped to meet desired rate control target.
     pub fn enable_skip_frame(mut self, value: bool) -> Self {
         self.enable_skip_frame = value;
         self
