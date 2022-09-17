@@ -120,6 +120,11 @@ impl EncoderConfig {
         self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self
     }
+
+    pub fn enable_skip_frame(mut self, value: bool) -> Self {
+        self.enable_skip_frame = value;
+        self
+    }
 }
 
 /// An [OpenH264](https://github.com/cisco/openh264) encoder.
