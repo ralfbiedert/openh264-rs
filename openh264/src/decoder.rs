@@ -187,6 +187,10 @@ impl Decoder {
 
             let info = buffer_info.UsrData.sSystemBuffer;
 
+            // TODO: Now that I think about it, this should probably be handled differently. Apparently it is ok for `decode_frame_no_delay` to not return
+            // an error _and_ to return null buffers. In that case we maybe should not return `Result<DecodedYUV, _>` but a `Result<Option<DecodedYUV>, _>`
+            // where `Ok(None)` means "no error yet, but insufficient data to provide a YUV".
+            // That way we could alsy simplify the `decoding` example again to rely on `Err` actually meaning an error, and not just "error or insufficient data".
             if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
                 return Err(Error::msg(
                     "Decoder returned null buffers. This is a bug on our side, a bug in OpenH264, or a configuration error on yours.",
