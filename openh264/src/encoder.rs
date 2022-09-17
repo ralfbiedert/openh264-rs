@@ -128,6 +128,7 @@ impl EncoderConfig {
         self
     }
 
+    /// Sets the requested maximum frame rate in Hz.
     pub fn max_frame_rate(mut self, value: f32) -> Self {
         self.max_frame_rate = value;
         self
