@@ -86,6 +86,8 @@ impl_native_error!(u64);
 impl_native_error!(i64);
 impl_native_error!(i32);
 
+impl std::error::Error for Error {}
+
 #[cfg(test)]
 mod test {
     use crate::Error;
