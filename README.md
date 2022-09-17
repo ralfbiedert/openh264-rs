@@ -2,7 +2,7 @@
 [![Latest Version]][crates.io]
 [![docs]][docs.rs]
 ![BSD-2]
-[![Rust](https://img.shields.io/badge/rust-1.53%2B-blue.svg?maxAge=3600)](https://github.com/ralfbiedert/openh264-rust)
+[![Rust](https://img.shields.io/badge/rust-1.64%2B-blue.svg?maxAge=3600)](https://github.com/ralfbiedert/openh264-rust)
 [![Rust](https://github.com/ralfbiedert/openh264-rust/actions/workflows/rust.yml/badge.svg)](https://github.com/ralfbiedert/openh264-rust/actions/workflows/rust.yml)
 
 ## OpenH264 Rust API
