@@ -27,7 +27,9 @@
 //!
 //! // Split H.264 into NAL units and decode each.
 //! for packet in nal_units(h264_in) {
-//!     let yuv = decoder.decode(packet)?;
+//!     // On the first few frames this may fail, so you should check the result
+//!     // a few packets before giving up.
+//!     let maybe_yuv = decoder.decode(packet);
 //! }
 //! # Ok(())
 //! # }

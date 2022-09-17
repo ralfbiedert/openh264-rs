@@ -64,12 +64,16 @@ fn can_decode_multi_to_end() -> Result<(), Error> {
 fn can_decode_multi_by_step() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512.h264")[..];
 
-    let config = DecoderConfig::default().debug(false);
+    let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
 
+    let mut last_was_ok = false;
+
     for packet in nal_units(src) {
-        decoder.decode(packet)?;
+        last_was_ok = decoder.decode(packet).is_ok()
     }
+
+    assert!(last_was_ok);
 
     Ok(())
 }
