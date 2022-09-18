@@ -4,7 +4,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
+    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL,
+    DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -169,7 +171,12 @@ impl Decoder {
     ///
     /// # Errors
     ///
-    /// The function returns and error if any of the packets is incomplete, e.g., was truncated.
+    /// The function returns an error if any of the packets is incomplete, e.g., was truncated.
+    ///
+    /// **If an error was returned you should not necessarily stop trying to decode the stream**, as more information might
+    /// arrive that will fix prior decoding errors. In particular the first few NAL units may be insufficient to produce YUVs.
+    ///
+    /// Note, this is an API design bug and will be fixed in 0.3, when this method should return a `Result<Option<_>, _>` instead.
     pub fn decode(&mut self, packet: &[u8]) -> Result<DecodedYUV<'_>, Error> {
         let mut dst = [null_mut::<u8>(); 3];
         let mut buffer_info = SBufferInfo::default();
