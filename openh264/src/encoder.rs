@@ -84,17 +84,17 @@ impl Drop for EncoderRawAPI {
 /// Specifies the mode used by the encoder to control the rate.
 #[derive(Copy, Clone, Debug)]
 pub enum RateControlMode {
-    /// quality mode
+    /// Quality mode.
     Quality,
-    /// bitrate mode
+    /// Bitrate mode.
     Bitrate,
-    /// no bitrate control, only using buffer status, adjust the video quality
+    /// No bitrate control, only using buffer status, adjust the video quality.
     Bufferbased,
-    /// rate control based timestamp
+    /// Rate control based timestamp.
     Timestamp,
-    /// this is in-building RC MODE, WILL BE DELETED after algorithm tuning!
+    /// This is in-building RC MODE, WILL BE DELETED after algorithm tuning!
     BitrateModePostSkip,
-    /// rate control off mode
+    /// Rate control off mode.
     Off,
 }
 
