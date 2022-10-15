@@ -6,7 +6,7 @@ use crate::Error;
 use openh264_sys2::{
     videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
     WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL,
-    DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -186,8 +186,17 @@ impl Decoder {
                 .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
                 .ok()?;
 
-            if !buffer_info.iBufferStatus == 1 {
-                return Err(Error::msg("Buffer status not valid"));
+            if buffer_info.iBufferStatus != 1 {
+                let mut num_frames: DECODER_OPTION = 0;
+                self.raw_api().get_option(DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+                                    addr_of_mut!(num_frames).cast()).ok()?;
+                if num_frames > 0 {  
+                    self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
+                    
+                    if buffer_info.iBufferStatus != 1 {
+                        return Err(Error::msg("Buffer status not valid"));
+                    }
+                }    
             }
 
             let info = buffer_info.UsrData.sSystemBuffer;
