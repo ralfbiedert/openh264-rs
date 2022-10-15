@@ -1,5 +1,7 @@
 #![cfg(feature = "decoder")]
 
+use std::io::Read;
+
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::{nal_units, Error};
 
@@ -79,6 +81,20 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 }
 
 #[test]
+fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
+    let src = &include_bytes!("data/multi_1024x768.raw")[..];
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(config)?;
+
+    for packet in read_frame(src) {
+        decoder.decode(packet.as_slice())?;
+    }
+
+    Ok(())
+}
+
+#[test]
 fn fails_on_truncated() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_512x512_truncated.h264")[..];
 
@@ -112,4 +128,30 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     decoder.decode(&src)?;
 
     Ok(())
+}
+
+// The packets in the file are written frame by frame
+// the first 4 bytes are frame length in little endian
+// followed by actual frame data
+pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>> 
+where
+    T: Read,
+{
+    std::iter::from_fn(move || {
+        let mut data = [0u8; 4];
+        let result = stream.read_exact(data.as_mut_slice());
+        if result.is_err() {
+            return None;
+        }
+        
+        let len = u32::from_le_bytes(data) as usize;
+        let mut data = vec![0u8; len];
+
+        let result = stream.read_exact(data.as_mut_slice());
+        if result.is_err() {
+            return None
+        } else {
+            Some(data)
+        }
+    })
 }
