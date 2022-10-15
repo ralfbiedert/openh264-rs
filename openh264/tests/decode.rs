@@ -1,7 +1,8 @@
 #![cfg(feature = "decoder")]
 
-use std::io::Read;
+use std::io::{Cursor, Read};
 
+use image::RgbImage;
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::{nal_units, Error};
 
@@ -83,13 +84,33 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 #[test]
 fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
     let src = &include_bytes!("data/multi_1024x768.raw")[..];
+    let compare_data = &include_bytes!("data/multi_1024x768.bmp")[..];
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
 
+    let mut decoded = None;
+
     for packet in read_frame(src) {
-        decoder.decode(packet.as_slice())?;
+        decoded = Some(decoder.decode(packet.as_slice())?);
     }
+
+    // Generate image from decoded frame
+    let decoded_frame = decoded.expect("No decoded data");
+    let dimensions = decoded_frame.dimension_rgb();
+    let mut frame_data = vec![0u8; dimensions.0 * dimensions.1 * 3];
+    decoded_frame.write_rgb8(frame_data.as_mut_slice())?;
+    let decoded_frame = RgbImage::from_vec(1024, 768, frame_data).expect("Failed to convert into image buffer");
+
+    // Get compare image
+    let compare_data = Cursor::new(compare_data);
+    let compare_data = image::load(compare_data, image::ImageFormat::Bmp)
+        .expect("Image load failed")
+        .into_rgb8();
+
+    let result = image_compare::rgb_hybrid_compare(&decoded_frame, &compare_data).expect("Image dimensitons are different");
+    // Images should be 99% similar
+    assert!(result.score > 0.99, "Image similarity score: {}", result.score);
 
     Ok(())
 }
@@ -133,7 +154,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 // The packets in the file are written frame by frame
 // the first 4 bytes are frame length in little endian
 // followed by actual frame data
-pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>> 
+pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>>
 where
     T: Read,
 {
@@ -143,13 +164,13 @@ where
         if result.is_err() {
             return None;
         }
-        
+
         let len = u32::from_le_bytes(data) as usize;
         let mut data = vec![0u8; len];
 
         let result = stream.read_exact(data.as_mut_slice());
         if result.is_err() {
-            return None
+            None
         } else {
             Some(data)
         }
