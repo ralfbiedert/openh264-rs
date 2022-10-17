@@ -29,7 +29,7 @@
 //! for packet in nal_units(h264_in) {
 //!     // On the first few frames this may fail, so you should check the result
 //!     // a few packets before giving up.
-//!     let maybe_yuv = decoder.decode(packet);
+//!     let maybe_some_yuv = decoder.decode(packet);
 //! }
 //! # Ok(())
 //! # }
@@ -45,7 +45,7 @@
 //! # let mut decoder = Decoder::new()?;
 //! # let mut rgb_out = vec![0; 512 * 512 * 3];
 //! # let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
-//! # let yuv = decoder.decode(&h264_in[..])?;
+//! # let yuv = decoder.decode(&h264_in[..])?.ok_or_else(|| Error::msg("Must have image"))?;
 //!
 //! let config = EncoderConfig::new(512, 512);
 //! let mut encoder = Encoder::with_config(config)?;
@@ -163,6 +163,7 @@
 //!
 //! ## Changelog
 //!
+//! - **v0.3** - Change some APIs to better reflect OpenH264 behavior.
 //! - **v0.2** - Added encoder; `asm` feature for 2x - 3x speed boost.
 //! - **v0.1** - Initial release, decoder only.
 //!
@@ -191,4 +192,4 @@ pub mod decoder;
 pub mod encoder;
 
 pub use error::Error;
-pub use utils::{nal_units, to_bitstream_with_001, BitstreamLength};
+pub use utils::{nal_units, to_bitstream_with_001_be, to_bitstream_with_001_le, BitstreamLength};

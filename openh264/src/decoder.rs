@@ -4,9 +4,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
-    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
-    DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -167,17 +165,13 @@ impl Decoder {
     /// - the headers and series of complete frames
     /// - new frames after previous headers and frames were successfully decoded.
     ///
-    /// In each case, it will return the decoded image in YUV format.
+    /// In each case, it will return Some(decoded) image in YUV format if an image was available, or None
+    /// if more data needs to be provided.
     ///
     /// # Errors
     ///
-    /// The function returns an error if any of the packets is incomplete, e.g., was truncated.
-    ///
-    /// **If an error was returned you should not necessarily stop trying to decode the stream**, as more information might
-    /// arrive that will fix prior decoding errors. In particular the first few NAL units may be insufficient to produce YUVs.
-    ///
-    /// Note, this is an API design bug and will be fixed in 0.3, when this method should return a `Result<Option<_>, _>` instead.
-    pub fn decode(&mut self, packet: &[u8]) -> Result<DecodedYUV<'_>, Error> {
+    /// The function returns an error if the bitstream was corrupted.
+    pub fn decode(&mut self, packet: &[u8]) -> Result<Option<DecodedYUV<'_>>, Error> {
         let mut dst = [null_mut::<u8>(); 3];
         let mut buffer_info = SBufferInfo::default();
 
@@ -186,7 +180,8 @@ impl Decoder {
                 .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
                 .ok()?;
 
-            if buffer_info.iBufferStatus != 1 {
+            // Buffer status == 0 means frame data is not ready.
+            if buffer_info.iBufferStatus == 0 {
                 let mut num_frames: DECODER_OPTION = 0;
                 self.raw_api()
                     .get_option(
@@ -194,25 +189,25 @@ impl Decoder {
                         addr_of_mut!(num_frames).cast(),
                     )
                     .ok()?;
+
+                // If we have outstanding frames flush them, if then still no frame data ready we have an error.
                 if num_frames > 0 {
                     self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
 
-                    if buffer_info.iBufferStatus != 1 {
-                        return Err(Error::msg("Buffer status not valid"));
+                    if buffer_info.iBufferStatus == 0 {
+                        return Err(Error::msg(
+                            "Buffer status invalid, we have outstanding frames but failed to flush them.",
+                        ));
                     }
                 }
             }
 
             let info = buffer_info.UsrData.sSystemBuffer;
 
-            // TODO: Now that I think about it, this should probably be handled differently. Apparently it is ok for `decode_frame_no_delay` to not return
-            // an error _and_ to return null buffers. In that case we maybe should not return `Result<DecodedYUV, _>` but a `Result<Option<DecodedYUV>, _>`
-            // where `Ok(None)` means "no error yet, but insufficient data to provide a YUV".
-            // That way we could alsy simplify the `decoding` example again to rely on `Err` actually meaning an error, and not just "error or insufficient data".
+            // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
+            // the user should try to continue decoding.
             if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
-                return Err(Error::msg(
-                    "Decoder returned null buffers. This is a bug on our side, a bug in OpenH264, or a configuration error on yours.",
-                ));
+                return Ok(None);
             }
 
             // https://github.com/cisco/openh264/issues/2379
@@ -220,7 +215,7 @@ impl Decoder {
             let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
             let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
 
-            Ok(DecodedYUV { info, y, u, v })
+            Ok(Some(DecodedYUV { info, y, u, v }))
         }
     }
 

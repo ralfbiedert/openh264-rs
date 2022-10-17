@@ -30,16 +30,16 @@ fn can_access_raw_api() -> Result<(), Error> {
 #[rustfmt::skip]
 fn can_decode_single() -> Result<(), Error> {
     let sources = [
-        &include_bytes!("data/single_1920x1080_cabac.h264")[..],
-        &include_bytes!("data/single_512x512_cabac.h264")[..],
-        &include_bytes!("data/single_512x512_cavlc.h264")[..],
+        include_bytes!("data/single_1920x1080_cabac.h264").as_slice(),
+        include_bytes!("data/single_512x512_cabac.h264").as_slice(),
+        include_bytes!("data/single_512x512_cavlc.h264").as_slice(),
     ];
 
     for (_, src) in sources.iter().enumerate() {
         let config = DecoderConfig::default().debug(false);
         let mut decoder = Decoder::with_config(config)?;
 
-        let yuv = decoder.decode(src)?;
+        let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Should not happen"))?;
 
         let dim = yuv.dimension_rgb();
         let rgb_len = dim.0 * dim.1 * 3;
@@ -53,7 +53,7 @@ fn can_decode_single() -> Result<(), Error> {
 
 #[test]
 fn can_decode_multi_to_end() -> Result<(), Error> {
-    let src = &include_bytes!("data/multi_512x512.h264")[..];
+    let src = include_bytes!("data/multi_512x512.h264");
 
     let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
@@ -65,7 +65,7 @@ fn can_decode_multi_to_end() -> Result<(), Error> {
 
 #[test]
 fn can_decode_multi_by_step() -> Result<(), Error> {
-    let src = &include_bytes!("data/multi_512x512.h264")[..];
+    let src = include_bytes!("data/multi_512x512.h264");
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
@@ -82,42 +82,8 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 }
 
 #[test]
-fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
-    let src = &include_bytes!("data/multi_1024x768.raw")[..];
-    let compare_data = &include_bytes!("data/multi_1024x768.bmp")[..];
-
-    let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(config)?;
-
-    let mut decoded = None;
-
-    for packet in read_frame(src) {
-        decoded = Some(decoder.decode(packet.as_slice())?);
-    }
-
-    // Generate image from decoded frame
-    let decoded_frame = decoded.expect("No decoded data");
-    let dimensions = decoded_frame.dimension_rgb();
-    let mut frame_data = vec![0u8; dimensions.0 * dimensions.1 * 3];
-    decoded_frame.write_rgb8(frame_data.as_mut_slice())?;
-    let decoded_frame = RgbImage::from_vec(1024, 768, frame_data).expect("Failed to convert into image buffer");
-
-    // Get compare image
-    let compare_data = Cursor::new(compare_data);
-    let compare_data = image::load(compare_data, image::ImageFormat::Bmp)
-        .expect("Image load failed")
-        .into_rgb8();
-
-    let result = image_compare::rgb_hybrid_compare(&decoded_frame, &compare_data).expect("Image dimensitons are different");
-    // Images should be 99% similar
-    assert!(result.score > 0.99, "Image similarity score: {}", result.score);
-
-    Ok(())
-}
-
-#[test]
 fn fails_on_truncated() -> Result<(), Error> {
-    let src = &include_bytes!("data/multi_512x512_truncated.h264")[..];
+    let src = include_bytes!("data/multi_512x512_truncated.h264");
 
     let config = DecoderConfig::default().debug(false);
     let mut decoder = Decoder::with_config(config)?;
@@ -133,7 +99,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::encoder::{Encoder, EncoderConfig};
     use openh264::formats::RBGYUVConverter;
 
-    let src = &include_bytes!("data/lenna_128x128.rgb")[..];
+    let src = include_bytes!("data/lenna_128x128.rgb");
 
     let config = EncoderConfig::new(128, 128);
     let mut encoder = Encoder::with_config(config)?;
@@ -151,6 +117,42 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     Ok(())
 }
 
+#[test]
+fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
+    let src = include_bytes!("data/multi_1024x768.h264");
+    let compare_data = include_bytes!("data/multi_1024x768.bmp");
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(config)?;
+    let mut decoded = None;
+
+    // Read packets in TODO: what? format.
+    for packet in read_frame(src.as_slice()) {
+        decoded = Some(decoder.decode(packet.as_slice())?);
+    }
+
+    // Generate image from decoded frame
+    let decoded_frame = decoded.expect("No decoded data").expect("Image");
+    let dimensions = decoded_frame.dimension_rgb();
+    let mut frame_data = vec![0u8; dimensions.0 * dimensions.1 * 3];
+    decoded_frame.write_rgb8(frame_data.as_mut_slice())?;
+    let decoded_frame = RgbImage::from_vec(1024, 768, frame_data).expect("Failed to convert into image buffer");
+
+    // Get compare image
+    let compare_data = Cursor::new(compare_data);
+    let compare_data = image::load(compare_data, image::ImageFormat::Bmp)
+        .expect("Image load failed")
+        .into_rgb8();
+
+    let result = image_compare::rgb_hybrid_compare(&decoded_frame, &compare_data).expect("Image dimensions differ");
+
+    // Images should be 99% similar
+    assert!(result.score > 0.99, "Image similarity score: {}", result.score);
+
+    Ok(())
+}
+
+// TODO: Can we remove this to use `to_bitstream_with_001_le` above?
 // The packets in the file are written frame by frame
 // the first 4 bytes are frame length in little endian
 // followed by actual frame data

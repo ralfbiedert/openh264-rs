@@ -15,7 +15,7 @@ fn can_get_encoder() -> Result<(), Error> {
 
 #[test]
 fn encode() -> Result<(), Error> {
-    let src = &include_bytes!("data/lenna_128x128.rgb")[..];
+    let src = include_bytes!("data/lenna_128x128.rgb");
 
     let config = EncoderConfig::new(128, 128);
     let mut encoder = Encoder::with_config(config)?;
@@ -50,7 +50,7 @@ fn encode() -> Result<(), Error> {
 
 #[test]
 fn encoder_sps_pps() -> Result<(), Error> {
-    let src = &include_bytes!("data/lenna_128x128.rgb")[..];
+    let src = include_bytes!("data/lenna_128x128.rgb");
 
     let config = EncoderConfig::new(128, 128);
     let mut encoder = Encoder::with_config(config)?;
@@ -75,11 +75,11 @@ fn encoder_sps_pps() -> Result<(), Error> {
 fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::decoder::{Decoder, DecoderConfig};
 
-    let src = &include_bytes!("data/single_512x512_cavlc.h264")[..];
+    let src = include_bytes!("data/single_512x512_cavlc.h264");
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
-    let yuv = decoder.decode(src)?;
+    let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Must have image"))?;
 
     let config = EncoderConfig::new(512, 512);
     let mut encoder = Encoder::with_config(config)?;
