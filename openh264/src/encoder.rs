@@ -4,9 +4,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
-    SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
-    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -107,7 +105,7 @@ impl Default for RateControlMode {
 }
 
 impl RateControlMode {
-    fn to_c(&self) -> RC_MODES {
+    fn to_c(self) -> RC_MODES {
         match self {
             RateControlMode::Quality => openh264_sys2::RC_QUALITY_MODE,
             RateControlMode::Bitrate => openh264_sys2::RC_BITRATE_MODE,
