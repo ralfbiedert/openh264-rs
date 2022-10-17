@@ -1,5 +1,6 @@
 use cc::Build;
 use std::path::Path;
+use std::process::Command;
 use walkdir::WalkDir;
 
 /// Finds all files with an extension, ignoring some.
@@ -17,70 +18,78 @@ fn glob_import<P: AsRef<Path>>(root: P, extenstion: &str, exclude: &str) -> Vec<
 
 /// Attempts to compile assembly units and links them to the current compilation build.
 ///
-/// TODO: Ideally automatically use nasm when we have it, without any option.
+/// Ok, I tried to clean this up for 0.3 since I found the previous build logic a bit hard to follow. This works for me,
+/// but there is a chance I broke things, apologies if that's why you're here.
+///
+/// Feel free to submit PRs improving this file, but try to keep the logic 'KISS' and minimize branches and nesting if possible.
 #[allow(unused)]
 fn try_compile_nasm(cc_build: &mut Build, root: &str) {
-    #[cfg(feature = "asm")]
-    {
-        let target = std::env::var("TARGET").unwrap();
+    // If NASM isn't found we don't use it
+    if Command::new("nasm").status().is_err() {
+        println!("Command `nasm` not found, things will be slower.");
+        return;
+    }
 
-        let is_64bits = target.starts_with("x86_64") || target.starts_with("aarch64");
-        let is_x86 = target.starts_with("x86_64") || target.starts_with("i686");
-        let is_arm = target.starts_with("arm") || target.starts_with("arm7") || target.starts_with("aarch64");
-        let is_windows = target.contains("windows");
-        let is_unix = target.contains("apple") || target.contains("linux");
+    let target = std::env::var("TARGET").unwrap();
 
-        let (extension, cpp_define, asm_dir, asm_define, exclude) = if is_x86 {
-            let extension = ".asm";
-            let cpp_define = "X86_ASM";
-            let asm_dir = "x86";
-            let exclusion = "asm_inc.asm";
-            if is_windows && is_64bits {
-                (extension, cpp_define, asm_dir, "WIN64", exclusion)
-            } else if is_unix && is_64bits {
-                (extension, cpp_define, asm_dir, "UNIX64", exclusion)
-            } else {
-                (extension, cpp_define, asm_dir, "X86_32", exclusion)
-            }
-        } else if is_arm {
-            let extension = ".S";
-            if is_64bits {
-                (
-                    extension,
-                    "HAVE_NEON_AARCH64",
-                    "arm64",
-                    "HAVE_NEON_AARCH64",
-                    "arm_arch64_common_macro.S",
-                )
-            } else {
-                (extension, "HAVE_NEON", "arm", "HAVE_NEON", "arm_arch_common_macro.S")
-            }
+    let is_64bits = target.starts_with("x86_64") || target.starts_with("aarch64");
+    let is_x86 = target.starts_with("x86_64") || target.starts_with("i686");
+    let is_arm = target.starts_with("arm") || target.starts_with("arm7") || target.starts_with("aarch64");
+    let is_windows = target.contains("windows");
+    let is_unix = target.contains("apple") || target.contains("linux");
+
+    let mut extension = "";
+    let mut cpp_define = "";
+    let mut asm_dir = "";
+    let mut asm_define = "";
+    let mut exclusion = "";
+
+    if is_x86 {
+        extension = ".asm";
+        cpp_define = "X86_ASM";
+        asm_dir = "x86";
+        exclusion = "asm_inc.asm";
+
+        if is_windows && is_64bits {
+            asm_define = "WIN64";
+        } else if is_unix && is_64bits {
+            asm_define = "UNIX64";
         } else {
-            panic!("Failure to evaluate build logic for target. Only `x86` and `ARM` are supported for now.");
-        };
-
-        if is_x86 {
-            if let Ok(objs) = nasm_rs::Build::new()
-                .include(format!("upstream/codec/common/{}/", asm_dir))
-                .define(asm_define, None)
-                .files(glob_import(root, extension, exclude))
-                .compile_objects()
-            {
-                cc_build.define(cpp_define, None);
-                for obj in &objs {
-                    cc_build.object(obj);
-                }
-            } else {
-                println!(
-                        "cargo:warning=Failed to build asm files, please check that NASM is available on the path and is at a recent version."
-                    );
-            }
-        } else {
-            cc_build
-                .include(format!("upstream/codec/common/{}/", asm_dir))
-                .define(asm_define, None)
-                .files(glob_import(root, extension, exclude));
+            asm_define = "X86_32";
         }
+    } else if is_arm {
+        extension = ".S";
+
+        if is_64bits {
+            cpp_define = "HAVE_NEON_AARCH64";
+            asm_dir = "arm64";
+            asm_define = "HAVE_NEON_AARCH64";
+            exclusion = "arm_arch64_common_macro.S";
+        } else {
+            cpp_define = "HAVE_NEON";
+            asm_dir = "arm";
+            asm_define = "HAVE_NEON";
+            exclusion = "arm_arch_common_macro.S";
+        }
+    }
+
+    // Try to compile NASM targets
+    let try_compile_nasm = nasm_rs::Build::new()
+        .include(format!("upstream/codec/common/{}/", asm_dir))
+        .define(asm_define, Some(asm_define))
+        .files(glob_import(root, extension, exclusion))
+        .compile_objects();
+
+    if let Ok(objs) = try_compile_nasm {
+        cc_build.define(cpp_define, None);
+        for obj in &objs {
+            cc_build.object(obj);
+        }
+    } else {
+        cc_build
+            .include(format!("upstream/codec/common/{}/", asm_dir))
+            .define(asm_define, None)
+            .files(glob_import(root, extension, exclusion));
     }
 }
 
@@ -114,6 +123,7 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
 
 fn main() {
     compile_and_add_openh264_static_lib("common", "upstream/codec/common", &[]);
+
     compile_and_add_openh264_static_lib(
         "processing",
         "upstream/codec/processing",
@@ -140,7 +150,4 @@ fn main() {
             "upstream/codec/processing/interface/",
         ],
     );
-
-    #[cfg(not(any(feature = "decoder", feature = "encoder")))]
-    panic!("at least one of 'decoder' or 'encoder' feature must be enabled");
 }
