@@ -20,7 +20,7 @@ fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgb8(tgt).unwrap();
+        yuv.write_rgb8(tgt);
     });
 }
 
@@ -39,7 +39,7 @@ fn convert_yuv_to_rgba_1920x1080(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgba8(tgt).unwrap();
+        yuv.write_rgba8(tgt);
     });
 }
 
@@ -58,6 +58,6 @@ fn convert_yuv_to_rgb_512x512(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgb8(tgt).unwrap();
+        yuv.write_rgb8(tgt);
     });
 }

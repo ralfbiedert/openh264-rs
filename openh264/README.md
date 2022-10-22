@@ -2,7 +2,7 @@
 [![Latest Version]][crates.io]
 [![docs]][docs.rs]
 ![BSD-2]
-[![Rust](https://img.shields.io/badge/rust-1.53%2B-blue.svg?maxAge=3600)](https://github.com/ralfbiedert/openh264-rust)
+[![Rust](https://img.shields.io/badge/rust-1.64%2B-blue.svg?maxAge=3600)](https://github.com/ralfbiedert/openh264-rust)
 [![Rust](https://github.com/ralfbiedert/openh264-rust/actions/workflows/rust.yml/badge.svg)](https://github.com/ralfbiedert/openh264-rust/actions/workflows/rust.yml)
 
 ## OpenH264 Rust API
@@ -26,7 +26,7 @@ let mut decoder = Decoder::new()?;
 for packet in nal_units(h264_in) {
     // On the first few frames this may fail, so you should check the result
     // a few packets before giving up.
-    let maybe_yuv = decoder.decode(packet);
+    let maybe_some_yuv = decoder.decode(packet);
 }
 ```
 
@@ -74,7 +74,7 @@ test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
 test encode_1920x1080_from_yuv       ... bench:  38,657,620 ns/iter (+/- 793,310)
 test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
 
--- Feature `asm` --
+-- If `nasm` available --
 test decode_yuv_single_1920x1080     ... bench:   4,265,260 ns/iter (+/- 89,438)
 test decode_yuv_single_512x512_cabac ... bench:     901,025 ns/iter (+/- 21,902)
 test decode_yuv_single_512x512_cavlc ... bench:   1,618,880 ns/iter (+/- 53,713)
@@ -90,7 +90,6 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 
 - `decoder` - Enable the decoder. Used by default.
 - `encoder` - Enable the encoder. Used by default.
-- `asm` - Enable assembly. Only supported on `x86` and `ARM`, requires `nasm` installed.
 
 ### FAQ
 
@@ -149,6 +148,7 @@ Especially needed:
 
 ### Changelog
 
+- **v0.3** - Change some APIs to better reflect OpenH264 behavior.
 - **v0.2** - Added encoder; `asm` feature for 2x - 3x speed boost.
 - **v0.1** - Initial release, decoder only.
 

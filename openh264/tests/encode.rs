@@ -2,7 +2,7 @@
 #![allow(clippy::bool_assert_comparison)]
 
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
-use openh264::formats::RBGYUVConverter;
+use openh264::formats::YUVBuffer;
 use openh264::Error;
 
 #[test]
@@ -19,9 +19,9 @@ fn encode() -> Result<(), Error> {
 
     let config = EncoderConfig::new(128, 128);
     let mut encoder = Encoder::with_config(config)?;
-    let mut converter = RBGYUVConverter::new(128, 128);
+    let mut converter = YUVBuffer::new(128, 128);
 
-    converter.convert(src);
+    converter.read_rgb(src);
 
     let stream = encoder.encode(&converter)?;
 
@@ -54,9 +54,9 @@ fn encoder_sps_pps() -> Result<(), Error> {
 
     let config = EncoderConfig::new(128, 128);
     let mut encoder = Encoder::with_config(config)?;
-    let mut converter = RBGYUVConverter::new(128, 128);
+    let mut converter = YUVBuffer::new(128, 128);
 
-    converter.convert(src);
+    converter.read_rgb(src);
 
     let stream = encoder.encode(&converter)?;
 

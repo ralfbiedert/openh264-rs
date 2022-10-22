@@ -2,7 +2,7 @@
 
 mod rgb2yuv;
 
-pub use rgb2yuv::RBGYUVConverter;
+pub use rgb2yuv::YUVBuffer;
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
 pub trait YUVSource {

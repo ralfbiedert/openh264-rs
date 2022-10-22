@@ -331,23 +331,22 @@ impl<'a> DecodedYUV<'a> {
     /// # Panics
     ///
     /// Panics if the target image dimension don't match the configured format.
-    pub fn write_rgb8(&self, target: &mut [u8]) -> Result<(), Error> {
+    pub fn write_rgb8(&self, target: &mut [u8]) {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();
         let wanted = dim.0 * dim.1 * 3;
 
         // This needs some love, and better architecture.
         assert_eq!(self.info.iFormat, videoFormatI420 as i32);
-
-        if target.len() != wanted as usize {
-            return Err(Error::msg(&format!(
-                "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
-                dim.0,
-                dim.1,
-                wanted,
-                target.len()
-            )));
-        }
+        assert_eq!(
+            target.len(),
+            wanted as usize,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
 
         for y in 0..dim.1 {
             for x in 0..dim.0 {
@@ -367,8 +366,6 @@ impl<'a> DecodedYUV<'a> {
                 rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
             }
         }
-
-        Ok(())
     }
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
@@ -377,23 +374,22 @@ impl<'a> DecodedYUV<'a> {
     /// # Panics
     ///
     /// Panics if the target image dimension don't match the configured format.
-    pub fn write_rgba8(&self, target: &mut [u8]) -> Result<(), Error> {
+    pub fn write_rgba8(&self, target: &mut [u8]) {
         let dim = self.dimension_rgb();
         let strides = self.strides_yuv();
         let wanted = dim.0 * dim.1 * 4;
 
         // This needs some love, and better architecture.
         assert_eq!(self.info.iFormat, videoFormatI420 as i32);
-
-        if target.len() != wanted as usize {
-            return Err(Error::msg(&format!(
-                "Target RGBA8 array does not match image dimensions. Wanted: {} * {} * 4 = {}, got {}",
-                dim.0,
-                dim.1,
-                wanted,
-                target.len()
-            )));
-        }
+        assert_eq!(
+            target.len(),
+            wanted as usize,
+            "Target RGBA8 array does not match image dimensions. Wanted: {} * {} * 4 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
 
         for y in 0..dim.1 {
             for x in 0..dim.0 {
@@ -414,8 +410,6 @@ impl<'a> DecodedYUV<'a> {
                 rgb_pixel[3] = 255;
             }
         }
-
-        Ok(())
     }
 }
 

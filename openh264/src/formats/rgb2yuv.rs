@@ -1,14 +1,14 @@
 use crate::formats::YUVSource;
 
 /// Converts RGB to YUV data.
-pub struct RBGYUVConverter {
+pub struct YUVBuffer {
     yuv: Vec<u8>,
     width: usize,
     height: usize,
 }
 
-impl RBGYUVConverter {
-    /// Allocates a new helper for the given format.
+impl YUVBuffer {
+    /// Allocates a new YUV buffer with the given width and height.
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             yuv: vec![0u8; (3 * (width * height)) / 2],
@@ -17,8 +17,34 @@ impl RBGYUVConverter {
         }
     }
 
-    /// Converts the RGB array.
-    pub fn convert(&mut self, rgb: &[u8]) {
+    /// Allocates a new YUV buffer with the given width and height and data.
+    ///
+    /// Data `rgb` is assumed to be `[rgb rgb rgb ...]`, starting at `y = 0`, continuing downwards, in other words
+    /// how you'd naively store an RGB image buffer.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if `rgb` does not match the formats given.
+    pub fn with_rgb(width: usize, height: usize, rgb: &[u8]) -> Self {
+        let mut rval = Self {
+            yuv: vec![0u8; (3 * (width * height)) / 2],
+            width,
+            height,
+        };
+
+        rval.read_rgb(rgb);
+        rval
+    }
+
+    /// Reads an RGB buffer, converts it to YUV and stores it.
+    ///
+    /// Data `rgb` is assumed to be `[rgb rgb rgb ...]`, starting at `y = 0`, continuing downwards, in other words
+    /// how you'd naively store an RGB image buffer.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if `rgb` does not match the formats given.
+    pub fn read_rgb(&mut self, rgb: &[u8]) {
         let width = self.width;
         let height = self.height;
 
@@ -73,7 +99,7 @@ impl RBGYUVConverter {
     }
 }
 
-impl YUVSource for RBGYUVConverter {
+impl YUVSource for YUVBuffer {
     fn width(&self) -> i32 {
         self.width as i32
     }
@@ -112,51 +138,53 @@ impl YUVSource for RBGYUVConverter {
 
 #[cfg(test)]
 mod tests {
-    use super::RBGYUVConverter;
+    use super::YUVBuffer;
     use crate::formats::YUVSource;
 
     #[test]
     fn rgb_to_yuv_conversion_black_2x2() {
-        let mut converter = RBGYUVConverter::new(2, 2);
-        let rgb = [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-        converter.convert(&rgb);
-        assert_eq!(converter.y(), [16u8, 16u8, 16u8, 16u8]);
-        assert_eq!(converter.u(), [128u8]);
-        assert_eq!(converter.v(), [128u8]);
-        assert_eq!(converter.y_stride(), 2);
-        assert_eq!(converter.u_stride(), 1);
-        assert_eq!(converter.v_stride(), 1);
+        let yuv = YUVBuffer::with_rgb(2, 2, &[0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]);
+        assert_eq!(yuv.y(), [16u8, 16u8, 16u8, 16u8]);
+        assert_eq!(yuv.u(), [128u8]);
+        assert_eq!(yuv.v(), [128u8]);
+        assert_eq!(yuv.y_stride(), 2);
+        assert_eq!(yuv.u_stride(), 1);
+        assert_eq!(yuv.v_stride(), 1);
     }
 
     #[test]
     fn rgb_to_yuv_conversion_white_4x2() {
-        let mut converter = RBGYUVConverter::new(4, 2);
-        let rgb = [
-            255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
-            255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
-        ];
-        converter.convert(&rgb);
-        assert_eq!(converter.y(), [235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8]);
-        assert_eq!(converter.u(), [128u8, 128u8]);
-        assert_eq!(converter.v(), [128u8, 128u8]);
-        assert_eq!(converter.y_stride(), 4);
-        assert_eq!(converter.u_stride(), 2);
-        assert_eq!(converter.v_stride(), 2);
+        let yuv = YUVBuffer::with_rgb(
+            4,
+            2,
+            &[
+                255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
+                255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
+            ],
+        );
+        assert_eq!(yuv.y(), [235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8]);
+        assert_eq!(yuv.u(), [128u8, 128u8]);
+        assert_eq!(yuv.v(), [128u8, 128u8]);
+        assert_eq!(yuv.y_stride(), 4);
+        assert_eq!(yuv.u_stride(), 2);
+        assert_eq!(yuv.v_stride(), 2);
     }
 
     #[test]
     fn rgb_to_yuv_conversion_red_2x4() {
-        let mut converter = RBGYUVConverter::new(4, 2);
-        let rgb = [
-            255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8,
-            0u8, 255u8, 0u8, 0u8,
-        ];
-        converter.convert(&rgb);
-        assert_eq!(converter.y(), [81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8]);
-        assert_eq!(converter.u(), [90u8, 90u8]);
-        assert_eq!(converter.v(), [239u8, 239u8]);
-        assert_eq!(converter.y_stride(), 4);
-        assert_eq!(converter.u_stride(), 2);
-        assert_eq!(converter.v_stride(), 2);
+        let yuv = YUVBuffer::with_rgb(
+            4,
+            2,
+            &[
+                255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8,
+                0u8, 255u8, 0u8, 0u8,
+            ],
+        );
+        assert_eq!(yuv.y(), [81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8]);
+        assert_eq!(yuv.u(), [90u8, 90u8]);
+        assert_eq!(yuv.v(), [239u8, 239u8]);
+        assert_eq!(yuv.y_stride(), 4);
+        assert_eq!(yuv.u_stride(), 2);
+        assert_eq!(yuv.v_stride(), 2);
     }
 }

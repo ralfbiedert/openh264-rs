@@ -230,7 +230,7 @@ impl Encoder {
         assert_eq!(yuv_source.height(), self.params.iPicHeight);
 
         // Converting *const u8 to *mut u8 should be fine because the encoder _should_
-        // only read these arrays (TOOD: needs verification).
+        // only read these arrays (TODO: needs verification).
         let source = SSourcePicture {
             iColorFormat: videoFormatI420,
             iStride: [yuv_source.y_stride(), yuv_source.u_stride(), yuv_source.v_stride(), 0],

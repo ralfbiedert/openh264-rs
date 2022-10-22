@@ -45,7 +45,7 @@ fn can_decode_single() -> Result<(), Error> {
         let rgb_len = dim.0 * dim.1 * 3;
         let mut rgb = vec![0; rgb_len];
 
-        yuv.write_rgb8(&mut rgb)?;
+        yuv.write_rgb8(&mut rgb);
     }
 
     Ok(())
@@ -97,15 +97,15 @@ fn fails_on_truncated() -> Result<(), Error> {
 #[cfg(feature = "encoder")]
 fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::encoder::{Encoder, EncoderConfig};
-    use openh264::formats::RBGYUVConverter;
+    use openh264::formats::YUVBuffer;
 
     let src = include_bytes!("data/lenna_128x128.rgb");
 
     let config = EncoderConfig::new(128, 128);
     let mut encoder = Encoder::with_config(config)?;
-    let mut converter = RBGYUVConverter::new(128, 128);
+    let mut converter = YUVBuffer::new(128, 128);
 
-    converter.convert(src);
+    converter.read_rgb(src);
 
     let stream = encoder.encode(&converter)?;
 
@@ -135,7 +135,7 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
     let decoded_frame = decoded.expect("No decoded data").expect("Image");
     let dimensions = decoded_frame.dimension_rgb();
     let mut frame_data = vec![0u8; dimensions.0 * dimensions.1 * 3];
-    decoded_frame.write_rgb8(frame_data.as_mut_slice())?;
+    decoded_frame.write_rgb8(frame_data.as_mut_slice());
     let decoded_frame = RgbImage::from_vec(1024, 768, frame_data).expect("Failed to convert into image buffer");
 
     // Get compare image

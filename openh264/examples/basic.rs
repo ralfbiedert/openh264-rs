@@ -8,7 +8,7 @@ fn main() -> Result<(), Error> {
     let mut decoder = Decoder::new()?;
     let image = decoder.decode(h264_packets)?.ok_or_else(|| Error::msg("Must have image"))?;
 
-    image.write_rgb8(&mut rgb)?;
+    image.write_rgb8(&mut rgb);
 
     Ok(())
 }

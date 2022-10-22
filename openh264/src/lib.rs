@@ -88,7 +88,7 @@
 //! test encode_1920x1080_from_yuv       ... bench:  38,657,620 ns/iter (+/- 793,310)
 //! test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
 //!
-//! -- Feature `asm` --
+//! -- If `nasm` available --
 //! test decode_yuv_single_1920x1080     ... bench:   4,265,260 ns/iter (+/- 89,438)
 //! test decode_yuv_single_512x512_cabac ... bench:     901,025 ns/iter (+/- 21,902)
 //! test decode_yuv_single_512x512_cavlc ... bench:   1,618,880 ns/iter (+/- 53,713)
@@ -104,7 +104,6 @@
 //!
 //! - `decoder` - Enable the decoder. Used by default.
 //! - `encoder` - Enable the encoder. Used by default.
-//! - `asm` - Enable assembly. Only supported on `x86` and `ARM`, requires `nasm` installed.
 //!
 //! ## FAQ
 //!
@@ -134,6 +133,13 @@
 //! - **Feature X is missing or broken, will you fix it?**
 //!
 //!   Right now I only have time to implement what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
+//!
+//!
+//! - **Can I get a performance boost?**
+//!
+//!   Make sure you have the command `nasm` somewhere in your PATH for your current platform (should be a single, standalone
+//!   executable you don't even need to install). If found by `build.rs` it should be used automatically for an up to 3x speed
+//!   boost.
 //!
 //!
 //! - **Decoder::decode() returned an error, is this a bug?**
