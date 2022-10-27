@@ -19,7 +19,7 @@ encoder = ["openh264-sys2/encoder"]
 backtrace = [] # Remove once backtrace feature is stable.
 
 [dependencies]
-openh264-sys2 = { path = "../openh264-sys2", version = "0.2.5", default-features = false }
+openh264-sys2 = { path = "../openh264-sys2", version = "0.3.0", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true
