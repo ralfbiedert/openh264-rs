@@ -121,6 +121,13 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
   Right now I only have time to implement what I need. However, I will gladly accept PRs either extending the APIs, or fixing bugs; see below.
 
 
+- **Can I get a performance boost?**
+
+  Make sure you have the command `nasm` somewhere in your PATH for your current platform (should be a single, standalone
+  executable you don't even need to install). If found by `build.rs` it should be used automatically for an up to 3x speed
+  boost.
+
+
 - **Decoder::decode() returned an error, is this a bug?**
 
   Maybe. Probably not. Some encoders can write data OpenH264 doesn't understand, and if _all_ frames fail this could either
