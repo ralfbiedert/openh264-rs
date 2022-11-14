@@ -74,13 +74,20 @@ fn try_compile_nasm(cc_build: &mut Build, root: &str) {
     }
 
     // Try to compile NASM targets
-    let try_compile_nasm = nasm_rs::Build::new()
+    let mut try_compiler_nasm = nasm_rs::Build::new();
+    let mut try_compile_nasm = try_compiler_nasm
         .include(format!("upstream/codec/common/{}/", asm_dir))
-        .define(asm_define, Some(asm_define))
+        .define(asm_define, Some(asm_define));
+
+    if is_unix && is_x86 && is_64bits {
+        try_compile_nasm.define("PREFIX", None);
+    }
+
+    let compile_result = try_compile_nasm
         .files(glob_import(root, extension, exclusion))
         .compile_objects();
 
-    if let Ok(objs) = try_compile_nasm {
+    if let Ok(objs) = compile_result {
         cc_build.define(cpp_define, None);
         for obj in &objs {
             cc_build.object(obj);
