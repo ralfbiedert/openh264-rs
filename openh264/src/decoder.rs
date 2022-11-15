@@ -84,6 +84,9 @@ impl Drop for DecoderRawAPI {
     }
 }
 
+unsafe impl Send for DecoderRawAPI {}
+unsafe impl Sync for DecoderRawAPI {}
+
 /// Configuration for the [`Decoder`].
 ///
 /// Setting missing? Please file a PR!

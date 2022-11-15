@@ -81,6 +81,9 @@ impl Drop for EncoderRawAPI {
     }
 }
 
+unsafe impl Send for EncoderRawAPI {}
+unsafe impl Sync for EncoderRawAPI {}
+
 /// Specifies the mode used by the encoder to control the rate.
 #[derive(Copy, Clone, Debug)]
 pub enum RateControlMode {
@@ -186,6 +189,9 @@ pub struct Encoder {
     raw_api: EncoderRawAPI,
     bit_stream_info: SFrameBSInfo,
 }
+
+unsafe impl Send for Encoder {}
+unsafe impl Sync for Encoder {}
 
 impl Encoder {
     /// Create an encoder with the provided configuration.
