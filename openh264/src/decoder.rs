@@ -4,7 +4,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
+    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+    DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -271,6 +273,18 @@ pub struct DecodedYUV<'a> {
     v: &'a [u8],
 }
 
+#[cfg(feature = "rayon")]
+#[inline]
+fn run_closure_maybe_parallel<'scope, R>(op: impl FnOnce(&rayon::Scope<'scope>) -> R) -> R {
+    rayon::in_place_scope(op)
+}
+
+#[cfg(not(feature = "rayon"))]
+#[inline]
+fn run_closure_maybe_parallel<R>(op: impl FnOnce(()) -> R) -> R {
+    op(())
+}
+
 impl<'a> DecodedYUV<'a> {
     /// Returns the Y (luma) array, including padding.
     ///
@@ -351,24 +365,30 @@ impl<'a> DecodedYUV<'a> {
             target.len()
         );
 
-        for y in 0..dim.1 {
-            for x in 0..dim.0 {
-                let base_tgt = (y * dim.0 + x) * 3;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
+        #[allow(unused_variables)]
+        run_closure_maybe_parallel(|scope| {
+            for (y, line_pixels) in (0..dim.1).zip(target.chunks_exact_mut(dim.0 * 3)) {
+                let mut line_job = move || {
+                    for (x, pixel) in (0..dim.0).zip(line_pixels.chunks_exact_mut(3)) {
+                        let base_y = y * strides.0 + x;
+                        let base_u = (y / 2 * strides.1) + (x / 2);
+                        let base_v = (y / 2 * strides.2) + (x / 2);
 
-                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+                        let y = self.y[base_y] as f32;
+                        let u = self.u[base_u] as f32;
+                        let v = self.v[base_v] as f32;
 
-                let y = self.y[base_y] as f32;
-                let u = self.u[base_u] as f32;
-                let v = self.v[base_v] as f32;
-
-                rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
-                rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
-                rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+                        pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
+                        pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
+                        pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+                    }
+                };
+                #[cfg(feature = "rayon")]
+                scope.spawn(move |_| line_job());
+                #[cfg(not(feature = "rayon"))]
+                line_job();
             }
-        }
+        });
     }
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
@@ -394,25 +414,31 @@ impl<'a> DecodedYUV<'a> {
             target.len()
         );
 
-        for y in 0..dim.1 {
-            for x in 0..dim.0 {
-                let base_tgt = (y * dim.0 + x) * 4;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
+        #[allow(unused_variables)]
+        run_closure_maybe_parallel(|scope| {
+            for (y, line_pixels) in (0..dim.1).zip(target.chunks_exact_mut(dim.0 * 4)) {
+                let mut line_job = move || {
+                    for (x, pixel) in (0..dim.0).zip(line_pixels.chunks_exact_mut(4)) {
+                        let base_y = y * strides.0 + x;
+                        let base_u = (y / 2 * strides.1) + (x / 2);
+                        let base_v = (y / 2 * strides.2) + (x / 2);
 
-                let rgb_pixel = &mut target[base_tgt..base_tgt + 4];
+                        let y = self.y[base_y] as f32;
+                        let u = self.u[base_u] as f32;
+                        let v = self.v[base_v] as f32;
 
-                let y = self.y[base_y] as f32;
-                let u = self.u[base_u] as f32;
-                let v = self.v[base_v] as f32;
-
-                rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
-                rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
-                rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
-                rgb_pixel[3] = 255;
+                        pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
+                        pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
+                        pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+                        pixel[3] = 255;
+                    }
+                };
+                #[cfg(feature = "rayon")]
+                scope.spawn(move |_| line_job());
+                #[cfg(not(feature = "rayon"))]
+                line_job();
             }
-        }
+        });
     }
 }
 
