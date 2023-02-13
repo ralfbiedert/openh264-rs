@@ -266,10 +266,22 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
         .pic(true)
         // Upstream sets these two and if we don't we get segmentation faults on Linux and MacOS ... Happy times.
         .flag_if_supported("-fno-strict-aliasing")
-        .flag_if_supported("-fstack-protector-all")
         .flag_if_supported("-fembed-bitcode")
         .flag_if_supported("-fno-common")
         .flag_if_supported("-undefined dynamic_lookup");
+
+    // disable stack protectors on mingw:
+    // (seems to be the way to go https://github.com/rdp/ffmpeg-windows-build-helpers/issues/380)
+
+    if let Target {
+        os: TargetOs::Windows,
+        env: TargetEnv::Gnu,
+        ..
+    } = Target::from_env() {
+    } else {
+        cc_build.flag_if_supported("-fstack-protector-all");
+    }
+
 
     for include in includes {
         cc_build.include(include);
@@ -279,16 +291,6 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
 
     println!("cargo:rustc-link-lib=static=openh264_{}", name);
 
-    if let Target {
-        os: TargetOs::Windows,
-        env: TargetEnv::Gnu,
-        ..
-    } = Target::from_env() {
-        // link to libssp_nonshared.a and libssp.a on Mingw
-        // This is required for stack protectors to work on MinGW
-        println!("cargo:rustc-link-arg=-lssp_nonshared");
-        println!("cargo:rustc-link-arg=-lssp");
-    }
 }
 
 fn main() {
