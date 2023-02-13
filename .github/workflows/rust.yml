@@ -19,6 +19,9 @@ jobs:
         toolchain:
           - stable
           - nightly
+        nasm:
+          - true
+          - false
     runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v2
@@ -31,6 +34,11 @@ jobs:
         profile: minimal
         toolchain: ${{ matrix.toolchain }}
         override: true
+    - name: Install NASM
+      uses: ilammy/setup-nasm@v1
+      if: matrix.nasm
+      with:
+        version: 2.15.05
     - name: LFS Checkout
       run: git lfs checkout
     - name: Version
