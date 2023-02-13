@@ -22,17 +22,29 @@ jobs:
           # eh, actually it doesn't seem easy to get musl working
           # because openh265 requires a C++ compiler, and musl doesn't provide one
 #          - x86_64-unknown-linux-musl
+          - armv7-unknown-linux-gnueabihf
+          - aarch64-unknown-linux-gnu
           - x86_64-apple-darwin
+          - aarch64-apple-darwin
           - i686-pc-windows-msvc
           - i686-pc-windows-gnu
           - x86_64-pc-windows-gnu
           - x86_64-pc-windows-msvc
+          - aarch64-pc-windows-msvc
         include:
           - target: i686-unknown-linux-gnu
             runs-on: ubuntu-latest
             packages: gcc-multilib g++-multilib # provides 32-bit headers
           - target: x86_64-unknown-linux-gnu
             runs-on: ubuntu-latest
+          - target: armv7-unknown-linux-gnueabihf
+            runs-on: ubuntu-latest
+            packages: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf # provides armv7 headers
+            no-test: true
+          - target: aarch64-unknown-linux-gnu
+            runs-on: ubuntu-latest
+            packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu # provides aarch64 headers
+            no-test: true
 
 #          - target: x86_64-unknown-linux-musl
 #            runs-on: ubuntu-latest
@@ -40,6 +52,9 @@ jobs:
 
           - target: x86_64-apple-darwin
             runs-on: macos-latest
+          - target: aarch64-apple-darwin
+            runs-on: macos-latest
+            no-test: true
 
           - target: i686-pc-windows-gnu
             runs-on: windows-latest
@@ -51,6 +66,9 @@ jobs:
             mingw: x64
           - target: x86_64-pc-windows-msvc
             runs-on: windows-latest
+          - target: aarch64-pc-windows-msvc
+            runs-on: windows-latest
+            no-test: true
 
     runs-on: ${{ matrix.runs-on }}
     steps:
@@ -89,3 +107,4 @@ jobs:
       run: cargo build --verbose --target=${{ matrix.target }}
     - name: Test
       run: cargo test --verbose --target=${{ matrix.target }} -- --test-threads=1 --nocapture
+      if: matrix.no-test != 'true'
