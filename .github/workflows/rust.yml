@@ -15,13 +15,43 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubuntu-latest, windows-latest, macos-latest]
-        toolchain:
-          - stable
-          - nightly
-        nasm:
-          - true
-          - false
+        nasm: [nasm, no-nasm]
+        target:
+          - i686-unknown-linux-gnu
+          - x86_64-unknown-linux-gnu
+          # eh, actually it doesn't seem easy to get musl working
+          # because openh265 requires a C++ compiler, and musl doesn't provide one
+#          - x86_64-unknown-linux-musl
+          - x86_64-apple-darwin
+          - i686-pc-windows-msvc
+          - i686-pc-windows-gnu
+          - x86_64-pc-windows-gnu
+          - x86_64-pc-windows-msvc
+        include:
+          - target: i686-unknown-linux-gnu
+            runs-on: ubuntu-latest
+            packages: gcc-multilib g++-multilib # provides 32-bit headers
+          - target: x86_64-unknown-linux-gnu
+            runs-on: ubuntu-latest
+
+#          - target: x86_64-unknown-linux-musl
+#            runs-on: ubuntu-latest
+#            packages: musl-tools # provides musl-gcc
+
+          - target: x86_64-apple-darwin
+            runs-on: macos-latest
+
+          - target: i686-pc-windows-gnu
+            runs-on: windows-latest
+            mingw: x86
+          - target: i686-pc-windows-msvc
+            runs-on: windows-latest
+          - target: x86_64-pc-windows-gnu
+            runs-on: windows-latest
+            mingw: x64
+          - target: x86_64-pc-windows-msvc
+            runs-on: windows-latest
+
     runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v2
@@ -32,18 +62,30 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: ${{ matrix.toolchain }}
+        toolchain: stable
         override: true
+        target: ${{ matrix.target }}
     - name: Install NASM
       uses: ilammy/setup-nasm@v1
-      if: matrix.nasm
+      if: matrix.nasm == 'nasm'
       with:
         version: 2.15.05
+    - name: Install Additional packages
+      uses: awalsh128/cache-apt-pkgs-action@v1.2.4
+      if: matrix.packages != ''
+      with:
+        packages: ${{ matrix.packages }}
+        version: 1.0
+    - name: Set up MinGW
+      uses: egor-tensin/setup-mingw@v2
+      if: matrix.mingw != ''
+      with:
+        platform: ${{ matrix.mingw }}
     - name: LFS Checkout
       run: git lfs checkout
     - name: Version
       run: rustc -Vv
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --target=${{ matrix.target }}
     - name: Test
-      run: cargo test --verbose -- --test-threads=1 --nocapture
+      run: cargo test --verbose --target=${{ matrix.target }} -- --test-threads=1 --nocapture
