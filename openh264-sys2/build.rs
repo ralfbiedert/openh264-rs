@@ -286,8 +286,8 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
     } = Target::from_env() {
         // link to libssp_nonshared.a and libssp.a on Mingw
         // This is required for stack protectors to work on MinGW
-        println!("cargo:rustc-link-lib=static=ssp_nonshared");
-        println!("cargo:rustc-link-lib=static=ssp");
+        println!("cargo:rustc-link-arg=-lssp_nonshared");
+        println!("cargo:rustc-link-arg=-lssp");
     }
 }
 
