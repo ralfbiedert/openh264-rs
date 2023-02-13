@@ -143,6 +143,16 @@ impl NasmConfiguration {
         // use TargetEnv::*;
         use TargetOs::*;
 
+        match target.arch {
+            // for now, we only support building asm with nasm
+            // and nasm only supports x86 and x86_64
+            // sooo, even though we have some logic for other arches coded, we don't actually support them
+            X86_64 | X86 => {}
+            _ => return None,
+        }
+
+        // this function basically repeats what is done across several included makefiles in the `build` directory of the upstream
+
         let asm_extension = match target.arch {
             X86_64 | X86 => ".asm",
             Aarch64 | Arm => ".S",
@@ -206,12 +216,7 @@ impl NasmConfiguration {
     }
 }
 
-/// Attempts to compile assembly units and links them to the current compilation build.
-///
-/// Ok, I tried to clean this up for 0.3 since I found the previous build logic a bit hard to follow. This works for me,
-/// but there is a chance I broke things, apologies if that's why you're here.
-///
-/// Feel free to submit PRs improving this file, but try to keep the logic 'KISS' and minimize branches and nesting if possible.
+
 #[allow(unused)]
 fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
     if std::env::var("OPENH264_NO_ASM").is_ok() {
@@ -236,6 +241,7 @@ fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
     }
 
     // Run `nasm` and store result.
+    // TODO: is it a good idea to "silently" disable assembly if this fails?
     let Ok(object_files) = nasm_build.files(glob_import(root, &config.asm_extension, &config.asm_exclude)).compile_objects() else {
         println!("Failed to compile NASM files, not using any assembly.");
         return;
@@ -287,7 +293,7 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
         cc_build.include(include);
     }
 
-    cc_build.compile(format!("libopenh264_{}.a", name).as_str());
+    cc_build.compile(format!("openh264_{}", name).as_str());
 
     println!("cargo:rustc-link-lib=static=openh264_{}", name);
 
