@@ -198,7 +198,7 @@ pub mod decoder;
 pub mod encoder;
 
 pub use error::Error;
-pub use utils::{nal_units, to_bitstream_with_001_be, to_bitstream_with_001_le};
+pub use utils::nal_units;
 
 #[cfg(feature = "mp4")]
 pub use utils::mp4_bitstream_converter::Mp4BitstreamConverter;

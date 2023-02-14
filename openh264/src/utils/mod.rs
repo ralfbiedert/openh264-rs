@@ -1,10 +1,6 @@
 #[cfg(feature = "mp4")]
 pub mod mp4_bitstream_converter;
 
-use crate::Error;
-use std::convert::TryInto;
-use std::mem::size_of;
-
 // How many `0` we have to observe before a `1` means NAL.
 const NAL_MIN_0_COUNT: usize = 2;
 
@@ -74,142 +70,9 @@ pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item = &[u8]> {
     })
 }
 
-/// Converts a bit stream with big-endian length to one with start codes.
-///
-/// When parsing MP4 files with [mp4](https://crates.io/crates/mp4) you might get a `Mp4Sample` that comes
-/// without start codes, but are prefixed with length information instead. For OpenH264 to read them, they
-/// must be converted.
-///
-/// In detail, given a bitstream like so (`001` being the NAL start prefix code, `LLLL` length bytes):
-///
-/// ```text
-/// LLLL..........LLLL............
-/// ```
-///
-/// This function will modify a vector to contain
-///
-/// ```text
-/// [001.........][001...........]
-/// ```
-///
-/// If a slice could not be decoded, e.g., because of a mismatch of slice length and indicated length,
-/// the final failing block will be ignored.
-pub fn to_bitstream_with_001_be<T: BitstreamLength>(mut stream: &[u8], out: &mut Vec<u8>) {
-    out.clear();
-
-    while let Ok((skip, payload)) = T::read_be(stream) {
-        out.extend_from_slice(&[0, 0, 1]);
-        out.extend_from_slice(payload);
-
-        stream = &stream[skip..];
-    }
-}
-
-/// Converts a bit stream with little-endian length to one with start codes.
-///
-/// When parsing MP4 files with [mp4](https://crates.io/crates/mp4) you might get a `Mp4Sample` that comes
-/// without start codes, but are prefixed with length information instead. For OpenH264 to read them, they
-/// must be converted.
-///
-/// In detail, given a bitstream like so (`001` being the NAL start prefix code, `LLLL` length bytes):
-///
-/// ```text
-/// LLLL..........LLLL............
-/// ```
-///
-/// This function will modify a vector to contain
-///
-/// ```text
-/// [001.........][001...........]
-/// ```
-///
-/// If a slice could not be decoded, e.g., because of a mismatch of slice length and indicated length,
-/// the final failing block will be ignored.
-pub fn to_bitstream_with_001_le<T: BitstreamLength>(mut stream: &[u8], out: &mut Vec<u8>) {
-    out.clear();
-
-    while let Ok((skip, payload)) = T::read_le(stream) {
-        out.extend_from_slice(&[0, 0, 1]);
-        out.extend_from_slice(payload);
-
-        stream = &stream[skip..];
-    }
-}
-
-/// Utility trait to read a bit stream without start prefix but with an encoded
-/// length of the given type.
-pub trait BitstreamLength {
-    /// First reads the length as big endian, then returns as many bytes as indicated.
-    ///
-    /// Returns the total length of the type and read data (e.g., `4+x` for `u32`)
-    /// as well as the indicated data (e.g., `&[1, 2, 3, ..., x]`).
-    fn read_be(data: &[u8]) -> Result<(usize, &[u8]), Error>;
-
-    /// First reads the length as little endian, then returns as many bytes as indicated.
-    ///
-    /// Returns the total length of the type and read data (e.g., `4+x` for `u32`)
-    /// as well as the indicated data (e.g., `&[1, 2, 3, ..., x]`).
-    fn read_le(data: &[u8]) -> Result<(usize, &[u8]), Error>;
-}
-
-macro_rules! impl_bitstream_length {
-    ($t:ty) => {
-        impl BitstreamLength for $t {
-            fn read_be(data: &[u8]) -> Result<(usize, &[u8]), Error> {
-                const SIZE: usize = size_of::<$t>();
-
-                if data.len() < SIZE {
-                    return Err(Error::msg("Unable to read length."));
-                }
-
-                let len = <$t>::from_be_bytes(
-                    (&data[0..SIZE])
-                        .try_into()
-                        .map_err(|_| Error::msg("Unable to get slice"))?,
-                )
-                .try_into()
-                .expect("Must be able to convert from usize to requested type");
-
-                if len + SIZE > data.len() {
-                    return Err(Error::msg("Resulting slice was too short for indicated length."));
-                }
-
-                Ok((len + SIZE, &data[SIZE..][..len]))
-            }
-
-            fn read_le(data: &[u8]) -> Result<(usize, &[u8]), Error> {
-                const SIZE: usize = size_of::<$t>();
-
-                if data.len() < SIZE {
-                    return Err(Error::msg("Unable to read length."));
-                }
-
-                let len = <$t>::from_le_bytes(
-                    (&data[0..SIZE])
-                        .try_into()
-                        .map_err(|_| Error::msg("Unable to get slice"))?,
-                )
-                .try_into()
-                .expect("Must be able to convert from usize to requested type");
-
-                if len + SIZE > data.len() {
-                    return Err(Error::msg("Resulting slice was too short for indicated length."));
-                }
-
-                Ok((len + SIZE, &data[SIZE..][..len]))
-            }
-        }
-    };
-}
-
-impl_bitstream_length!(u8);
-impl_bitstream_length!(u16);
-impl_bitstream_length!(u32);
-
 #[cfg(test)]
 mod test {
     use super::nal_units;
-    use crate::utils::to_bitstream_with_001_be;
 
     #[test]
     fn splits_at_nal() {
@@ -248,15 +111,5 @@ mod test {
         assert_eq!(split.next().unwrap(), &[0, 0, 1, 2, 3]);
         assert_eq!(split.next().unwrap(), &[0, 0, 1]);
         assert!(split.next().is_none());
-    }
-
-    #[test]
-    fn bitstream_to_prefixed() {
-        let mut vec = Vec::new();
-        to_bitstream_with_001_be::<u32>(&[0, 0, 0, 1, 5, 0, 0, 0, 2, 6, 6], &mut vec);
-        assert_eq!(vec.as_slice(), &[0, 0, 1, 5, 0, 0, 1, 6, 6]);
-
-        to_bitstream_with_001_be::<u32>(&[0, 0, 0, 1, 5, 0, 0, 0, 2, 6, 6, 255, 255], &mut vec);
-        assert_eq!(vec.as_slice(), &[0, 0, 1, 5, 0, 0, 1, 6, 6]);
     }
 }
