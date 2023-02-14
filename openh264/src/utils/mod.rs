@@ -1,3 +1,6 @@
+#[cfg(feature = "mp4")]
+pub mod mp4_bitstream_converter;
+
 use crate::Error;
 use std::convert::TryInto;
 use std::mem::size_of;
