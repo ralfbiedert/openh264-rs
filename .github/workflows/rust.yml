@@ -104,7 +104,7 @@ jobs:
     - name: Version
       run: rustc -Vv
     - name: Build
-      run: cargo build --verbose --target=${{ matrix.target }} --tests
+      run: cargo build --verbose --target=${{ matrix.target }} --tests --all-features
     - name: Test
-      run: cargo test --verbose --target=${{ matrix.target }} -- --test-threads=1 --nocapture
+      run: cargo test --verbose --target=${{ matrix.target }} --all-features -- --test-threads=1 --nocapture
       if: matrix.no-test != true
