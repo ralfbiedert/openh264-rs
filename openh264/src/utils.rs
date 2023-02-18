@@ -1,6 +1,3 @@
-#[cfg(feature = "mp4")]
-pub mod mp4_bitstream_converter;
-
 // How many `0` we have to observe before a `1` means NAL.
 const NAL_MIN_0_COUNT: usize = 2;
 

@@ -1,5 +1,9 @@
 use mp4::Mp4Track;
 
+/// This struct converts NAL units from the MP4 to the Annex B format, expected by openh264.
+///
+/// It also inserts SPS and PPS units from the MP4 header into the stream.
+/// They are also required for Annex B format to be decodable, but are not present in the MP4 bitstream, as they are stored in the headers.
 pub struct Mp4BitstreamConverter {
     length_size: u8,
     sequence_parameter_sets: Vec<Vec<u8>>,
@@ -88,6 +92,8 @@ impl From<u8> for NalType {
 }
 
 impl Mp4BitstreamConverter {
+    /// Create a new converter for the given track.
+    /// The track must contain AVC1 configuration.
     pub fn for_mp4_track(track: &Mp4Track) -> Self {
         let config_box = &track
             .trak
@@ -111,6 +117,9 @@ impl Mp4BitstreamConverter {
         }
     }
 
+    /// Convert a single packet from the MP4 format to the Annex B format.
+    ///
+    /// It clears the `out` vector and appends the converted packet to it.
     pub fn convert_packet(&mut self, packet: &[u8], out: &mut Vec<u8>) {
         let mut stream = packet;
         out.clear();
