@@ -163,6 +163,7 @@ Especially needed:
 
 ### Changelog
 
+- **v0.4** - Update build system, remove unused API.
 - **v0.3** - Change some APIs to better reflect OpenH264 behavior.
 - **v0.2** - Added encoder; `asm` feature for 2x - 3x speed boost.
 - **v0.1** - Initial release, decoder only.
