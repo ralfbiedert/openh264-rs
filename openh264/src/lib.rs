@@ -63,8 +63,16 @@
 //! | Platform | Compiled | Unit Tested |
 //! | --- | --- | --- |
 //! | `x86_64-pc-windows-msvc` | ✅ | ✅ |
+//! | `x86_64-pc-windows-gnu` | ✅ | ✅ |
 //! | `x86_64-unknown-linux-gnu` | ✅ | ✅ |
 //! | `x86_64-apple-darwin` | ✅ | ✅ |
+//! | `i686-unknown-linux-gnu` | ✅ | ✅ |
+//! | `i686-pc-windows-msvc` | ✅ | ✅ |
+//! | `i686-pc-windows-gnu` | ✅ | ✅ |
+//! | `armv7-unknown-linux-gnueabihf` | ✅ | - |
+//! | `aarch64-unknown-linux-gnu` | ✅ | - |
+//! | `aarch64-apple-darwin` | ✅ | - |
+//! | `aarch64-pc-windows-msvc` | ✅ | - |
 //! | `aarch64-linux-android` | 🆗<sup>1</sup>  | - |
 //! | `wasm32-unknown-unknown` | ❌<sup>2</sup> | - |
 //!

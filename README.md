@@ -98,7 +98,6 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 
 - `decoder` - Enable the decoder. Used by default.
 - `encoder` - Enable the encoder. Used by default.
-- `mp4` - Enable integration with the `mp4` crate.
 
 ### FAQ
 
@@ -149,12 +148,6 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 
   FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV it would be a bug
   if we can't. However, any stream / frame it fails on is pretty much a _wontfix_ for us.
-
-- **How do I use this with mp4 crate?**
-
-  You would need to convert the bitstream you get from mp4 into an Annex B stream. You can use `openh264::Mp4BitstreamConverter` to do the job (requires the `mp4` feature).
-
-  See the [mp4 example](openh264/examples/mp4.rs).
 
 ### Contributing
 
