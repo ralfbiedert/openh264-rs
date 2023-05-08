@@ -23,7 +23,11 @@ jobs:
           # because openh265 requires a C++ compiler, and musl doesn't provide one
 #          - x86_64-unknown-linux-musl
           - armv7-unknown-linux-gnueabihf
-          - aarch64-unknown-linux-gnu
+          # the target below fails installing "Additional packages", with ...
+          # /bin/bash: -c: line 1: syntax error near unexpected token `newline'
+          # /bin/bash: -c: line 1: `<h1>Internal Server Error</h1>'
+          # ... any help fixing this would be welcome.
+#         - aarch64-unknown-linux-gnu
           - x86_64-apple-darwin
           - aarch64-apple-darwin
           - i686-pc-windows-msvc
