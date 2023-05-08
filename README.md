@@ -9,7 +9,7 @@
 
 Idiomatic and low-level bindings for [OpenH264](https://github.com/cisco/openh264), converting between these two in Rust:
 
-![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rust/master/gfx/title3.jpg)
+![sample_image](https://media.githubusercontent.com/media/ralfbiedert/openh264-rs/master/gfx/title3.jpg)
 
 
 ### Example API
