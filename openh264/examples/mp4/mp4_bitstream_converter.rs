@@ -1,21 +1,9 @@
+use anyhow::anyhow;
 use mp4::Mp4Track;
 
-/// This struct converts NAL units from the MP4 to the Annex B format, expected by openh264.
-///
-/// It also inserts SPS and PPS units from the MP4 header into the stream.
-/// They are also required for Annex B format to be decodable, but are not present in the MP4 bitstream, as they are stored in the headers.
-pub struct Mp4BitstreamConverter {
-    length_size: u8,
-    sequence_parameter_sets: Vec<Vec<u8>>,
-    picture_parameter_sets: Vec<Vec<u8>>,
-
-    new_idr: bool,
-    sps_seen: bool,
-    pps_seen: bool,
-}
-
+/// Network abstraction layer type for H264 pocket we might find.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum NalType {
+pub enum NalType {
     Unspecified = 0,
     Slice = 1,
     Dpa = 2,
@@ -51,8 +39,14 @@ enum NalType {
 }
 
 impl From<u8> for NalType {
+    /// Reads NAL from header byte.
     fn from(value: u8) -> Self {
-        use NalType::*;
+        use NalType::{
+            Aud, AuxiliarySlice, DepthExtenSlice, Dpa, Dpb, Dpc, EndSequence, EndStream, ExtenSlice, FillerData, IdrSlice, Pps,
+            Prefix, Reserved17, Reserved18, Reserved22, Reserved23, Sei, Slice, Sps, SpsExt, SubSps, Unspecified, Unspecified24,
+            Unspecified25, Unspecified26, Unspecified27, Unspecified28, Unspecified29, Unspecified30, Unspecified31, DPS,
+        };
+
         match value {
             0 => Unspecified,
             1 => Slice,
@@ -91,11 +85,68 @@ impl From<u8> for NalType {
     }
 }
 
+/// A NAL unit in a bitstream.
+struct NalUnit<'a> {
+    nal_type: NalType,
+    bytes: &'a [u8],
+}
+
+impl<'a> NalUnit<'a> {
+    /// Reads a NAL unit from a slice of bytes in MP4, returning the unit, and the remaining stream after that slice.
+    fn from_stream(mut stream: &'a [u8], length_size: u8) -> Option<(Self, &[u8])> {
+        let mut nal_size = 0;
+
+        // Construct nal_size from first bytes in MP4 stream.
+        for _ in 0..length_size {
+            nal_size = (nal_size << 8) | u32::from(stream[0]);
+            stream = &stream[1..];
+        }
+
+        if nal_size == 0 {
+            return None;
+        }
+
+        let packet = &stream[..nal_size as usize];
+        let nal_type = NalType::from(packet[0] & 0x1F);
+        let unit = NalUnit { nal_type, bytes: packet };
+
+        stream = &stream[nal_size as usize..];
+
+        Some((unit, stream))
+    }
+
+    #[allow(unused)]
+    fn nal_type(&self) -> NalType {
+        self.nal_type
+    }
+
+    #[allow(unused)]
+    fn bytes(&self) -> &'a [u8] {
+        self.bytes
+    }
+}
+
+/// Converter from NAL units from the MP4 to the Annex B format expected by openh264.
+///
+/// It also inserts SPS and PPS units from the MP4 header into the stream.
+/// They are also required for Annex B format to be decodable, but are not present in the MP4 bitstream,
+/// as they are stored in the headers.
+pub struct Mp4BitstreamConverter {
+    length_size: u8,
+    sps: Vec<Vec<u8>>,
+    pps: Vec<Vec<u8>>,
+    new_idr: bool,
+    sps_seen: bool,
+    pps_seen: bool,
+}
+
 impl Mp4BitstreamConverter {
     /// Create a new converter for the given track.
-    /// The track must contain AVC1 configuration.
-    pub fn for_mp4_track(track: &Mp4Track) -> Self {
-        let config_box = &track
+    ///
+    /// The track must contain an AVC1 configuration.
+    /// The track must contain an AVC1 configuration.
+    pub fn for_mp4_track(track: &Mp4Track) -> Result<Self, anyhow::Error> {
+        let avcc_config = &track
             .trak
             .mdia
             .minf
@@ -103,18 +154,17 @@ impl Mp4BitstreamConverter {
             .stsd
             .avc1
             .as_ref()
-            .expect("The track does not contain AVC1 configuration")
+            .ok_or_else(|| anyhow!("Track does not contain AVC1 config"))?
             .avcc;
 
-        Self {
-            length_size: config_box.length_size_minus_one + 1,
-            sequence_parameter_sets: config_box.sequence_parameter_sets.iter().cloned().map(|v| v.bytes).collect(),
-            picture_parameter_sets: config_box.picture_parameter_sets.iter().cloned().map(|v| v.bytes).collect(),
-
+        Ok(Self {
+            length_size: avcc_config.length_size_minus_one + 1,
+            sps: avcc_config.sequence_parameter_sets.iter().cloned().map(|v| v.bytes).collect(),
+            pps: avcc_config.picture_parameter_sets.iter().cloned().map(|v| v.bytes).collect(),
             new_idr: true,
             sps_seen: false,
             pps_seen: false,
-        }
+        })
     }
 
     /// Convert a single packet from the MP4 format to the Annex B format.
@@ -123,51 +173,38 @@ impl Mp4BitstreamConverter {
     pub fn convert_packet(&mut self, packet: &[u8], out: &mut Vec<u8>) {
         let mut stream = packet;
         out.clear();
+
         while !stream.is_empty() {
-            // read the length of the NAL unit
-            let mut nal_size = 0;
-            for _ in 0..self.length_size {
-                nal_size = (nal_size << 8) | stream[0] as u32;
-                stream = &stream[1..];
-            }
-
-            if nal_size == 0 {
+            let Some((unit, remaining_stream)) = NalUnit::from_stream(stream, self.length_size) else {
                 continue;
-            }
+            };
 
-            let nal = &stream[..nal_size as usize];
-            stream = &stream[nal_size as usize..];
+            stream = remaining_stream;
 
-            let nal_type = NalType::from(nal[0] & 0x1F);
-
-            match nal_type {
-                NalType::Sps => {
-                    self.sps_seen = true;
-                }
-                NalType::Pps => {
-                    self.pps_seen = true;
-                }
+            match unit.nal_type {
+                NalType::Sps => self.sps_seen = true,
+                NalType::Pps => self.pps_seen = true,
                 NalType::IdrSlice => {
                     // If this is a new IDR picture following an IDR picture, reset the idr flag.
                     // Just check first_mb_in_slice to be 1
-                    if !self.new_idr && nal[1] & 0x80 != 0 {
+                    if !self.new_idr && unit.bytes[1] & 0x80 != 0 {
                         self.new_idr = true;
                     }
                     // insert SPS & PPS NAL units if they were not seen
                     if self.new_idr && !self.sps_seen && !self.pps_seen {
                         self.new_idr = false;
-                        for sps in self.sequence_parameter_sets.iter() {
+                        for sps in self.sps.iter() {
                             out.extend([0, 0, 1]);
                             out.extend(sps);
                         }
-                        for pps in self.picture_parameter_sets.iter() {
+                        for pps in self.pps.iter() {
                             out.extend([0, 0, 1]);
                             out.extend(pps);
                         }
                     }
                     // insert only PPS if SPS was seen
                     if self.new_idr && self.sps_seen && !self.pps_seen {
-                        for pps in self.picture_parameter_sets.iter() {
+                        for pps in self.pps.iter() {
                             out.extend([0, 0, 1]);
                             out.extend(pps);
                         }
@@ -177,9 +214,9 @@ impl Mp4BitstreamConverter {
             }
 
             out.extend([0, 0, 1]);
-            out.extend(nal);
+            out.extend(unit.bytes);
 
-            if !self.new_idr && nal_type == NalType::Slice {
+            if !self.new_idr && unit.nal_type == NalType::Slice {
                 self.new_idr = true;
                 self.sps_seen = false;
                 self.pps_seen = false;

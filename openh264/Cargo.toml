@@ -30,6 +30,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 image = "0.24.4"
 image-compare = "0.2.3"
 mp4 = "0.13.0"
+anyhow = "1.0.71"
 
 [[example]]
 name = "mp4"
