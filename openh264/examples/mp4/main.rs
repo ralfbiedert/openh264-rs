@@ -7,7 +7,7 @@ use std::io::Cursor;
 
 fn main() -> Result<(), Error> {
     let mp4 = include_bytes!("../../tests/data/multi_512x512.mp4");
-    let mut mp4 = mp4::Mp4Reader::read_header(Cursor::new(mp4), mp4.len() as u64).unwrap();
+    let mut mp4 = mp4::Mp4Reader::read_header(Cursor::new(mp4), mp4.len() as u64)?;
 
     let track = mp4
         .tracks()
@@ -34,7 +34,7 @@ fn main() -> Result<(), Error> {
         // convert the packet from mp4 representation to one that openh264 can decode
         bitstream_converter.convert_packet(&sample.bytes, &mut buffer);
 
-        if let Some(image) = decoder.decode(&buffer).unwrap() {
+        if let Some(image) = decoder.decode(&buffer)? {
             image.write_rgb8(&mut rgb);
         }
     }
