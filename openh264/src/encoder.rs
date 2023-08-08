@@ -4,7 +4,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
+    SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
+    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -325,6 +327,28 @@ impl<'a> EncodedBitStream<'a> {
                 dst.extend_from_slice(nal)
             }
         }
+    }
+
+    /// Writes the current bitstream into the given Writer.
+    pub fn write<T: std::io::Write>(&self, writer: &mut T) -> Result<(), Error> {
+        for l in 0..self.num_layers() {
+            let layer = self.layer(l).unwrap();
+
+            for n in 0..layer.nal_count() {
+                let nal = layer.nal_unit(n).unwrap();
+
+                match writer.write(nal) {
+                    Ok(num) if num < nal.len() => {
+                        return Err(Error::msg(&format!("only wrote {} out of {} bytes", num, nal.len())));
+                    }
+                    Err(e) => {
+                        return Err(Error::msg(&format!("failed to write: {}", e)));
+                    }
+                    _ => {}
+                };
+            }
+        }
+        Ok(())
     }
 
     /// Convenience method returning a Vec containing the encoded bitstream.
