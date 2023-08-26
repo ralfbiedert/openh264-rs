@@ -1,5 +1,7 @@
 use crate::formats::YUVSource;
 
+#[cfg(feature = "libyuv")]
+use libyuv::{argb_to_i420, rgb24_to_i420};
 /// Converts RGB to YUV data.
 pub struct YUVBuffer {
     yuv: Vec<u8>,
@@ -15,6 +17,27 @@ impl YUVBuffer {
             width,
             height,
         }
+    }
+
+    /// Allocates a new YUV buffer with the given width and height and data.
+    ///
+    /// Data `rgb` is assumed to be `[argb argb argb ...]`, starting at `y = 0`, continuing downwards, in other words
+    /// how you'd naively store an RGB image buffer.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if `rgb` does not match the formats given.
+
+    #[cfg(feature = "libyuv")]
+    pub fn with_argb(width: usize, height: usize, argb: &[u8]) -> Self {
+        let mut rval = Self {
+            yuv: vec![0u8; (3 * (width * height)) / 2],
+            width,
+            height,
+        };
+
+        rval.read_argb(argb);
+        rval
     }
 
     /// Allocates a new YUV buffer with the given width and height and data.
@@ -44,6 +67,7 @@ impl YUVBuffer {
     /// # Panics
     ///
     /// Will panic if `rgb` does not match the formats given.
+    #[cfg(not(feature = "libyuv"))]
     pub fn read_rgb(&mut self, rgb: &[u8]) {
         let width = self.width;
         let height = self.height;
@@ -95,6 +119,64 @@ impl YUVBuffer {
                 write_u(&mut self.yuv[..], i, j, avg_pix);
                 write_v(&mut self.yuv[..], i, j, avg_pix);
             }
+        }
+    }
+
+    #[cfg(feature = "libyuv")]
+    pub fn read_rgb(&mut self, rgb: &[u8]) {
+        assert_eq!(rgb.len(), self.width * self.height * 3);
+        assert_eq!(self.width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(self.height % 2, 0, "height needs to be a multiple of 2");
+
+        let u = self.width * self.height;
+        let v = u + u / 4;
+        let dst_stride_y = self.width;
+        let dst_stride_uv = self.width / 2;
+        let dst_y = self.yuv.as_mut_ptr();
+        let dst_u = self.yuv[u..].as_mut_ptr();
+        let dst_v = self.yuv[v..].as_mut_ptr();
+        unsafe {
+            rgb24_to_i420(
+                rgb.as_ptr(),
+                (rgb.len() / self.height) as _,
+                dst_y,
+                dst_stride_y as _,
+                dst_u,
+                dst_stride_uv as _,
+                dst_v,
+                dst_stride_uv as _,
+                self.width as _,
+                self.height as _,
+            );
+        }
+    }
+
+    #[cfg(feature = "libyuv")]
+    pub fn read_argb(&mut self, argb: &[u8]) {
+        assert_eq!(argb.len(), self.width * self.height * 4);
+        assert_eq!(self.width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(self.height % 2, 0, "height needs to be a multiple of 2");
+
+        let u = self.width * self.height;
+        let v = u + u / 4;
+        let dst_stride_y = self.width;
+        let dst_stride_uv = self.width / 2;
+        let dst_y = self.yuv.as_mut_ptr();
+        let dst_u = self.yuv[u..].as_mut_ptr();
+        let dst_v = self.yuv[v..].as_mut_ptr();
+        unsafe {
+            argb_to_i420(
+                argb.as_ptr(),
+                (argb.len() / self.height) as _,
+                dst_y,
+                dst_stride_y as _,
+                dst_u,
+                dst_stride_uv as _,
+                dst_v,
+                dst_stride_uv as _,
+                self.width as _,
+                self.height as _,
+            );
         }
     }
 }
@@ -153,6 +235,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "libyuv"))]
     fn rgb_to_yuv_conversion_white_4x2() {
         let yuv = YUVBuffer::with_rgb(
             4,
@@ -171,6 +254,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "libyuv"))]
     fn rgb_to_yuv_conversion_red_2x4() {
         let yuv = YUVBuffer::with_rgb(
             4,

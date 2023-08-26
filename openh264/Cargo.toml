@@ -17,10 +17,12 @@ repository = "https://github.com/ralfbiedert/openh264-rust"
 default = ["decoder", "encoder"]
 decoder = ["openh264-sys2/decoder"]
 encoder = ["openh264-sys2/encoder"]
+libyuv  = ["dep:libyuv"]
 backtrace = [] # Remove once backtrace feature is stable.
 
 [dependencies]
 openh264-sys2 = { path = "../openh264-sys2", version = "0.4.0", default-features = false }
+libyuv = { version = "0.1.2", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
