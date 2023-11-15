@@ -10,6 +10,7 @@ use openh264_sys2::{
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
+use std::time::Duration;
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
 ///
@@ -234,6 +235,21 @@ impl Encoder {
     ///
     /// Panics if the source image dimension don't match the configured format.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream<'_>, Error> {
+        self.encode_at(yuv_source, Duration::ZERO)
+    }
+
+    /// Encodes a YUV source and returns the encoded bitstream.
+    ///
+    /// The returned bitstream consists of one or more NAL units or packets. The first packets contain
+    /// initialization information. Subsequent packages then contain, amongst others, keyframes
+    /// ("I frames") or delta frames. The interval at which they are produced depends on the encoder settings.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the source image dimension don't match the configured format.
+    ///
+    /// Panics if the provided timestamp as milliseconds is out of range of i64.
+    pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: Duration) -> Result<EncodedBitStream<'_>, Error> {
         assert_eq!(yuv_source.width(), self.params.iPicWidth);
         assert_eq!(yuv_source.height(), self.params.iPicHeight);
 
@@ -250,7 +266,11 @@ impl Encoder {
             ],
             iPicWidth: self.params.iPicWidth,
             iPicHeight: self.params.iPicHeight,
-            ..Default::default()
+            // TODO: Custom error type that can include native errors and conversion errors.
+            uiTimeStamp: timestamp
+                .as_millis()
+                .try_into()
+                .expect("timestamp millis out of range of i64"),
         };
 
         unsafe {
