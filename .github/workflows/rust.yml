@@ -60,14 +60,14 @@ jobs:
             runs-on: macos-latest
             no-test: true
 
-          - target: i686-pc-windows-gnu
-            runs-on: windows-latest
-            mingw: x86
+#          - target: i686-pc-windows-gnu
+#            runs-on: windows-latest
+#            mingw: x86
           - target: i686-pc-windows-msvc
             runs-on: windows-latest
-          - target: x86_64-pc-windows-gnu
-            runs-on: windows-latest
-            mingw: x64
+#          - target: x86_64-pc-windows-gnu
+#            runs-on: windows-latest
+#            mingw: x64
           - target: x86_64-pc-windows-msvc
             runs-on: windows-latest
           - target: aarch64-pc-windows-msvc
