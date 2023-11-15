@@ -49,17 +49,14 @@ jobs:
             runs-on: ubuntu-latest
             packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu # provides aarch64 headers
             no-test: true
-
 #          - target: x86_64-unknown-linux-musl
 #            runs-on: ubuntu-latest
 #            packages: musl-tools # provides musl-gcc
-
           - target: x86_64-apple-darwin
             runs-on: macos-latest
           - target: aarch64-apple-darwin
             runs-on: macos-latest
             no-test: true
-
 #          - target: i686-pc-windows-gnu
 #            runs-on: windows-latest
 #            mingw: x86
