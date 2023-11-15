@@ -4,13 +4,10 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
-    SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
-    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
-use std::time::Duration;
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
 ///
@@ -235,7 +232,7 @@ impl Encoder {
     ///
     /// Panics if the source image dimension don't match the configured format.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream<'_>, Error> {
-        self.encode_at(yuv_source, Duration::ZERO)
+        self.encode_at(yuv_source, 0)
     }
 
     /// Encodes a YUV source and returns the encoded bitstream.
@@ -249,7 +246,7 @@ impl Encoder {
     /// Panics if the source image dimension don't match the configured format.
     ///
     /// Panics if the provided timestamp as milliseconds is out of range of i64.
-    pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: Duration) -> Result<EncodedBitStream<'_>, Error> {
+    pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: u64) -> Result<EncodedBitStream<'_>, Error> {
         assert_eq!(yuv_source.width(), self.params.iPicWidth);
         assert_eq!(yuv_source.height(), self.params.iPicHeight);
 
@@ -266,11 +263,9 @@ impl Encoder {
             ],
             iPicWidth: self.params.iPicWidth,
             iPicHeight: self.params.iPicHeight,
-            // TODO: Custom error type that can include native errors and conversion errors.
             uiTimeStamp: timestamp
-                .as_millis()
                 .try_into()
-                .expect("timestamp millis out of range of i64"),
+                .expect("Could not convert u64 timestamp into native timestamp"),
         };
 
         unsafe {
