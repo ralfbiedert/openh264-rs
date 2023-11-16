@@ -4,7 +4,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::Error;
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder, WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
+    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+    DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -206,6 +208,7 @@ impl Decoder {
             }
 
             let info = buffer_info.UsrData.sSystemBuffer;
+            let timestamp = buffer_info.uiInBsTimeStamp; // TODO: Is this the right one?
 
             // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
             // the user should try to continue decoding.
@@ -218,7 +221,13 @@ impl Decoder {
             let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
             let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
 
-            Ok(Some(DecodedYUV { info, y, u, v }))
+            Ok(Some(DecodedYUV {
+                info,
+                timestamp,
+                y,
+                u,
+                v,
+            }))
         }
     }
 
@@ -265,6 +274,7 @@ impl Drop for Decoder {
 #[derive(Debug)]
 pub struct DecodedYUV<'a> {
     info: SSysMEMBuffer,
+    timestamp: u64,
 
     y: &'a [u8],
     u: &'a [u8],
@@ -326,6 +336,11 @@ impl<'a> DecodedYUV<'a> {
             self.info.iStride[1] as usize,
             self.info.iStride[1] as usize,
         )
+    }
+
+    /// Timestamp of this frame in milliseconds(?) with respect to the video stream.
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
     }
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.

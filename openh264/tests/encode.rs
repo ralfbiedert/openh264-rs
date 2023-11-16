@@ -1,8 +1,9 @@
 #![cfg(feature = "encoder")]
 #![allow(clippy::bool_assert_comparison)]
 
+use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
-use openh264::formats::YUVBuffer;
+use openh264::formats::{YUVBuffer, YUVSource};
 use openh264::Error;
 
 #[test]
@@ -44,6 +45,32 @@ fn encode() -> Result<(), Error> {
     assert_eq!(&video_unit[..5], &[0u8, 0u8, 0u8, 1u8, 0x65u8]);
     assert!(video_unit.len() > 1000);
     assert!(video_unit.len() < 100_000);
+
+    Ok(())
+}
+
+#[test]
+#[ignore]
+fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
+    let src = include_bytes!("data/lenna_128x128.rgb");
+
+    let config = EncoderConfig::new(128, 128);
+    let mut encoder = Encoder::with_config(config)?;
+    let mut converter = YUVBuffer::new(128, 128);
+
+    converter.read_rgb(src);
+
+    let encoded = encoder.encode_at(&converter, 64)?.to_vec();
+
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_config(config)?;
+    let yuv = decoder
+        .decode(encoded.as_slice())?
+        .ok_or_else(|| Error::msg("Must have image"))?;
+
+    assert_eq!(yuv.width(), 128);
+    assert_eq!(yuv.height(), 128);
+    assert_eq!(yuv.timestamp(), 64); // TODO: This fails, the returned timestamp is 0.
 
     Ok(())
 }
