@@ -4,7 +4,7 @@
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
 use openh264::formats::{YUVBuffer, YUVSource};
-use openh264::Error;
+use openh264::{Error, Timestamp};
 
 #[test]
 fn can_get_encoder() -> Result<(), Error> {
@@ -60,7 +60,8 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 
     converter.read_rgb(src);
 
-    let encoded = encoder.encode_at(&converter, 64)?.to_vec();
+    let timestamp = Timestamp::from_millis(64);
+    let encoded = encoder.encode_at(&converter, timestamp)?.to_vec();
 
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_config(config)?;
@@ -70,7 +71,7 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 
     assert_eq!(yuv.width(), 128);
     assert_eq!(yuv.height(), 128);
-    assert_eq!(yuv.timestamp(), 64); // TODO: This fails, the returned timestamp is 0.
+    assert_eq!(yuv.timestamp(), timestamp); // TODO: This fails, the returned timestamp is 0.
 
     Ok(())
 }

@@ -2,7 +2,7 @@
 
 use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
-use crate::Error;
+use crate::{Error, Timestamp};
 use openh264_sys2::{
     videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
     WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
@@ -208,7 +208,7 @@ impl Decoder {
             }
 
             let info = buffer_info.UsrData.sSystemBuffer;
-            let timestamp = buffer_info.uiInBsTimeStamp; // TODO: Is this the right one?
+            let timestamp = Timestamp::from_millis(buffer_info.uiInBsTimeStamp); // TODO: Is this the right one?
 
             // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
             // the user should try to continue decoding.
@@ -274,7 +274,7 @@ impl Drop for Decoder {
 #[derive(Debug)]
 pub struct DecodedYUV<'a> {
     info: SSysMEMBuffer,
-    timestamp: u64,
+    timestamp: Timestamp,
 
     y: &'a [u8],
     u: &'a [u8],
@@ -339,7 +339,7 @@ impl<'a> DecodedYUV<'a> {
     }
 
     /// Timestamp of this frame in milliseconds(?) with respect to the video stream.
-    pub fn timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> Timestamp {
         self.timestamp
     }
 

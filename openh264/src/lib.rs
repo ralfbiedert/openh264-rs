@@ -194,6 +194,7 @@
 //! [docs.rs]: https://docs.rs/openh264/
 
 mod error;
+mod time;
 mod utils;
 
 pub mod formats;
@@ -207,4 +208,5 @@ pub mod decoder;
 pub mod encoder;
 
 pub use error::Error;
+pub use time::Timestamp;
 pub use utils::nal_units;
