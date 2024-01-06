@@ -4,6 +4,7 @@ extern crate test;
 
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::formats::{YUVBuffer, YUVSource};
+use openh264::OpenH264API;
 use test::Bencher;
 
 #[bench]
@@ -21,8 +22,9 @@ fn convert_rgb_to_yuv_512x512(b: &mut Bencher) {
 fn convert_rgb_to_yuv_1920x1080(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_1920x1080_cabac.h264");
 
+    let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(config).unwrap();
+    let mut decoder = Decoder::with_config(api, config).unwrap();
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
     let mut rgb = vec![0u8; (yuv.width() * yuv.height() * 3) as usize];
     yuv.write_rgb8(&mut rgb);
