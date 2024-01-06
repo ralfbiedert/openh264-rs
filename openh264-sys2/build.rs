@@ -110,12 +110,7 @@ impl Target {
             _ => panic!("Unknown target env: {}", env),
         };
 
-        Self {
-            family,
-            os,
-            arch,
-            env,
-        }
+        Self { family, os, arch, env }
     }
 }
 
@@ -138,8 +133,8 @@ struct NasmConfiguration {
 
 impl NasmConfiguration {
     fn find(target: Target) -> Option<Self> {
-        use TargetFamily::*;
         use TargetArch::*;
+        use TargetFamily::*;
         // use TargetEnv::*;
         use TargetOs::*;
 
@@ -195,15 +190,18 @@ impl NasmConfiguration {
         };
 
         // Prefix symbols exported from assembly with an underscore on x86/x86_64 macOS and x86 Windows.
-        let prefix_underscores = matches!(target, Target {
-            os: Macos,
-            arch: X86_64 | X86,
-            ..
-        } | Target {
-            os: TargetOs::Windows,
-            arch: X86,
-            ..
-        });
+        let prefix_underscores = matches!(
+            target,
+            Target {
+                os: Macos,
+                arch: X86_64 | X86,
+                ..
+            } | Target {
+                os: TargetOs::Windows,
+                arch: X86,
+                ..
+            }
+        );
 
         Some(Self {
             asm_extension: asm_extension.to_string(),
@@ -216,7 +214,6 @@ impl NasmConfiguration {
     }
 }
 
-
 #[allow(unused)]
 fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
     if std::env::var("OPENH264_NO_ASM").is_ok() {
@@ -227,14 +224,16 @@ fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
     let target = Target::from_env();
 
     let Some(config) = NasmConfiguration::find(target) else {
-        println!("No NASM configuration found for target, not using any assembly.\nTarget: {:?}", target);
+        println!(
+            "No NASM configuration found for target, not using any assembly.\nTarget: {:?}",
+            target
+        );
         return;
     };
 
     // Try to compile NASM targets
     let mut nasm_build = nasm_rs::Build::new();
-    let mut nasm_build = nasm_build
-        .include(format!("upstream/codec/common/{}/", config.include_dir));
+    let mut nasm_build = nasm_build.include(format!("upstream/codec/common/{}/", config.include_dir));
     nasm_build = nasm_build.define(&config.asm_platform_define, None);
     if config.prefix_symbols {
         nasm_build = nasm_build.define("PREFIX", None);
@@ -242,7 +241,10 @@ fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
 
     // Run `nasm` and store result.
     // TODO: is it a good idea to "silently" disable assembly if this fails?
-    let Ok(object_files) = nasm_build.files(glob_import(root, &config.asm_extension, &config.asm_exclude)).compile_objects() else {
+    let Ok(object_files) = nasm_build
+        .files(glob_import(root, &config.asm_extension, &config.asm_exclude))
+        .compile_objects()
+    else {
         println!("Failed to compile NASM files, not using any assembly.");
         return;
     };
@@ -283,11 +285,11 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
         os: TargetOs::Windows,
         env: TargetEnv::Gnu,
         ..
-    } = Target::from_env() {
+    } = Target::from_env()
+    {
     } else {
         cc_build.flag_if_supported("-fstack-protector-all");
     }
-
 
     for include in includes {
         cc_build.include(include);
@@ -296,7 +298,6 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
     cc_build.compile(format!("openh264_{}", name).as_str());
 
     println!("cargo:rustc-link-lib=static=openh264_{}", name);
-
 }
 
 fn main() {
@@ -311,14 +312,14 @@ fn main() {
         ],
     );
 
-    #[cfg(feature = "decoder")]
+    // #[cfg(feature = "decoder")]
     compile_and_add_openh264_static_lib(
         "decoder",
         "upstream/codec/decoder",
         &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
     );
 
-    #[cfg(feature = "encoder")]
+    // #[cfg(feature = "encoder")]
     compile_and_add_openh264_static_lib(
         "encoder",
         "upstream/codec/encoder",

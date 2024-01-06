@@ -2,11 +2,11 @@
 
 use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
-use crate::{Error, Timestamp};
+use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
-    SSourcePicture, WelsCreateSVCEncoder, WelsDestroySVCEncoder, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
-    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER,
+    WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -16,8 +16,8 @@ use std::ptr::{addr_of_mut, null, null_mut};
 /// This struct automatically handles `WelsCreateSVCEncoder` and `WelsDestroySVCEncoder`.
 #[rustfmt::skip]
 #[allow(non_snake_case)]
-#[derive(Debug)]
 pub struct EncoderRawAPI {
+    api: OpenH264API,
     encoder_ptr: *mut *const ISVCEncoderVtbl,
     initialize: unsafe extern "C" fn(arg1: *mut ISVCEncoder, pParam: *const SEncParamBase) -> c_int,
     initialize_ext: unsafe extern "C" fn(arg1: *mut ISVCEncoder, pParam: *const SEncParamExt) -> c_int,
@@ -36,17 +36,18 @@ pub struct EncoderRawAPI {
 #[allow(non_snake_case)]
 #[allow(unused)]
 impl EncoderRawAPI {
-    fn new() -> Result<Self, Error> {
+    fn new(api: OpenH264API) -> Result<Self, Error> {
         unsafe {
             let mut encoder_ptr = null::<ISVCEncoderVtbl>() as *mut *const ISVCEncoderVtbl;
 
-            WelsCreateSVCEncoder(&mut encoder_ptr as *mut *mut *const ISVCEncoderVtbl).ok()?;
+            api.WelsCreateSVCEncoder(&mut encoder_ptr as *mut *mut *const ISVCEncoderVtbl).ok()?;
 
             let e = || {
                 Error::msg("VTable missing function.")
             };
 
             Ok(Self {
+                api,
                 encoder_ptr,
                 initialize: (*(*encoder_ptr)).Initialize.ok_or_else(e)?,
                 initialize_ext: (*(*encoder_ptr)).InitializeExt.ok_or_else(e)?,
@@ -78,7 +79,7 @@ impl Drop for EncoderRawAPI {
     fn drop(&mut self) {
         // Safe because when we drop the pointer must have been initialized, and we aren't clone.
         unsafe {
-            WelsDestroySVCEncoder(self.encoder_ptr);
+            self.api.WelsDestroySVCEncoder(self.encoder_ptr);
         }
     }
 }
@@ -197,8 +198,8 @@ unsafe impl Sync for Encoder {}
 
 impl Encoder {
     /// Create an encoder with the provided configuration.
-    pub fn with_config(mut config: EncoderConfig) -> Result<Self, Error> {
-        let raw_api = EncoderRawAPI::new()?;
+    pub fn with_config(api: OpenH264API, mut config: EncoderConfig) -> Result<Self, Error> {
+        let raw_api = EncoderRawAPI::new(api)?;
         let mut params = SEncParamExt::default();
 
         #[rustfmt::skip]

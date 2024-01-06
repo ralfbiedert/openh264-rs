@@ -2,10 +2,10 @@
 
 use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
-use crate::{Error, Timestamp};
+use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, WelsCreateDecoder,
-    WelsDestroyDecoder, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API,
+    DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
     DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
@@ -16,8 +16,8 @@ use std::ptr::{addr_of_mut, null, null_mut};
 /// This struct automatically handles `WelsCreateDecoder` and `WelsDestroyDecoder`.
 #[rustfmt::skip]
 #[allow(non_snake_case)]
-#[derive(Debug)]
 pub struct DecoderRawAPI {
+    api: OpenH264API,
     decoder_ptr: *mut *const ISVCDecoderVtbl,
     initialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder, pParam: *const SDecodingParam) -> c_long,
     uninitialize: unsafe extern "C" fn(arg1: *mut ISVCDecoder) -> c_long,
@@ -37,17 +37,18 @@ pub struct DecoderRawAPI {
 #[allow(non_snake_case)]
 #[allow(unused)]
 impl DecoderRawAPI {
-    fn new() -> Result<Self, Error> {
+    fn new(api: OpenH264API) -> Result<Self, Error> {
         unsafe {
             let mut decoder_ptr = null::<ISVCDecoderVtbl>() as *mut *const ISVCDecoderVtbl;
 
-            WelsCreateDecoder(&mut decoder_ptr as *mut *mut *const ISVCDecoderVtbl).ok()?;
+            api.WelsCreateDecoder(&mut decoder_ptr as *mut *mut *const ISVCDecoderVtbl).ok()?;
 
             let e = || {
                 Error::msg("VTable missing function.")
             };
 
             Ok(DecoderRawAPI {
+                api,
                 decoder_ptr,
                 initialize: (*(*decoder_ptr)).Initialize.ok_or_else(e)?,
                 uninitialize: (*(*decoder_ptr)).Uninitialize.ok_or_else(e)?,
@@ -81,7 +82,7 @@ impl Drop for DecoderRawAPI {
     fn drop(&mut self) {
         // Safe because when we drop the pointer must have been initialized, and we aren't clone.
         unsafe {
-            WelsDestroyDecoder(self.decoder_ptr);
+            self.api.WelsDestroyDecoder(self.decoder_ptr);
         }
     }
 }
@@ -134,20 +135,19 @@ impl DecoderConfig {
 }
 
 /// An [OpenH264](https://github.com/cisco/openh264) decoder.
-#[derive(Debug)]
 pub struct Decoder {
     raw_api: DecoderRawAPI,
 }
 
 impl Decoder {
     /// Create a decoder with default settings.
-    pub fn new() -> Result<Self, Error> {
-        Self::with_config(DecoderConfig::new())
+    pub fn new(api: OpenH264API) -> Result<Self, Error> {
+        Self::with_config(api, DecoderConfig::new())
     }
 
     /// Create a decoder with the provided configuration.
-    pub fn with_config(mut config: DecoderConfig) -> Result<Self, Error> {
-        let raw = DecoderRawAPI::new()?;
+    pub fn with_config(api: OpenH264API, mut config: DecoderConfig) -> Result<Self, Error> {
+        let raw = DecoderRawAPI::new(api)?;
 
         // config.params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
 
@@ -244,11 +244,12 @@ impl Decoder {
     /// ```
     /// use openh264::decoder::{DecoderConfig, Decoder};
     ///
-    /// # use openh264::Error;
+    /// # use openh264::{Error, OpenH264API};
     /// #
     /// # fn try_main() -> Result<(), Error> {
+    /// let api = OpenH264API::from_source();
     /// let config = DecoderConfig::default();
-    /// let mut decoder = Decoder::with_config(config)?;
+    /// let mut decoder = Decoder::with_config(api, config)?;
     ///
     /// unsafe {
     ///     let _ = decoder.raw_api();
@@ -431,7 +432,6 @@ impl<'a> DecodedYUV<'a> {
     }
 }
 
-#[cfg(feature = "encoder")]
 impl<'a> YUVSource for DecodedYUV<'a> {
     fn width(&self) -> i32 {
         self.info.iWidth

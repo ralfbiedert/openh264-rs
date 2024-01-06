@@ -4,7 +4,7 @@ description = "Idiomatic bindings for OpenH264."
 authors = ["Ralf Biedert <rb@xr.io>"]
 keywords = ["multimedia", "encoding", "video"]
 categories = ["api-bindings", "multimedia::video"]
-version = "0.4.4"
+version = "0.5.0"
 edition = "2021"
 rust-version = "1.65"
 license = "BSD-2-Clause"
@@ -14,13 +14,14 @@ repository = "https://github.com/ralfbiedert/openh264-rust"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["decoder", "encoder"]
-decoder = ["openh264-sys2/decoder"]
-encoder = ["openh264-sys2/encoder"]
+default = ["source", "libloading"]
+source = ["openh264-sys2/source"]
+libloading = ["openh264-sys2/libloading"]
 backtrace = [] # Remove once backtrace feature is stable.
 
+
 [dependencies]
-openh264-sys2 = { path = "../openh264-sys2", version = "0.4.0", default-features = false }
+openh264-sys2 = { path = "../openh264-sys2", version = "0.5.0", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true

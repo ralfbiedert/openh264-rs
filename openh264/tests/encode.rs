@@ -1,15 +1,15 @@
-#![cfg(feature = "encoder")]
 #![allow(clippy::bool_assert_comparison)]
 
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
-use openh264::formats::{YUVBuffer, YUVSource};
-use openh264::{Error, Timestamp};
+use openh264::formats::YUVBuffer;
+use openh264::{Error, OpenH264API, Timestamp};
 
 #[test]
 fn can_get_encoder() -> Result<(), Error> {
+    let api = OpenH264API::from_source();
     let config = EncoderConfig::new(300, 200);
-    let _encoder = Encoder::with_config(config)?;
+    let _encoder = Encoder::with_config(api, config)?;
 
     Ok(())
 }
@@ -18,8 +18,9 @@ fn can_get_encoder() -> Result<(), Error> {
 fn encode() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
+    let api = OpenH264API::from_source();
     let config = EncoderConfig::new(128, 128);
-    let mut encoder = Encoder::with_config(config)?;
+    let mut encoder = Encoder::with_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -54,8 +55,9 @@ fn encode() -> Result<(), Error> {
 fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
+    let api = OpenH264API::from_source();
     let config = EncoderConfig::new(128, 128);
-    let mut encoder = Encoder::with_config(config)?;
+    let mut encoder = Encoder::with_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -63,14 +65,15 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
     let timestamp = Timestamp::from_millis(64);
     let encoded = encoder.encode_at(&converter, timestamp)?.to_vec();
 
+    let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(config)?;
+    let mut decoder = Decoder::with_config(api, config)?;
     let yuv = decoder
         .decode(encoded.as_slice())?
         .ok_or_else(|| Error::msg("Must have image"))?;
 
-    assert_eq!(yuv.width(), 128);
-    assert_eq!(yuv.height(), 128);
+    assert_eq!(yuv.dimension_y().0, 128);
+    assert_eq!(yuv.dimension_y().1, 128);
     assert_eq!(yuv.timestamp(), timestamp); // TODO: This fails, the returned timestamp is 0.
 
     Ok(())
@@ -80,8 +83,9 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 fn encoder_sps_pps() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
+    let api = OpenH264API::from_source();
     let config = EncoderConfig::new(128, 128);
-    let mut encoder = Encoder::with_config(config)?;
+    let mut encoder = Encoder::with_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -99,18 +103,19 @@ fn encoder_sps_pps() -> Result<(), Error> {
 }
 
 #[test]
-#[cfg(feature = "decoder")]
 fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::decoder::{Decoder, DecoderConfig};
 
     let src = include_bytes!("data/single_512x512_cavlc.h264");
 
+    let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(config)?;
+    let mut decoder = Decoder::with_config(api, config)?;
     let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Must have image"))?;
 
+    let api = OpenH264API::from_source();
     let config = EncoderConfig::new(512, 512);
-    let mut encoder = Encoder::with_config(config)?;
+    let mut encoder = Encoder::with_config(api, config)?;
 
     let stream = encoder.encode(&yuv)?;
 

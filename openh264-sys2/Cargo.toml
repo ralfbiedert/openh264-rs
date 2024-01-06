@@ -4,7 +4,7 @@ description = "Low-level bindings for OpenH264."
 authors = ["Ralf Biedert <rb@xr.io>"]
 keywords = ["multimedia", "encoding", "video"]
 categories = ["api-bindings", "multimedia::video"]
-version = "0.4.4"
+version = "0.5.0"
 edition = "2021"
 documentation = "https://docs.rs/openh264-sys2/"
 repository = "https://github.com/ralfbiedert/openh264-rust"
@@ -13,13 +13,12 @@ license = "BSD-2-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["decoder", "encoder"]
-decoder = []
-encoder = []
+default = [ "source", "libloading" ] # TODO: Remove libloading from default
+source = []
+libloading = [ "dep:libloading" ]
 
 [dependencies]
-libloading = "0.8.1"
-
+libloading = { version = "0.8.1", optional = true }
 
 [build-dependencies]
 cc = { version = "1.0", features = ["parallel"] }

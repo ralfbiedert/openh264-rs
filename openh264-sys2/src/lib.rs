@@ -9,6 +9,7 @@
 //! contains
 //!
 //! - a fully self-contained version of OpenH264
+//! - alternatively, a libloading wrapper around precompiled OpenH264 binaries
 //! - `unsafe` Rust bindings
 //! - build logic that should work "out of the box" on most platforms (sans bugs)
 //!
@@ -22,6 +23,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+mod error;
+
 /// Generated bindings for OpenH264.
 mod generated {
     pub mod consts;
@@ -29,6 +32,12 @@ mod generated {
     pub mod fns_source;
     pub mod types;
 }
+
+pub use self::generated::consts::*;
+pub use self::generated::types::*;
+pub use error::Error;
+use std::ffi::OsStr;
+use std::os::raw::{c_int, c_long};
 
 /// Abstraction over `source` or `libloading` APIs.
 #[rustfmt::skip]
@@ -44,8 +53,8 @@ pub trait API {
 
 /// API surface via libloading.
 ///
-/// While this is no legal advice, the idea is that using this API might be covered by Cicos' [promise to cover MPEG-LA license costs](https://www.openh264.org/).
-/// The big downside is you will have to download pre-build libraries from Cisco during installation. From [their FAQ](https://www.openh264.org/faq.html) (copied 2024-01-06), emphasis ours:
+/// While this is no legal advice, the idea is that using this API might be covered by Cisco's [promise to cover MPEG-LA license costs](https://www.openh264.org/).
+/// The big downside is you will have to download binary blobs from Cisco during installation. From [their FAQ](https://www.openh264.org/faq.html) (copied 2024-01-06, emphasis ours):
 ///
 /// Q: If I use the source code in my product, and then distribute that product on my own, will Cisco cover the MPEG LA licensing fees which I'd otherwise have to pay?
 /// A: No. Cisco is only covering the licensing fees for its own binary module, and products or projects that utilize it **must download it at the time the product or project is installed on the user's computer or device**. Cisco will not be liable for any licensing fees incurred by other parties.
@@ -79,6 +88,7 @@ pub mod source {
     use crate::{ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
     use std::os::raw::{c_int, c_long};
 
+    #[derive(Debug)]
     pub struct APIEntry {}
 
     #[rustfmt::skip]
@@ -105,5 +115,88 @@ pub mod source {
     }
 }
 
-pub use self::generated::consts::*;
-pub use self::generated::types::*;
+/// Convenience wrapper around `libloading` and `source` API surfaces.
+pub enum DynamicAPI {
+    #[cfg(feature = "source")]
+    Source(source::APIEntry),
+
+    #[cfg(feature = "libloading")]
+    Libloading(libloading::APIEntry),
+}
+
+impl DynamicAPI {
+    /// Creates an OpenH264 API using the built-in source if available.
+    #[cfg(feature = "source")]
+    pub fn from_source() -> Self {
+        let api = crate::source::APIEntry::new();
+        Self::Source(api)
+    }
+
+    /// Creates an OpenH264 API via the provided shared library.
+    ///
+    /// In order for this to have any legal use, you should download the library from
+    /// Cisco [**during installation**](https://www.openh264.org/faq.html), and then
+    /// pass the file-system path in here.
+    ///
+    /// # Safety
+    ///
+    /// Will cause UB if the provided path does not match the current platform and version.
+    ///
+    /// TODO: Right now you will have to divine the appropriate version yourself, but we should hard-code some SHAs or so.
+    #[cfg(feature = "libloading")]
+    pub unsafe fn from_blob(path: impl AsRef<OsStr>) -> Result<Self, Error> {
+        let api = unsafe { libloading::APIEntry::new(path)? };
+        Ok(Self::Libloading(api))
+    }
+}
+
+impl API for DynamicAPI {
+    unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int {
+        match self {
+            DynamicAPI::Source(api) => api.WelsCreateSVCEncoder(ppEncoder),
+            DynamicAPI::Libloading(api) => api.WelsCreateSVCEncoder(ppEncoder),
+        }
+    }
+
+    unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) {
+        match self {
+            DynamicAPI::Source(api) => api.WelsDestroySVCEncoder(pEncoder),
+            DynamicAPI::Libloading(api) => api.WelsDestroySVCEncoder(pEncoder),
+        }
+    }
+
+    unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int {
+        match self {
+            DynamicAPI::Source(api) => api.WelsGetDecoderCapability(pDecCapability),
+            DynamicAPI::Libloading(api) => api.WelsGetDecoderCapability(pDecCapability),
+        }
+    }
+
+    unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long {
+        match self {
+            DynamicAPI::Source(api) => api.WelsCreateDecoder(ppDecoder),
+            DynamicAPI::Libloading(api) => api.WelsCreateDecoder(ppDecoder),
+        }
+    }
+
+    unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) {
+        match self {
+            DynamicAPI::Source(api) => api.WelsDestroyDecoder(pDecoder),
+            DynamicAPI::Libloading(api) => api.WelsDestroyDecoder(pDecoder),
+        }
+    }
+
+    unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version {
+        match self {
+            DynamicAPI::Source(api) => api.WelsGetCodecVersion(),
+            DynamicAPI::Libloading(api) => api.WelsGetCodecVersion(),
+        }
+    }
+
+    unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) {
+        match self {
+            DynamicAPI::Source(api) => api.WelsGetCodecVersionEx(pVersion),
+            DynamicAPI::Libloading(api) => api.WelsGetCodecVersionEx(pVersion),
+        }
+    }
+}

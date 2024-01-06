@@ -3,6 +3,7 @@ mod mp4_bitstream_converter;
 use crate::mp4_bitstream_converter::Mp4BitstreamConverter;
 use anyhow::{anyhow, Error};
 use openh264::decoder::Decoder;
+use openh264::OpenH264API;
 use std::io::Cursor;
 
 fn main() -> Result<(), Error> {
@@ -20,8 +21,9 @@ fn main() -> Result<(), Error> {
     // mp4 spits out length-prefixed NAL units, but openh264 expects start codes
     // the mp4 stream also lacks parameter sets, so we need to add them
     // Mp4BitstreamConverter does this for us
+    let api = OpenH264API::from_source();
     let mut bitstream_converter = Mp4BitstreamConverter::for_mp4_track(track)?;
-    let mut decoder = Decoder::new()?;
+    let mut decoder = Decoder::new(api)?;
 
     let mut buffer = Vec::new();
     let mut rgb = [0; 512 * 512 * 3];

@@ -20,10 +20,11 @@
 //! use openh264::decoder::Decoder;
 //! use openh264::nal_units;
 //!
-//! # use openh264::Error;
+//! # use openh264::{Error, OpenH264API};
 //! # fn main() -> Result<(), Error> {
 //! let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
-//! let mut decoder = Decoder::new()?;
+//! let api = OpenH264API::from_source();
+//! let mut decoder = Decoder::new(api)?;
 //!
 //! // Split H.264 into NAL units and decode each.
 //! for packet in nal_units(h264_in) {
@@ -39,16 +40,18 @@
 //! And **encode** the same YUV back to H.264:
 //! ```rust
 //! # use openh264::decoder::Decoder;
-//! # use openh264::Error;
+//! # use openh264::{Error, OpenH264API};
 //! use openh264::encoder::{Encoder, EncoderConfig};
 //! # fn main() -> Result<(), Error> {
-//! # let mut decoder = Decoder::new()?;
+//! # let api = OpenH264API::from_source();
+//! # let mut decoder = Decoder::new(api)?;
 //! # let mut rgb_out = vec![0; 512 * 512 * 3];
 //! # let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 //! # let yuv = decoder.decode(&h264_in[..])?.ok_or_else(|| Error::msg("Must have image"))?;
 //!
 //! let config = EncoderConfig::new(512, 512);
-//! let mut encoder = Encoder::with_config(config)?;
+//! let api = OpenH264API::from_source();
+//! let mut encoder = Encoder::with_config(api, config)?;
 //!
 //! // Encode YUV back into H.264.
 //! let bitstream = encoder.encode(&yuv)?;
@@ -197,16 +200,12 @@ mod error;
 mod time;
 mod utils;
 
-pub mod formats;
-
-#[cfg(feature = "decoder")]
-#[cfg_attr(docsrs, doc(cfg(feature = "decoder")))]
 pub mod decoder;
-
-#[cfg(feature = "encoder")]
-#[cfg_attr(docsrs, doc(cfg(feature = "encoder")))]
 pub mod encoder;
+pub mod formats;
 
 pub use error::Error;
 pub use time::Timestamp;
 pub use utils::nal_units;
+
+pub use openh264_sys2::DynamicAPI as OpenH264API;
