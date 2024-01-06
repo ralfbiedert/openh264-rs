@@ -17,6 +17,10 @@ default = ["decoder", "encoder"]
 decoder = []
 encoder = []
 
+[dependencies]
+libloading = "0.8.1"
+
+
 [build-dependencies]
 cc = { version = "1.0", features = ["parallel"] }
 walkdir = "2.3"
