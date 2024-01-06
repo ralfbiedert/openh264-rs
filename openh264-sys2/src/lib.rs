@@ -28,7 +28,9 @@ mod error;
 /// Generated bindings for OpenH264.
 mod generated {
     pub mod consts;
+    #[cfg(feature = "libloading")]
     pub mod fns_libloading;
+    #[cfg(feature = "source")]
     pub mod fns_source;
     pub mod types;
 }
@@ -65,6 +67,7 @@ pub trait API {
 /// - **Q: Is Cisco guaranteeing that it will pay other licensing fees for H.264, should additional patent holders assert claims in the future?**
 ///
 ///     A: Cisco is providing no such guarantee. We are only covering the royalties that would apply to the binary module under MPEG LA's AVC/H.264 patent pool.
+#[cfg(feature = "libloading")]
 pub mod libloading {
     pub use crate::generated::fns_libloading::*;
     use crate::{ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
@@ -86,6 +89,7 @@ pub mod libloading {
 ///
 /// This API surface should _just work_ once compiled. Depending on your commercial, legal and geographic situation, and the H.264 features you use,
 /// this might or might not come with an elevated patent risk.
+#[cfg(feature = "source")]
 pub mod source {
     use crate::{ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
     use std::os::raw::{c_int, c_long};
@@ -160,49 +164,63 @@ impl DynamicAPI {
 impl API for DynamicAPI {
     unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsCreateSVCEncoder(ppEncoder),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsCreateSVCEncoder(ppEncoder),
         }
     }
 
     unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsDestroySVCEncoder(pEncoder),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsDestroySVCEncoder(pEncoder),
         }
     }
 
     unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsGetDecoderCapability(pDecCapability),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsGetDecoderCapability(pDecCapability),
         }
     }
 
     unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsCreateDecoder(ppDecoder),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsCreateDecoder(ppDecoder),
         }
     }
 
     unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsDestroyDecoder(pDecoder),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsDestroyDecoder(pDecoder),
         }
     }
 
     unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsGetCodecVersion(),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsGetCodecVersion(),
         }
     }
 
     unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) {
         match self {
+            #[cfg(feature = "source")]
             DynamicAPI::Source(api) => api.WelsGetCodecVersionEx(pVersion),
+            #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsGetCodecVersionEx(pVersion),
         }
     }

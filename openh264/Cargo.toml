@@ -14,7 +14,7 @@ repository = "https://github.com/ralfbiedert/openh264-rust"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["source", "libloading"]
+default = ["source"]
 source = ["openh264-sys2/source"]
 libloading = ["openh264-sys2/libloading"]
 backtrace = [] # Remove once backtrace feature is stable.

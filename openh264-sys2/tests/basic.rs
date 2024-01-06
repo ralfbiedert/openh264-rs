@@ -20,6 +20,7 @@ fn api_source() {
 
 #[test]
 #[ignore]
+#[cfg(feature = "libloading")]
 fn api_libloading() {
     use openh264_sys2::libloading::APIEntry;
     let api = unsafe { APIEntry::new(r"C:\Users\rb\Downloads\openh264-2.4.0-win64.dll\openh264-2.4.0-win64.dll").unwrap() };
