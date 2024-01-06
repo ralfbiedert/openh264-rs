@@ -9,6 +9,7 @@ This low-level crate used by [openh264](https://crates.io/crates/openh264)
 contains
 
 - a fully self-contained version of OpenH264
+- alternatively, a libloading wrapper around precompiled OpenH264 binaries
 - `unsafe` Rust bindings
 - build logic that should work "out of the box" on most platforms (sans bugs)
 

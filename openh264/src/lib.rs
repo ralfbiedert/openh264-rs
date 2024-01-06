@@ -113,8 +113,9 @@
 //!
 //! ## Compile Features
 //!
-//! - `decoder` - Enable the decoder. Used by default.
-//! - `encoder` - Enable the encoder. Used by default.
+//! - `source` - Uses the bundled OpenH264 source; works out of the box (default).
+//! - `libloading` - You'll need to provide Cisco's prebuilt library.
+//!
 //!
 //! ## FAQ
 //!
@@ -166,6 +167,12 @@
 //!   FWIW, we consider OpenH264's `h264dec` the reference decoder. If you can get it to emit YUV it would be a bug
 //!   if we can't. However, any stream / frame it fails on is pretty much a _wontfix_ for us.
 //!
+//!
+//! - **What's the deal with the `source` and `libloading` features?**
+//!
+//!   See [this issue](https://github.com/ralfbiedert/openh264-rs/issues/43).
+//!
+//!
 //! ## Contributing
 //!
 //! PRs are very welcome. Feel free to submit PRs and fixes right away. You can open issues if you want to discuss things, but due to time restrictions on my side the project will have to rely on people contributing.
@@ -180,6 +187,7 @@
 //!
 //! ## Changelog
 //!
+//! - **v0.5** - Can now use built-in source, or Cisco's prebuilt library.
 //! - **v0.4** - Update build system, remove unused API.
 //! - **v0.3** - Change some APIs to better reflect OpenH264 behavior.
 //! - **v0.2** - Added encoder; `asm` feature for 2x - 3x speed boost.

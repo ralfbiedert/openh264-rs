@@ -56,13 +56,15 @@ pub trait API {
 /// While this is no legal advice, the idea is that using this API might be covered by Cisco's [promise to cover MPEG-LA license costs](https://www.openh264.org/).
 /// The big downside is you will have to download binary blobs from Cisco during installation. From [their FAQ](https://www.openh264.org/faq.html) (copied 2024-01-06, emphasis ours):
 ///
-/// Q: If I use the source code in my product, and then distribute that product on my own, will Cisco cover the MPEG LA licensing fees which I'd otherwise have to pay?
-/// A: No. Cisco is only covering the licensing fees for its own binary module, and products or projects that utilize it **must download it at the time the product or project is installed on the user's computer or device**. Cisco will not be liable for any licensing fees incurred by other parties.
+/// - **Q: If I use the source code in my product, and then distribute that product on my own, will Cisco cover the MPEG LA licensing fees which I'd otherwise have to pay?**
+///
+///     A: No. Cisco is only covering the licensing fees for its own binary module, and products or projects that utilize it **must download it at the time the product or project is installed on the user's computer or device**. Cisco will not be liable for any licensing fees incurred by other parties.
 ///
 /// In addition, note that this might not cover _all_ possible license claims:
 ///
-/// Q: Is Cisco guaranteeing that it will pay other licensing fees for H.264, should additional patent holders assert claims in the future?
-/// A: Cisco is providing no such guarantee. We are only covering the royalties that would apply to the binary module under MPEG LA's AVC/H.264 patent pool.
+/// - **Q: Is Cisco guaranteeing that it will pay other licensing fees for H.264, should additional patent holders assert claims in the future?**
+///
+///     A: Cisco is providing no such guarantee. We are only covering the royalties that would apply to the binary module under MPEG LA's AVC/H.264 patent pool.
 pub mod libloading {
     pub use crate::generated::fns_libloading::*;
     use crate::{ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
@@ -116,6 +118,9 @@ pub mod source {
 }
 
 /// Convenience wrapper around `libloading` and `source` API surfaces.
+///
+/// This type mainly exists to prevent infecting the rest of the OpenH264 crate with generics. The dispatch overhead
+/// in contrast to H.264 computation is absolutely negligible.
 pub enum DynamicAPI {
     #[cfg(feature = "source")]
     Source(source::APIEntry),
@@ -134,7 +139,7 @@ impl DynamicAPI {
 
     /// Creates an OpenH264 API via the provided shared library.
     ///
-    /// In order for this to have any legal use, you should download the library from
+    /// In order for this to have any (legal) use, you should download the library from
     /// Cisco [**during installation**](https://www.openh264.org/faq.html), and then
     /// pass the file-system path in here.
     ///
@@ -142,7 +147,9 @@ impl DynamicAPI {
     ///
     /// Will cause UB if the provided path does not match the current platform and version.
     ///
-    /// TODO: Right now you will have to divine the appropriate version yourself, but we should hard-code some SHAs or so.
+    /// # TODO
+    ///
+    /// Right now you will have to divine the appropriate version yourself, but we should hard-code some SHAs or so.
     #[cfg(feature = "libloading")]
     pub unsafe fn from_blob(path: impl AsRef<OsStr>) -> Result<Self, Error> {
         let api = unsafe { libloading::APIEntry::new(path)? };
