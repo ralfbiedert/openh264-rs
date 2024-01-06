@@ -7,6 +7,7 @@ use openh264::OpenH264API;
 use test::Bencher;
 
 #[bench]
+#[cfg(feature = "source")]
 fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_1920x1080_cabac.h264");
 
@@ -27,6 +28,7 @@ fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
 }
 
 #[bench]
+#[cfg(feature = "source")]
 fn convert_yuv_to_rgba_1920x1080(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_1920x1080_cabac.h264");
 
@@ -47,6 +49,7 @@ fn convert_yuv_to_rgba_1920x1080(b: &mut Bencher) {
 }
 
 #[bench]
+#[cfg(feature = "source")]
 fn convert_yuv_to_rgb_512x512(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
 

@@ -5,6 +5,7 @@ use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::{nal_units, Error, OpenH264API};
 
 #[test]
+#[cfg(feature = "source")]
 fn can_get_decoder() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
@@ -14,6 +15,7 @@ fn can_get_decoder() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn can_access_raw_api() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
@@ -28,6 +30,7 @@ fn can_access_raw_api() -> Result<(), Error> {
 
 #[test]
 #[rustfmt::skip]
+#[cfg(feature = "source")]
 fn can_decode_single() -> Result<(), Error> {
     let sources = [
         include_bytes!("data/single_1920x1080_cabac.h264").as_slice(),
@@ -53,6 +56,7 @@ fn can_decode_single() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn can_decode_multi_to_end() -> Result<(), Error> {
     let src = include_bytes!("data/multi_512x512.h264");
 
@@ -66,6 +70,7 @@ fn can_decode_multi_to_end() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn can_decode_multi_by_step() -> Result<(), Error> {
     let src = include_bytes!("data/multi_512x512.h264");
 
@@ -85,6 +90,7 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn fails_on_truncated() -> Result<(), Error> {
     let src = include_bytes!("data/multi_512x512_truncated.h264");
 
@@ -98,6 +104,7 @@ fn fails_on_truncated() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::encoder::{Encoder, EncoderConfig};
     use openh264::formats::YUVBuffer;
@@ -123,6 +130,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
     let src = include_bytes!("data/multi_1024x768.h264");
     let compare_data = include_bytes!("data/multi_1024x768.bmp");

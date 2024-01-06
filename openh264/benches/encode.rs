@@ -8,6 +8,7 @@ use openh264::OpenH264API;
 use test::{black_box, Bencher};
 
 #[bench]
+#[cfg(feature = "source")]
 fn encode_512x512_from_yuv(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
 
@@ -28,6 +29,7 @@ fn encode_512x512_from_yuv(b: &mut Bencher) {
 }
 
 #[bench]
+#[cfg(feature = "source")]
 fn encode_1920x1080_from_yuv(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_1920x1080_cabac.h264");
 

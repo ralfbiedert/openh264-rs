@@ -6,6 +6,7 @@ use openh264::formats::YUVBuffer;
 use openh264::{Error, OpenH264API, Timestamp};
 
 #[test]
+#[cfg(feature = "source")]
 fn can_get_encoder() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new(300, 200);
@@ -15,6 +16,7 @@ fn can_get_encoder() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn encode() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
@@ -52,6 +54,7 @@ fn encode() -> Result<(), Error> {
 
 #[test]
 #[ignore]
+#[cfg(feature = "source")]
 fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
@@ -80,6 +83,7 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn encoder_sps_pps() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
@@ -103,6 +107,7 @@ fn encoder_sps_pps() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::decoder::{Decoder, DecoderConfig};
 

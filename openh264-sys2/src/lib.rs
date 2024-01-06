@@ -161,6 +161,8 @@ impl DynamicAPI {
     }
 }
 
+#[allow(unreachable_patterns)]
+#[allow(unused)]
 impl API for DynamicAPI {
     unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int {
         match self {
@@ -168,6 +170,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsCreateSVCEncoder(ppEncoder),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsCreateSVCEncoder(ppEncoder),
+            _ => panic!("No API enabled"),
         }
     }
 
@@ -177,6 +180,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsDestroySVCEncoder(pEncoder),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsDestroySVCEncoder(pEncoder),
+            _ => panic!("No API enabled"),
         }
     }
 
@@ -186,6 +190,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsGetDecoderCapability(pDecCapability),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsGetDecoderCapability(pDecCapability),
+            _ => panic!("No API enabled"),
         }
     }
 
@@ -195,6 +200,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsCreateDecoder(ppDecoder),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsCreateDecoder(ppDecoder),
+            _ => panic!("No API enabled"),
         }
     }
 
@@ -204,6 +210,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsDestroyDecoder(pDecoder),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsDestroyDecoder(pDecoder),
+            _ => panic!("No API enabled"),
         }
     }
 
@@ -213,6 +220,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsGetCodecVersion(),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsGetCodecVersion(),
+            _ => panic!("No API enabled"),
         }
     }
 
@@ -222,6 +230,7 @@ impl API for DynamicAPI {
             DynamicAPI::Source(api) => api.WelsGetCodecVersionEx(pVersion),
             #[cfg(feature = "libloading")]
             DynamicAPI::Libloading(api) => api.WelsGetCodecVersionEx(pVersion),
+            _ => panic!("No API enabled"),
         }
     }
 }

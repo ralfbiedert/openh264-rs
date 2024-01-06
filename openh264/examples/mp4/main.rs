@@ -6,6 +6,7 @@ use openh264::decoder::Decoder;
 use openh264::OpenH264API;
 use std::io::Cursor;
 
+#[cfg(feature = "source")]
 fn main() -> Result<(), Error> {
     let mp4 = include_bytes!("../../tests/data/multi_512x512.mp4");
     let mut mp4 = mp4::Mp4Reader::read_header(Cursor::new(mp4), mp4.len() as u64)?;
@@ -43,3 +44,6 @@ fn main() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[cfg(not(feature = "source"))]
+fn main() {}

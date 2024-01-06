@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Error {
@@ -15,10 +15,11 @@ impl From<::libloading::Error> for Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        #[allow(unreachable_patterns)]
         match self {
             #[cfg(feature = "libloading")]
             Error::LibLoading(x) => x.fmt(f),
-            _ => ().fmt(f),
+            _ => "".fmt(f),
         }
     }
 }

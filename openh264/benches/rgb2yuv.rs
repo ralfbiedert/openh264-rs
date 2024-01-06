@@ -19,6 +19,7 @@ fn convert_rgb_to_yuv_512x512(b: &mut Bencher) {
 }
 
 #[bench]
+#[cfg(feature = "source")]
 fn convert_rgb_to_yuv_1920x1080(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_1920x1080_cabac.h264");
 

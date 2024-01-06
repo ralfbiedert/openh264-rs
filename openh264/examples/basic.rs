@@ -1,6 +1,7 @@
 use openh264::decoder::Decoder;
 use openh264::{Error, OpenH264API};
 
+#[cfg(feature = "source")]
 fn main() -> Result<(), Error> {
     let h264_packets = &include_bytes!("../tests/data/multi_512x512.h264")[..];
     let mut rgb = [0; 512 * 512 * 3];
@@ -13,3 +14,6 @@ fn main() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[cfg(not(feature = "source"))]
+fn main() {}

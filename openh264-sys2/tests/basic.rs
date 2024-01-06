@@ -12,6 +12,7 @@ fn api_generic(api: impl API) {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn api_source() {
     use openh264_sys2::source::APIEntry;
     let api = APIEntry::new();
@@ -28,6 +29,7 @@ fn api_libloading() {
 }
 
 #[test]
+#[cfg(feature = "source")]
 fn api_dynamic() {
     let api = DynamicAPI::from_source();
     api_generic(api);
