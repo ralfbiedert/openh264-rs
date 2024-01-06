@@ -38,7 +38,6 @@ mod generated {
 pub use self::generated::consts::*;
 pub use self::generated::types::*;
 pub use error::Error;
-use std::ffi::OsStr;
 use std::os::raw::{c_int, c_long};
 
 /// Abstraction over `source` or `libloading` APIs.
@@ -155,7 +154,7 @@ impl DynamicAPI {
     ///
     /// Right now you will have to divine the appropriate version yourself, but we should hard-code some SHAs or so.
     #[cfg(feature = "libloading")]
-    pub unsafe fn from_blob(path: impl AsRef<OsStr>) -> Result<Self, Error> {
+    pub unsafe fn from_blob(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
         let api = unsafe { libloading::APIEntry::new(path)? };
         Ok(Self::Libloading(api))
     }
