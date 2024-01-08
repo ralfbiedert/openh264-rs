@@ -41,7 +41,7 @@ bindgen ^
     --with-derive-eq --with-derive-default --with-derive-hash --with-derive-ord ^
     --use-array-pointers-in-arguments ^
     --raw-line "use super::types::*;" ^
-    --dynamic-loading APIEntry ^
+    --dynamic-loading APILoader ^
     --generate functions ^
     -o ../openh264-sys2/src/generated/fns_libloading.rs
 

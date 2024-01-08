@@ -73,14 +73,14 @@ pub mod libloading {
     use std::os::raw::{c_int, c_long};
 
     #[rustfmt::skip]
-    impl super::API for APIEntry {
-        unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { APIEntry::WelsCreateSVCEncoder(self, ppEncoder) }
-        unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { APIEntry::WelsDestroySVCEncoder(self, pEncoder) }
-        unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int { APIEntry::WelsGetDecoderCapability(self, pDecCapability) }
-        unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long { APIEntry::WelsCreateDecoder(self, ppDecoder) }
-        unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) { APIEntry::WelsDestroyDecoder(self, pDecoder) }
-        unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version { APIEntry::WelsGetCodecVersion(self) }
-        unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) {APIEntry::WelsGetCodecVersionEx(self, pVersion) }
+    impl super::API for APILoader {
+        unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { APILoader::WelsCreateSVCEncoder(self, ppEncoder) }
+        unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { APILoader::WelsDestroySVCEncoder(self, pEncoder) }
+        unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int { APILoader::WelsGetDecoderCapability(self, pDecCapability) }
+        unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long { APILoader::WelsCreateDecoder(self, ppDecoder) }
+        unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) { APILoader::WelsDestroyDecoder(self, pDecoder) }
+        unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version { APILoader::WelsGetCodecVersion(self) }
+        unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) {APILoader::WelsGetCodecVersionEx(self, pVersion) }
     }
 }
 
@@ -94,10 +94,10 @@ pub mod source {
     use std::os::raw::{c_int, c_long};
 
     #[derive(Debug)]
-    pub struct APIEntry {}
+    pub struct APILoader {}
 
     #[rustfmt::skip]
-    impl APIEntry {
+    impl APILoader {
         pub fn new() -> Self { Self {} }
         pub unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int { crate::generated::fns_source::WelsCreateSVCEncoder(ppEncoder) }
         pub unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { crate::generated::fns_source::WelsDestroySVCEncoder(pEncoder) }
@@ -109,14 +109,14 @@ pub mod source {
     }
 
     #[rustfmt::skip]
-    impl super::API for APIEntry {
-        unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { APIEntry::WelsCreateSVCEncoder(self, ppEncoder) }
-        unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { APIEntry::WelsDestroySVCEncoder(self, pEncoder) }
-        unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int { APIEntry::WelsGetDecoderCapability(self, pDecCapability) }
-        unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long { APIEntry::WelsCreateDecoder(self, ppDecoder) }
-        unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) { APIEntry::WelsDestroyDecoder(self, pDecoder) }
-        unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version { APIEntry::WelsGetCodecVersion(self) }
-        unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) { APIEntry::WelsGetCodecVersionEx(self, pVersion) }
+    impl super::API for APILoader {
+        unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { APILoader::WelsCreateSVCEncoder(self, ppEncoder) }
+        unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { APILoader::WelsDestroySVCEncoder(self, pEncoder) }
+        unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int { APILoader::WelsGetDecoderCapability(self, pDecCapability) }
+        unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long { APILoader::WelsCreateDecoder(self, ppDecoder) }
+        unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) { APILoader::WelsDestroyDecoder(self, pDecoder) }
+        unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version { APILoader::WelsGetCodecVersion(self) }
+        unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) { APILoader::WelsGetCodecVersionEx(self, pVersion) }
     }
 }
 
@@ -126,17 +126,17 @@ pub mod source {
 /// in contrast to H.264 computation is absolutely negligible.
 pub enum DynamicAPI {
     #[cfg(feature = "source")]
-    Source(source::APIEntry),
+    Source(source::APILoader),
 
     #[cfg(feature = "libloading")]
-    Libloading(libloading::APIEntry),
+    Libloading(libloading::APILoader),
 }
 
 impl DynamicAPI {
     /// Creates an OpenH264 API using the built-in source if available.
     #[cfg(feature = "source")]
     pub fn from_source() -> Self {
-        let api = crate::source::APIEntry::new();
+        let api = crate::source::APILoader::new();
         Self::Source(api)
     }
 
@@ -155,7 +155,7 @@ impl DynamicAPI {
     /// Will cause UB if the provided path does not match the current platform and version.
     #[cfg(feature = "libloading")]
     pub unsafe fn from_blob_path_unchecked(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
-        let api = unsafe { libloading::APIEntry::new(path)? };
+        let api = unsafe { libloading::APILoader::new(path)? };
         Ok(Self::Libloading(api))
     }
 

@@ -3,7 +3,7 @@
 use super::types::*;
 
 extern crate libloading;
-pub struct APIEntry {
+pub struct APILoader {
     __library: ::libloading::Library,
     pub WelsCreateSVCEncoder:
         Result<unsafe extern "C" fn(ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int, ::libloading::Error>,
@@ -16,7 +16,7 @@ pub struct APIEntry {
     pub WelsGetCodecVersion: Result<unsafe extern "C" fn() -> OpenH264Version, ::libloading::Error>,
     pub WelsGetCodecVersionEx: Result<unsafe extern "C" fn(pVersion: *mut OpenH264Version), ::libloading::Error>,
 }
-impl APIEntry {
+impl APILoader {
     pub unsafe fn new<P>(path: P) -> Result<Self, ::libloading::Error>
     where
         P: AsRef<::std::ffi::OsStr>,
@@ -36,7 +36,7 @@ impl APIEntry {
         let WelsDestroyDecoder = __library.get(b"WelsDestroyDecoder\0").map(|sym| *sym);
         let WelsGetCodecVersion = __library.get(b"WelsGetCodecVersion\0").map(|sym| *sym);
         let WelsGetCodecVersionEx = __library.get(b"WelsGetCodecVersionEx\0").map(|sym| *sym);
-        Ok(APIEntry {
+        Ok(APILoader {
             __library,
             WelsCreateSVCEncoder,
             WelsDestroySVCEncoder,

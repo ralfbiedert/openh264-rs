@@ -14,8 +14,8 @@ fn api_generic(api: impl API) {
 #[test]
 #[cfg(feature = "source")]
 fn api_source() {
-    use openh264_sys2::source::APIEntry;
-    let api = APIEntry::new();
+    use openh264_sys2::source::APILoader;
+    let api = APILoader::new();
     api_generic(api);
 }
 
@@ -23,8 +23,8 @@ fn api_source() {
 #[ignore]
 #[cfg(feature = "libloading")]
 fn api_libloading() {
-    use openh264_sys2::libloading::APIEntry;
-    let api = unsafe { APIEntry::new(r"C:\Users\rb\Downloads\openh264-2.4.0-win64.dll\openh264-2.4.0-win64.dll").unwrap() };
+    use openh264_sys2::libloading::APILoader;
+    let api = unsafe { APILoader::new(r"C:\Users\rb\Downloads\openh264-2.4.0-win64.dll\openh264-2.4.0-win64.dll").unwrap() };
     api_generic(api);
 }
 
