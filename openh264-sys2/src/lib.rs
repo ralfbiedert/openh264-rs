@@ -173,6 +173,8 @@ impl DynamicAPI {
     /// not match against a list of well-known versions we can load.
     #[cfg(feature = "libloading")]
     pub fn from_blob_path(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
+        use sha2::Digest;
+
         let bytes = std::fs::read(path.as_ref())?;
 
         // Get SHA of blob at given path.
