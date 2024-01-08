@@ -146,17 +146,53 @@ impl DynamicAPI {
     /// Cisco [**during installation**](https://www.openh264.org/faq.html), and then
     /// pass the file-system path in here.
     ///
+    /// # Errors
+    ///
+    /// Can fail if the library could not be loaded, e.g., it does not exist.
+    ///
     /// # Safety
     ///
     /// Will cause UB if the provided path does not match the current platform and version.
-    ///
-    /// # TODO
-    ///
-    /// Right now you will have to divine the appropriate version yourself, but we should hard-code some SHAs or so.
     #[cfg(feature = "libloading")]
-    pub unsafe fn from_blob(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
+    pub unsafe fn from_blob_path_unchecked(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
         let api = unsafe { libloading::APIEntry::new(path)? };
         Ok(Self::Libloading(api))
+    }
+
+    /// Creates an OpenH264 API via the provided shared library if the library is well-known.
+    ///
+    /// In order for this to have any (legal) use, you should download the library from
+    /// Cisco [**during installation**](https://www.openh264.org/faq.html), and then
+    /// pass the file-system path in here.
+    ///
+    /// This function also checks the file's SHA against a list of well-known libraries we can load.
+    ///
+    /// # Errors
+    ///
+    /// Can fail if the library could not be loaded, e.g., it does not exist. It can also fail if the file's SHA does
+    /// not match against a list of well-known versions we can load.
+    #[cfg(feature = "libloading")]
+    pub fn from_blob_path(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
+        let bytes = std::fs::read(path.as_ref())?;
+
+        // Get SHA of blob at given path.
+        let sha256 = sha2::Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{:02x}", byte))
+            .collect::<String>();
+
+        // Check all known hashes if we should load this library.
+        // TODO: We might also want to verify this matches our architecture, but then again libloading should catch that.
+        let hash_is_well_known = include_str!("blobs/hashes.txt")
+            .lines()
+            .filter_map(|line| line.split_whitespace().next())
+            .any(|x| x == sha256);
+
+        if !hash_is_well_known {
+            return Err(Error::InvalidHash(sha256));
+        }
+
+        unsafe { Self::from_blob_path_unchecked(path) }
     }
 }
 
@@ -231,5 +267,17 @@ impl API for DynamicAPI {
             DynamicAPI::Libloading(api) => api.WelsGetCodecVersionEx(pVersion),
             _ => panic!("No API enabled"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[ignore]
+    #[cfg(feature = "libloading")]
+    fn it_works() -> Result<(), crate::Error> {
+        _ = super::DynamicAPI::from_blob_path(r"C:\Users\rb\Downloads\openh264-2.4.0-win64.dll\openh264-2.4.0-win64.dll")?;
+
+        Ok(())
     }
 }
