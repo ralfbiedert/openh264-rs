@@ -112,7 +112,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
 
     let api = OpenH264API::from_source();
-    let config = EncoderConfig::new(128, 128);
+    let config = EncoderConfig::new();
     let mut encoder = Encoder::with_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
