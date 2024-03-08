@@ -179,6 +179,7 @@ pub struct EncoderConfig {
     max_frame_rate: f32,
     rate_control_mode: RateControlMode,
     sps_pps_strategy: SpsPpsStrategy,
+    multiple_thread_idc: u16,
 }
 
 impl EncoderConfig {
@@ -195,6 +196,7 @@ impl EncoderConfig {
             max_frame_rate: 0.0,
             rate_control_mode: Default::default(),
             sps_pps_strategy: Default::default(),
+            multiple_thread_idc: 0,
         }
     }
 
@@ -233,6 +235,18 @@ impl EncoderConfig {
         self.sps_pps_strategy = value;
         self
     }
+
+    /// Sets the number of internal encoder threads.
+    ///
+    /// * 0 - auto mode
+    /// * 1 - multiple threads disabled
+    /// * &gt;1 - fixed number of threads
+    ///
+    /// Defaults to 0 (auto mode).
+    pub fn set_multiple_thread_idc(mut self, threads: u16) -> Self {
+        self.multiple_thread_idc = threads;
+        self
+    }
 }
 
 /// An [OpenH264](https://github.com/cisco/openh264) encoder.
@@ -262,6 +276,7 @@ impl Encoder {
             params.bEnableDenoise = config.enable_denoise;
             params.fMaxFrameRate = config.max_frame_rate;
             params.eSpsPpsIdStrategy = config.sps_pps_strategy.to_c();
+            params.iMultipleThreadIdc = config.multiple_thread_idc;
             raw_api.initialize_ext(&params).ok()?;
 
             raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
