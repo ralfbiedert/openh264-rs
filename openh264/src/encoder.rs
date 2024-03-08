@@ -123,6 +123,47 @@ impl RateControlMode {
     }
 }
 
+/// Sets the behavior for generating SPS/PPS.
+#[derive(Copy, Clone, Debug)]
+pub enum SpsPpsStrategy {
+    /// Use a constant SPS/PPS ID. The ID will not change across encoded video frames.
+    ///
+    /// This is the default value.
+    ConstantId,
+
+    /// Increment the SPS/PPS ID with each IDR frame.
+    ///
+    /// This allows decoders to detect missing frames.
+    IncreasingId,
+
+    /// Use SPS in the existing list if possible.
+    SpsListing,
+
+    /// _find doc for this_
+    SpsListingAndPpsIncreasing,
+
+    /// _find doc for this_
+    SpsPpsListing,
+}
+
+impl SpsPpsStrategy {
+    fn to_c(self) -> RC_MODES {
+        match self {
+            SpsPpsStrategy::ConstantId => openh264_sys2::CONSTANT_ID,
+            SpsPpsStrategy::IncreasingId => openh264_sys2::INCREASING_ID,
+            SpsPpsStrategy::SpsListing => openh264_sys2::SPS_LISTING,
+            SpsPpsStrategy::SpsListingAndPpsIncreasing => openh264_sys2::SPS_LISTING_AND_PPS_INCREASING,
+            SpsPpsStrategy::SpsPpsListing => openh264_sys2::SPS_PPS_LISTING,
+        }
+    }
+}
+
+impl Default for SpsPpsStrategy {
+    fn default() -> Self {
+        Self::ConstantId
+    }
+}
+
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -137,6 +178,7 @@ pub struct EncoderConfig {
     data_format: EVideoFormatType,
     max_frame_rate: f32,
     rate_control_mode: RateControlMode,
+    sps_pps_strategy: SpsPpsStrategy,
 }
 
 impl EncoderConfig {
@@ -152,6 +194,7 @@ impl EncoderConfig {
             data_format: videoFormatI420,
             max_frame_rate: 0.0,
             rate_control_mode: Default::default(),
+            sps_pps_strategy: Default::default(),
         }
     }
 
@@ -184,6 +227,12 @@ impl EncoderConfig {
         self.rate_control_mode = value;
         self
     }
+
+    /// Set the SPS/PPS behavior.
+    pub fn sps_pps_strategy(mut self, value: SpsPpsStrategy) -> Self {
+        self.sps_pps_strategy = value;
+        self
+    }
 }
 
 /// An [OpenH264](https://github.com/cisco/openh264) encoder.
@@ -212,6 +261,7 @@ impl Encoder {
             params.iTargetBitrate = config.target_bitrate as c_int;
             params.bEnableDenoise = config.enable_denoise;
             params.fMaxFrameRate = config.max_frame_rate;
+            params.eSpsPpsIdStrategy = config.sps_pps_strategy.to_c();
             raw_api.initialize_ext(&params).ok()?;
 
             raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
