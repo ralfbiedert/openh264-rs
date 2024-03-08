@@ -49,7 +49,7 @@
 //! # let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
 //! # let yuv = decoder.decode(&h264_in[..])?.ok_or_else(|| Error::msg("Must have image"))?;
 //!
-//! let config = EncoderConfig::new(512, 512);
+//! let config = EncoderConfig::new();
 //! let api = OpenH264API::from_source();
 //! let mut encoder = Encoder::with_config(api, config)?;
 //!

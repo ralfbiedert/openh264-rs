@@ -5,8 +5,8 @@ use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
-    SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER,
-    WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT,
+    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -128,8 +128,6 @@ impl RateControlMode {
 /// Setting missing? Please file a PR!
 #[derive(Default, Copy, Clone, Debug)]
 pub struct EncoderConfig {
-    width: u32,
-    height: u32,
     enable_skip_frame: bool,
     target_bitrate: u32,
     enable_denoise: bool,
@@ -141,10 +139,8 @@ pub struct EncoderConfig {
 
 impl EncoderConfig {
     /// Creates a new default encoder config.
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new() -> Self {
         Self {
-            width,
-            height,
             enable_skip_frame: true,
             target_bitrate: 120_000,
             enable_denoise: false,
@@ -188,9 +184,10 @@ impl EncoderConfig {
 
 /// An [OpenH264](https://github.com/cisco/openh264) encoder.
 pub struct Encoder {
-    params: SEncParamExt,
+    config: EncoderConfig,
     raw_api: EncoderRawAPI,
     bit_stream_info: SFrameBSInfo,
+    previous_dimensions: Option<(i32, i32)>,
 }
 
 unsafe impl Send for Encoder {}
@@ -198,30 +195,16 @@ unsafe impl Sync for Encoder {}
 
 impl Encoder {
     /// Create an encoder with the provided configuration.
-    pub fn with_config(api: OpenH264API, mut config: EncoderConfig) -> Result<Self, Error> {
+    ///
+    /// The width and height will be taken from the [`YUVSource`] when calling [`Encoder::encode()`].
+    pub fn with_config(api: OpenH264API, config: EncoderConfig) -> Result<Self, Error> {
         let raw_api = EncoderRawAPI::new(api)?;
-        let mut params = SEncParamExt::default();
-
-        #[rustfmt::skip]
-        unsafe {
-            raw_api.get_default_params(&mut params).ok()?;
-            params.iPicWidth = config.width as c_int;
-            params.iPicHeight = config.height as c_int;
-            params.iRCMode = config.rate_control_mode.to_c();
-            params.bEnableFrameSkip = config.enable_skip_frame;
-            params.iTargetBitrate = config.target_bitrate as c_int;
-            params.bEnableDenoise = config.enable_denoise;
-            params.fMaxFrameRate = config.max_frame_rate;
-            raw_api.initialize_ext(&params).ok()?;
-
-            raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
-            raw_api.set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(config.data_format).cast()).ok()?;
-        };
 
         Ok(Self {
-            params,
+            config,
             raw_api,
             bit_stream_info: Default::default(),
+            previous_dimensions: None,
         })
     }
 
@@ -231,9 +214,12 @@ impl Encoder {
     /// initialization information. Subsequent packages then contain, amongst others, keyframes
     /// ("I frames") or delta frames. The interval at which they are produced depends on the encoder settings.
     ///
+    /// The resolution of the encoded frame is allowed to change. Each time it changes, the
+    /// encoder is re-initialized with the new values.
+    ///
     /// # Panics
     ///
-    /// Panics if the source image dimension don't match the configured format.
+    /// Panics if the provided timestamp as milliseconds is out of range of i64.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream<'_>, Error> {
         self.encode_at(yuv_source, Timestamp::ZERO)
     }
@@ -244,14 +230,19 @@ impl Encoder {
     /// initialization information. Subsequent packages then contain, amongst others, keyframes
     /// ("I frames") or delta frames. The interval at which they are produced depends on the encoder settings.
     ///
-    /// # Panics
+    /// The resolution of the encoded frame is allowed to change. Each time it changes, the
+    /// encoder is re-initialized with the new values.
     ///
-    /// Panics if the source image dimension don't match the configured format.
+    /// # Panics
     ///
     /// Panics if the provided timestamp as milliseconds is out of range of i64.
     pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: Timestamp) -> Result<EncodedBitStream<'_>, Error> {
-        assert_eq!(yuv_source.width(), self.params.iPicWidth);
-        assert_eq!(yuv_source.height(), self.params.iPicHeight);
+        let new_dimensions = (yuv_source.width(), yuv_source.height());
+
+        if self.previous_dimensions != Some(new_dimensions) {
+            self.reinit(new_dimensions.0, new_dimensions.1)?;
+            self.previous_dimensions = Some(new_dimensions);
+        }
 
         // Converting *const u8 to *mut u8 should be fine because the encoder _should_
         // only read these arrays (TODO: needs verification).
@@ -264,8 +255,8 @@ impl Encoder {
                 yuv_source.v().as_ptr() as *mut c_uchar,
                 null_mut(),
             ],
-            iPicWidth: self.params.iPicWidth,
-            iPicHeight: self.params.iPicHeight,
+            iPicWidth: new_dimensions.0,
+            iPicHeight: new_dimensions.1,
             uiTimeStamp: timestamp.as_native(),
         };
 
@@ -276,6 +267,45 @@ impl Encoder {
                 bit_stream_info: &self.bit_stream_info,
             })
         }
+    }
+
+    fn reinit(&mut self, width: i32, height: i32) -> Result<(), Error> {
+        let mut params = SEncParamExt::default();
+
+        unsafe { self.raw_api.get_default_params(&mut params).ok()? };
+
+        params.iPicWidth = width as c_int;
+        params.iPicHeight = height as c_int;
+        params.iRCMode = self.config.rate_control_mode.to_c();
+        params.bEnableFrameSkip = self.config.enable_skip_frame;
+        params.iTargetBitrate = self.config.target_bitrate as c_int;
+        params.bEnableDenoise = self.config.enable_denoise;
+        params.fMaxFrameRate = self.config.max_frame_rate;
+
+        if self.previous_dimensions.is_none() {
+            // First time we call initialize_ext
+            unsafe {
+                self.raw_api.initialize_ext(&params).ok()?;
+                self.raw_api
+                    .set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast())
+                    .ok()?;
+                self.raw_api
+                    .set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast())
+                    .ok()?;
+            };
+        } else {
+            // Subsequent times we call SetOption
+            unsafe {
+                self.raw_api
+                    .set_option(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, addr_of_mut!(params).cast())
+                    .ok()?;
+
+                // Start with a new keyframe.
+                self.raw_api.force_intra_frame(true);
+            }
+        }
+
+        Ok(())
     }
 
     /// Obtain the raw API for advanced use cases.

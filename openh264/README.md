@@ -36,7 +36,7 @@ And **encode** the same YUV back to H.264:
 ```rust
 use openh264::encoder::{Encoder, EncoderConfig};
 
-let config = EncoderConfig::new(512, 512);
+let config = EncoderConfig::new();
 let api = OpenH264API::from_source();
 let mut encoder = Encoder::with_config(api, config)?;
 
