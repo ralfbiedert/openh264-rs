@@ -8,7 +8,7 @@ pub use rgb2yuv::YUVBuffer;
 pub trait YUVSource {
     /// Size of the image as `(w, h)`.
     #[must_use]
-    fn dimension(&self) -> (i32, i32);
+    fn dimensions(&self) -> (i32, i32);
 
     /// YUV strides as `(y, u, v)`.
     ///
@@ -31,14 +31,14 @@ pub trait YUVSource {
     /// Estimates how many bytes you'll need to store this YUV as RGB.
     #[must_use]
     fn estimate_rgb_size(&self) -> usize {
-        let (w, h) = self.dimension();
+        let (w, h) = self.dimensions();
         w as usize * h as usize * 3
     }
 
     /// Estimates how many bytes you'll need to store this YUV as RGBA.
     #[must_use]
     fn estimate_rgba_size(&self) -> usize {
-        let (w, h) = self.dimension();
+        let (w, h) = self.dimensions();
         w as usize * h as usize * 4
     }
 }

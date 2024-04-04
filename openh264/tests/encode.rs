@@ -80,8 +80,8 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
         .decode(encoded.as_slice())?
         .ok_or_else(|| Error::msg("Must have image"))?;
 
-    assert_eq!(yuv.dimension_y().0, 128);
-    assert_eq!(yuv.dimension_y().1, 128);
+    assert_eq!(yuv.dimensions_y().0, 128);
+    assert_eq!(yuv.dimensions_y().1, 128);
     assert_eq!(yuv.timestamp(), timestamp); // TODO: This fails, the returned timestamp is 0.
 
     Ok(())

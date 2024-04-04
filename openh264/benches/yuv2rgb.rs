@@ -17,7 +17,7 @@ fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
 
     let mut rgb = vec![0; 2000 * 2000 * 3];
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-    let dim = yuv.dimension_rgb();
+    let dim = yuv.dimensions_rgb();
     let rgb_len = dim.0 * dim.1 * 3;
 
     let tgt = &mut rgb[0..rgb_len];
@@ -38,7 +38,7 @@ fn convert_yuv_to_rgba_1920x1080(b: &mut Bencher) {
 
     let mut rgb = vec![0; 2000 * 2000 * 4];
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-    let dim = yuv.dimension_rgb();
+    let dim = yuv.dimensions_rgb();
     let rgb_len = dim.0 * dim.1 * 4;
 
     let tgt = &mut rgb[0..rgb_len];
@@ -59,7 +59,7 @@ fn convert_yuv_to_rgb_512x512(b: &mut Bencher) {
 
     let mut rgb = vec![0; 2000 * 2000 * 3];
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-    let dim = yuv.dimension_rgb();
+    let dim = yuv.dimensions_rgb();
     let rgb_len = dim.0 * dim.1 * 3;
 
     let tgt = &mut rgb[0..rgb_len];

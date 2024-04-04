@@ -13,7 +13,7 @@ fn decode_yuv_single_512x512_cavlc(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimension_rgb();
+        let dim = yuv.dimensions_rgb();
 
         black_box(dim);
     });
@@ -27,7 +27,7 @@ fn decode_yuv_single_512x512_cabac(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimension_rgb();
+        let dim = yuv.dimensions_rgb();
 
         black_box(dim);
     });
@@ -41,7 +41,7 @@ fn decode_yuv_single_1920x1080(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimension_rgb();
+        let dim = yuv.dimensions_rgb();
 
         black_box(dim);
     });
@@ -55,7 +55,7 @@ fn decode_yuv_multi_512x512(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimension_rgb();
+        let dim = yuv.dimensions_rgb();
 
         black_box(dim);
     });
@@ -69,7 +69,7 @@ fn whole_decoder(b: &mut Bencher) {
     b.iter(|| {
         let mut decoder = Decoder::new().unwrap();
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimension_rgb();
+        let dim = yuv.dimensions_rgb();
 
         black_box(dim);
     });

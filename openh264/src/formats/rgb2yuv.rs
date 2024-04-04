@@ -100,7 +100,7 @@ impl YUVBuffer {
 }
 
 impl YUVSource for YUVBuffer {
-    fn dimension(&self) -> (i32, i32) {
+    fn dimensions(&self) -> (i32, i32) {
         (self.width as i32, self.height as i32)
     }
 

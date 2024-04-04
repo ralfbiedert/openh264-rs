@@ -317,7 +317,7 @@ impl Encoder {
     ///
     /// Panics if the provided timestamp as milliseconds is out of range of i64.
     pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: Timestamp) -> Result<EncodedBitStream<'_>, Error> {
-        let new_dimensions = yuv_source.dimension();
+        let new_dimensions = yuv_source.dimensions();
 
         if self.previous_dimensions != Some(new_dimensions) {
             self.reinit(new_dimensions.0, new_dimensions.1)?;
