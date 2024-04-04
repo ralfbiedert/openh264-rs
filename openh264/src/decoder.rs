@@ -172,7 +172,7 @@ impl Decoder {
     /// - the headers and series of complete frames
     /// - new frames after previous headers and frames were successfully decoded.
     ///
-    /// In each case, it will return Some(decoded) image in YUV format if an image was available, or None
+    /// In each case, it will return `Some(decoded)` image in YUV format if an image was available, or `None`
     /// if more data needs to be provided.
     ///
     /// # Errors

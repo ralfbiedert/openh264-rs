@@ -20,8 +20,7 @@ use openh264::decoder::Decoder;
 use openh264::nal_units;
 
 let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
-let api = OpenH264API::from_source();
-let mut decoder = Decoder::new(api)?;
+let mut decoder = Decoder::new()?;
 
 // Split H.264 into NAL units and decode each.
 for packet in nal_units(h264_in) {
@@ -36,9 +35,7 @@ And **encode** the same YUV back to H.264:
 ```rust
 use openh264::encoder::{Encoder, EncoderConfig};
 
-let config = EncoderConfig::new();
-let api = OpenH264API::from_source();
-let mut encoder = Encoder::with_config(api, config)?;
+let mut encoder = Encoder::new()?;
 
 // Encode YUV back into H.264.
 let bitstream = encoder.encode(&yuv)?;
@@ -172,6 +169,7 @@ Especially needed:
 
 ### Changelog
 
+- **v0.6** - Encoder supports dynamic resolution.
 - **v0.5** - Can now use built-in source, or Cisco's prebuilt library.
 - **v0.4** - Update build system, remove unused API.
 - **v0.3** - Change some APIs to better reflect OpenH264 behavior.
