@@ -7,8 +7,8 @@ fn is_send_sync(_: impl Send + Sync + 'static) {}
 #[test]
 #[cfg(feature = "source")]
 fn decoder_encoder_are_send_sync() -> Result<(), Error> {
-    is_send_sync(Decoder::new(OpenH264API::from_source()));
-    is_send_sync(Encoder::with_config(OpenH264API::from_source(), EncoderConfig::default()));
+    is_send_sync(Decoder::new());
+    is_send_sync(Encoder::with_api_config(OpenH264API::from_source(), EncoderConfig::default()));
 
     Ok(())
 }

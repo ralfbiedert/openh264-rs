@@ -4,9 +4,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
-    SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT,
-    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -257,10 +255,28 @@ unsafe impl Send for Encoder {}
 unsafe impl Sync for Encoder {}
 
 impl Encoder {
-    /// Create an encoder with the provided configuration.
+    /// Create an encoder with default settings.
     ///
     /// The width and height will be taken from the [`YUVSource`] when calling [`Encoder::encode()`].
-    pub fn with_config(api: OpenH264API, config: EncoderConfig) -> Result<Self, Error> {
+    ///
+    /// This method is only available when compiling with the `source` feature.
+    #[cfg(feature = "source")]
+    pub fn new() -> Result<Self, Error> {
+        let api = OpenH264API::from_source();
+        let config = EncoderConfig::new();
+        let raw_api = EncoderRawAPI::new(api)?;
+
+        Ok(Self {
+            config,
+            raw_api,
+            bit_stream_info: Default::default(),
+            previous_dimensions: None,
+        })
+    }
+    /// Create an encoder with the provided [API](OpenH264API) and [configuration](EncoderConfig).
+    ///
+    /// The width and height will be taken from the [`YUVSource`] when calling [`Encoder::encode()`].
+    pub fn with_api_config(api: OpenH264API, config: EncoderConfig) -> Result<Self, Error> {
         let raw_api = EncoderRawAPI::new(api)?;
 
         Ok(Self {

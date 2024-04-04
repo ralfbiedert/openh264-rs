@@ -13,7 +13,7 @@ fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config).unwrap();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
 
     let mut rgb = vec![0; 2000 * 2000 * 3];
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
@@ -34,7 +34,7 @@ fn convert_yuv_to_rgba_1920x1080(b: &mut Bencher) {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config).unwrap();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
 
     let mut rgb = vec![0; 2000 * 2000 * 4];
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
@@ -55,7 +55,7 @@ fn convert_yuv_to_rgb_512x512(b: &mut Bencher) {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config).unwrap();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
 
     let mut rgb = vec![0; 2000 * 2000 * 3];
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();

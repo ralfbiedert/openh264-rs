@@ -10,7 +10,15 @@ use openh264::{Error, OpenH264API, Timestamp};
 fn can_get_encoder() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let _encoder = Encoder::with_config(api, config)?;
+    let _encoder = Encoder::with_api_config(api, config)?;
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "source")]
+fn can_get_encoder_default() -> Result<(), Error> {
+    let _encoder = Encoder::new()?;
 
     Ok(())
 }
@@ -19,10 +27,7 @@ fn can_get_encoder() -> Result<(), Error> {
 #[cfg(feature = "source")]
 fn encode() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
-
-    let api = OpenH264API::from_source();
-    let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_config(api, config)?;
+    let mut encoder = Encoder::new()?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -60,7 +65,7 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_config(api, config)?;
+    let mut encoder = Encoder::with_api_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -70,7 +75,7 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
     let yuv = decoder
         .decode(encoded.as_slice())?
         .ok_or_else(|| Error::msg("Must have image"))?;
@@ -89,7 +94,7 @@ fn encoder_sps_pps() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_config(api, config)?;
+    let mut encoder = Encoder::with_api_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -115,12 +120,12 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
     let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Must have image"))?;
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_config(api, config)?;
+    let mut encoder = Encoder::with_api_config(api, config)?;
 
     let stream = encoder.encode(&yuv)?;
 
@@ -155,7 +160,7 @@ fn encode_change_resolution() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_config(api, config)?;
+    let mut encoder = Encoder::with_api_config(api, config)?;
 
     let converter1 = {
         let mut buf = YUVBuffer::new(128, 128);

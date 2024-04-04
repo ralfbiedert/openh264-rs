@@ -9,7 +9,7 @@ use openh264::{nal_units, Error, OpenH264API};
 fn can_get_decoder() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let _decoder = Decoder::with_config(api, config)?;
+    let _decoder = Decoder::with_api_config(api, config)?;
 
     Ok(())
 }
@@ -19,7 +19,7 @@ fn can_get_decoder() -> Result<(), Error> {
 fn can_access_raw_api() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
 
     unsafe {
         let _ = decoder.raw_api();
@@ -41,7 +41,7 @@ fn can_decode_single() -> Result<(), Error> {
     for (_, src) in sources.iter().enumerate() {
         let api = OpenH264API::from_source();
         let config = DecoderConfig::default().debug(false);
-        let mut decoder = Decoder::with_config(api, config)?;
+        let mut decoder = Decoder::with_api_config(api, config)?;
 
         let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Should not happen"))?;
 
@@ -62,7 +62,7 @@ fn can_decode_multi_to_end() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default().debug(false);
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
 
     decoder.decode(src)?;
 
@@ -76,7 +76,7 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
 
     let mut last_was_ok = false;
 
@@ -96,7 +96,7 @@ fn fails_on_truncated() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default().debug(false);
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
 
     assert!(decoder.decode(src).is_err());
 
@@ -113,7 +113,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_config(api, config)?;
+    let mut encoder = Encoder::with_api_config(api, config)?;
     let mut converter = YUVBuffer::new(128, 128);
 
     converter.read_rgb(src);
@@ -123,7 +123,7 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let src = stream.to_vec();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
     decoder.decode(&src)?;
 
     Ok(())
@@ -137,7 +137,7 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(api, config)?;
     let mut decoded = None;
 
     // Read packets in TODO: what? format.

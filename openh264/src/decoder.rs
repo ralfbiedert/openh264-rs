@@ -4,9 +4,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API,
-    DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
-    DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -140,13 +138,17 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    /// Create a decoder with default settings.
-    pub fn new(api: OpenH264API) -> Result<Self, Error> {
-        Self::with_config(api, DecoderConfig::new())
+    /// Create a decoder with default settings and the built-in decoder.
+    ///
+    /// This method is only available when compiling with the `source` feature.
+    #[cfg(feature = "source")]
+    pub fn new() -> Result<Self, Error> {
+        let api = OpenH264API::from_source();
+        Self::with_api_config(api, DecoderConfig::new())
     }
 
-    /// Create a decoder with the provided configuration.
-    pub fn with_config(api: OpenH264API, mut config: DecoderConfig) -> Result<Self, Error> {
+    /// Create a decoder with the provided [API](OpenH264API) and [configuration](DecoderConfig).
+    pub fn with_api_config(api: OpenH264API, mut config: DecoderConfig) -> Result<Self, Error> {
         let raw = DecoderRawAPI::new(api)?;
 
         // config.params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
@@ -249,7 +251,7 @@ impl Decoder {
     /// # fn try_main() -> Result<(), Error> {
     /// let api = OpenH264API::from_source();
     /// let config = DecoderConfig::default();
-    /// let mut decoder = Decoder::with_config(api, config)?;
+    /// let mut decoder = Decoder::with_api_config(api, config)?;
     ///
     /// unsafe {
     ///     let _ = decoder.raw_api();
