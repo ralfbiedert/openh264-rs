@@ -166,6 +166,7 @@ impl Default for SpsPpsStrategy {
 ///
 /// Setting missing? Please file a PR!
 #[derive(Default, Copy, Clone, Debug)]
+#[must_use]
 pub struct EncoderConfig {
     enable_skip_frame: bool,
     target_bitrate: u32,

@@ -92,6 +92,7 @@ unsafe impl Sync for DecoderRawAPI {}
 ///
 /// Setting missing? Please file a PR!
 #[derive(Default, Copy, Clone, Debug)]
+#[must_use]
 pub struct DecoderConfig {
     params: SDecodingParam,
     num_threads: DECODER_OPTION,
