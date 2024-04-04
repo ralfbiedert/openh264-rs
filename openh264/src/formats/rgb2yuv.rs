@@ -1,4 +1,4 @@
-use crate::formats::YUVSource;
+use crate::formats::{rgbdata::RgbData, YUVSource};
 
 /// Converts RGB to YUV data.
 pub struct YUVBuffer {
@@ -9,42 +9,43 @@ pub struct YUVBuffer {
 
 impl YUVBuffer {
     /// Allocates a new YUV buffer with the given width and height.
+    ///
+    /// Both dimensions must be even.
     pub fn new(width: usize, height: usize) -> Self {
-        Self {
+        Self::verify(Self {
             yuv: vec![0u8; (3 * (width * height)) / 2],
             width,
             height,
-        }
+        })
     }
 
     /// Allocates a new YUV buffer with the given width and height and data.
     ///
-    /// Data `rgb` is assumed to be `[rgb rgb rgb ...]`, starting at `y = 0`, continuing downwards, in other words
-    /// how you'd naively store an RGB image buffer.
+    /// Data `rgb` format is specified the configured `RGBData` trait.
     ///
-    /// # Panics
-    ///
-    /// Will panic if `rgb` does not match the formats given.
-    pub fn with_rgb(width: usize, height: usize, rgb: &[u8]) -> Self {
-        let mut rval = Self {
-            yuv: vec![0u8; (3 * (width * height)) / 2],
-            width,
-            height,
-        };
-
+    /// Both dimensions must be even. May panic or yield unexpected results if `rgb`
+    /// does not match the formats given.
+    pub fn with_rgb<T: RgbData>(width: usize, height: usize, rgb: &T) -> Self {
+        let mut rval = Self::new(width, height);
         rval.read_rgb(rgb);
         rval
     }
 
+    /// Verify priors on inputs.
+    ///
+    /// Image dimensions must be even.
+    fn verify(self) -> Self {
+        assert_eq!(self.width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(self.height % 2, 0, "height needs to be a multiple of 2");
+        self
+    }
+
     /// Reads an RGB buffer, converts it to YUV and stores it.
     ///
-    /// Data `rgb` is assumed to be `[rgb rgb rgb ...]`, starting at `y = 0`, continuing downwards, in other words
-    /// how you'd naively store an RGB image buffer.
+    /// Data `rgb` format is specified the configured `RGBData` trait.
     ///
-    /// # Panics
-    ///
-    /// Will panic if `rgb` does not match the formats given.
-    pub fn read_rgb(&mut self, rgb: &[u8]) {
+    /// May panic or yield unexpected results if `rgb` does not match the formats given.
+    pub fn read_rgb<T: RgbData>(&mut self, rgb: &T) {
         let width = self.width;
         let height = self.height;
 
@@ -52,17 +53,7 @@ impl YUVBuffer {
         let v_base = u_base + u_base / 4;
         let half_width = width / 2;
 
-        assert_eq!(rgb.len(), width * height * 3);
-        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
-        assert_eq!(height % 2, 0, "height needs to be a multiple of 2");
-
         // y is full size, u, v is quarter size
-        let pixel = |x: usize, y: usize| -> (f32, f32, f32) {
-            // two dim to single dim
-            let base_pos = (x + y * width) * 3;
-            (rgb[base_pos] as f32, rgb[base_pos + 1] as f32, rgb[base_pos + 2] as f32)
-        };
-
         let write_y = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
             yuv[x + y * width] = (0.2578125 * rgb.0 + 0.50390625 * rgb.1 + 0.09765625 * rgb.2 + 16.0) as u8;
         };
@@ -79,10 +70,10 @@ impl YUVBuffer {
             for j in 0..height / 2 {
                 let px = i * 2;
                 let py = j * 2;
-                let pix0x0 = pixel(px, py);
-                let pix0x1 = pixel(px, py + 1);
-                let pix1x0 = pixel(px + 1, py);
-                let pix1x1 = pixel(px + 1, py + 1);
+                let pix0x0 = rgb.pixel(px, py, width, height);
+                let pix0x1 = rgb.pixel(px, py + 1, width, height);
+                let pix1x0 = rgb.pixel(px + 1, py, width, height);
+                let pix1x1 = rgb.pixel(px + 1, py + 1, width, height);
                 let avg_pix = (
                     (pix0x0.0 as u32 + pix0x1.0 as u32 + pix1x0.0 as u32 + pix1x1.0 as u32) as f32 / 4.0,
                     (pix0x0.1 as u32 + pix0x1.1 as u32 + pix1x0.1 as u32 + pix1x1.1 as u32) as f32 / 4.0,
