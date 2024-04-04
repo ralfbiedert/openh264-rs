@@ -6,14 +6,32 @@ pub use rgb2yuv::YUVBuffer;
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
 pub trait YUVSource {
-    fn width(&self) -> i32;
-    fn height(&self) -> i32;
+    /// Size of the image as `(w, h)`.
+    fn dimension(&self) -> (i32, i32);
 
+    /// YUV strides as `(y, u, v)`.
+    ///
+    /// For now you should make sure `u == v`.
+    fn strides(&self) -> (i32, i32, i32);
+
+    /// Y buffer, should be of size `dimension.1 * strides.0`.
     fn y(&self) -> &[u8];
+
+    /// U buffer, should be of size `dimension.1 * strides.1`.
     fn u(&self) -> &[u8];
+
+    /// V buffer, should be of size `dimension.1 * strides.2`.
     fn v(&self) -> &[u8];
 
-    fn y_stride(&self) -> i32;
-    fn u_stride(&self) -> i32;
-    fn v_stride(&self) -> i32;
+    /// Estimates how many bytes you'll need to store this YUV as RGB.
+    fn estimate_rgb_size(&self) -> usize {
+        let (w, h) = self.dimension();
+        w as usize * h as usize * 3
+    }
+
+    /// Estimates how many bytes you'll need to store this YUV as RGBA.
+    fn estimate_rgba_size(&self) -> usize {
+        let (w, h) = self.dimension();
+        w as usize * h as usize * 4
+    }
 }

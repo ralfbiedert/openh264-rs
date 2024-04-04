@@ -100,12 +100,12 @@ impl YUVBuffer {
 }
 
 impl YUVSource for YUVBuffer {
-    fn width(&self) -> i32 {
-        self.width as i32
+    fn dimension(&self) -> (i32, i32) {
+        (self.width as i32, self.height as i32)
     }
 
-    fn height(&self) -> i32 {
-        self.height as i32
+    fn strides(&self) -> (i32, i32, i32) {
+        (self.width as i32, (self.width / 2) as i32, (self.width / 2) as i32)
     }
 
     fn y(&self) -> &[u8] {
@@ -122,18 +122,6 @@ impl YUVSource for YUVBuffer {
         let base_v = base_u + base_u / 4;
         &self.yuv[base_v..]
     }
-
-    fn y_stride(&self) -> i32 {
-        self.width as i32
-    }
-
-    fn u_stride(&self) -> i32 {
-        (self.width / 2) as i32
-    }
-
-    fn v_stride(&self) -> i32 {
-        (self.width / 2) as i32
-    }
 }
 
 #[cfg(test)]
@@ -147,9 +135,9 @@ mod tests {
         assert_eq!(yuv.y(), [16u8, 16u8, 16u8, 16u8]);
         assert_eq!(yuv.u(), [128u8]);
         assert_eq!(yuv.v(), [128u8]);
-        assert_eq!(yuv.y_stride(), 2);
-        assert_eq!(yuv.u_stride(), 1);
-        assert_eq!(yuv.v_stride(), 1);
+        assert_eq!(yuv.strides().0, 2);
+        assert_eq!(yuv.strides().1, 1);
+        assert_eq!(yuv.strides().2, 1);
     }
 
     #[test]
@@ -165,9 +153,9 @@ mod tests {
         assert_eq!(yuv.y(), [235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8]);
         assert_eq!(yuv.u(), [128u8, 128u8]);
         assert_eq!(yuv.v(), [128u8, 128u8]);
-        assert_eq!(yuv.y_stride(), 4);
-        assert_eq!(yuv.u_stride(), 2);
-        assert_eq!(yuv.v_stride(), 2);
+        assert_eq!(yuv.strides().0, 4);
+        assert_eq!(yuv.strides().1, 2);
+        assert_eq!(yuv.strides().2, 2);
     }
 
     #[test]
@@ -183,8 +171,8 @@ mod tests {
         assert_eq!(yuv.y(), [81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8]);
         assert_eq!(yuv.u(), [90u8, 90u8]);
         assert_eq!(yuv.v(), [239u8, 239u8]);
-        assert_eq!(yuv.y_stride(), 4);
-        assert_eq!(yuv.u_stride(), 2);
-        assert_eq!(yuv.v_stride(), 2);
+        assert_eq!(yuv.strides().0, 4);
+        assert_eq!(yuv.strides().1, 2);
+        assert_eq!(yuv.strides().2, 2);
     }
 }

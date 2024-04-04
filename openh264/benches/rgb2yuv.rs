@@ -27,7 +27,7 @@ fn convert_rgb_to_yuv_1920x1080(b: &mut Bencher) {
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_api_config(api, config).unwrap();
     let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-    let mut rgb = vec![0u8; (yuv.width() * yuv.height() * 3) as usize];
+    let mut rgb = vec![0u8; yuv.estimate_rgb_size()];
     yuv.write_rgb8(&mut rgb);
     let mut converter = YUVBuffer::new(1920, 1080);
 

@@ -316,22 +316,24 @@ impl Encoder {
     ///
     /// Panics if the provided timestamp as milliseconds is out of range of i64.
     pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: Timestamp) -> Result<EncodedBitStream<'_>, Error> {
-        let new_dimensions = (yuv_source.width(), yuv_source.height());
+        let new_dimensions = yuv_source.dimension();
 
         if self.previous_dimensions != Some(new_dimensions) {
             self.reinit(new_dimensions.0, new_dimensions.1)?;
             self.previous_dimensions = Some(new_dimensions);
         }
 
+        let strides = yuv_source.strides();
+
         // Converting *const u8 to *mut u8 should be fine because the encoder _should_
         // only read these arrays (TODO: needs verification).
         let source = SSourcePicture {
             iColorFormat: videoFormatI420,
-            iStride: [yuv_source.y_stride(), yuv_source.u_stride(), yuv_source.v_stride(), 0],
+            iStride: [strides.0, strides.1, strides.2, 0],
             pData: [
-                yuv_source.y().as_ptr() as *mut c_uchar,
-                yuv_source.u().as_ptr() as *mut c_uchar,
-                yuv_source.v().as_ptr() as *mut c_uchar,
+                yuv_source.y().as_ptr().cast_mut(),
+                yuv_source.u().as_ptr().cast_mut(),
+                yuv_source.v().as_ptr().cast_mut(),
                 null_mut(),
             ],
             iPicWidth: new_dimensions.0,
@@ -373,9 +375,9 @@ impl Encoder {
         params.eSpsPpsIdStrategy = self.config.sps_pps_strategy.to_c();
         params.iMultipleThreadIdc = self.config.multiple_thread_idc;
 
-        if self.previous_dimensions.is_none() {
-            // First time we call initialize_ext
-            unsafe {
+        unsafe {
+            if self.previous_dimensions.is_none() {
+                // First time we call initialize_ext
                 self.raw_api.initialize_ext(&params).ok()?;
                 self.raw_api
                     .set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast())
@@ -383,10 +385,8 @@ impl Encoder {
                 self.raw_api
                     .set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast())
                     .ok()?;
-            };
-        } else {
-            // Subsequent times we call SetOption
-            unsafe {
+            } else {
+                // Subsequent times we call SetOption
                 self.raw_api
                     .set_option(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, addr_of_mut!(params).cast())
                     .ok()?;

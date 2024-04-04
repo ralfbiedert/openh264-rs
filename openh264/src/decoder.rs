@@ -435,12 +435,13 @@ impl<'a> DecodedYUV<'a> {
 }
 
 impl<'a> YUVSource for DecodedYUV<'a> {
-    fn width(&self) -> i32 {
-        self.info.iWidth
+    fn dimension(&self) -> (i32, i32) {
+        (self.info.iWidth, self.info.iHeight)
     }
 
-    fn height(&self) -> i32 {
-        self.info.iHeight
+    fn strides(&self) -> (i32, i32, i32) {
+        // iStride is an array of size 2, so indices are really (0, 1, 1)
+        (self.info.iStride[0], self.info.iStride[1], self.info.iStride[1])
     }
 
     fn y(&self) -> &[u8] {
@@ -453,17 +454,5 @@ impl<'a> YUVSource for DecodedYUV<'a> {
 
     fn v(&self) -> &[u8] {
         self.v
-    }
-
-    fn y_stride(&self) -> i32 {
-        self.info.iStride[0]
-    }
-
-    fn u_stride(&self) -> i32 {
-        self.info.iStride[1]
-    }
-
-    fn v_stride(&self) -> i32 {
-        self.info.iStride[1]
     }
 }

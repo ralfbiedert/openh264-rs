@@ -2,6 +2,7 @@ use std::io::{Cursor, Read};
 
 use image::RgbImage;
 use openh264::decoder::{Decoder, DecoderConfig};
+use openh264::formats::YUVSource;
 use openh264::{nal_units, Error, OpenH264API};
 
 #[test]
@@ -44,10 +45,7 @@ fn can_decode_single() -> Result<(), Error> {
         let mut decoder = Decoder::with_api_config(api, config)?;
 
         let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Should not happen"))?;
-
-        let dim = yuv.dimension_rgb();
-        let rgb_len = dim.0 * dim.1 * 3;
-        let mut rgb = vec![0; rgb_len];
+        let mut rgb = vec![0; yuv.estimate_rgb_size()];
 
         yuv.write_rgb8(&mut rgb);
     }
@@ -147,8 +145,7 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
 
     // Generate image from decoded frame
     let decoded_frame = decoded.expect("No decoded data").expect("Image");
-    let dimensions = decoded_frame.dimension_rgb();
-    let mut frame_data = vec![0u8; dimensions.0 * dimensions.1 * 3];
+    let mut frame_data = vec![0u8; decoded_frame.estimate_rgb_size()];
     decoded_frame.write_rgb8(frame_data.as_mut_slice());
     let decoded_frame = RgbImage::from_vec(1024, 768, frame_data).expect("Failed to convert into image buffer");
 
