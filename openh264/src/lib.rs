@@ -183,7 +183,7 @@
 //!
 //! ## Changelog
 //!
-//! - **v0.6** - Encoder supports dynamic resolution.
+//! - **v0.6** - Encoder supports dynamic resolution; API cleanup.
 //! - **v0.5** - Can now use built-in source, or Cisco's prebuilt library.
 //! - **v0.4** - Update build system, remove unused API.
 //! - **v0.3** - Change some APIs to better reflect OpenH264 behavior.
