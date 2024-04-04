@@ -1,9 +1,10 @@
 //! Handles conversions, e.g., between RGB and YUV.
 
-pub mod rgbdata;
-mod rgb2yuv;
+mod rgb;
+mod yuv;
 
-pub use rgb2yuv::YUVBuffer;
+pub use rgb::{AbgrSlice, BgrSlice, BgraSlice, RgbSlice, RgbaSlice};
+pub use yuv::YUVBuffer;
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
 pub trait YUVSource {
@@ -42,4 +43,11 @@ pub trait YUVSource {
         let (w, h) = self.dimensions();
         w as usize * h as usize * 4
     }
+}
+
+/// Source of arbitrarily formatted RGB data
+pub trait RGBSource {
+    /// Extract the pixel value at the specified location. Pixel values are
+    /// expected to be floats in the range `[0, 256)` (`u8` represented as `f32`).
+    fn pixel(&self, x: usize, y: usize, width: usize, _height: usize) -> (f32, f32, f32);
 }

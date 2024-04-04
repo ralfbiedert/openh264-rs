@@ -1,4 +1,4 @@
-use crate::formats::{rgbdata::RgbData, YUVSource};
+use crate::formats::{RGBSource, YUVSource};
 
 /// Converts RGB to YUV data.
 pub struct YUVBuffer {
@@ -21,11 +21,11 @@ impl YUVBuffer {
 
     /// Allocates a new YUV buffer with the given width and height and data.
     ///
-    /// Data `rgb` format is specified the configured `RGBData` trait.
+    /// Data `rgb` format is specified the configured [`RGBSource`] trait.
     ///
     /// Both dimensions must be even. May panic or yield unexpected results if `rgb`
     /// does not match the formats given.
-    pub fn with_rgb<T: RgbData>(width: usize, height: usize, rgb: &T) -> Self {
+    pub fn with_rgb<T: RGBSource>(width: usize, height: usize, rgb: &T) -> Self {
         let mut rval = Self::new(width, height);
         rval.read_rgb(rgb);
         rval
@@ -42,10 +42,10 @@ impl YUVBuffer {
 
     /// Reads an RGB buffer, converts it to YUV and stores it.
     ///
-    /// Data `rgb` format is specified the configured `RGBData` trait.
+    /// Data `rgb` format is specified the configured [`RGBSource`] trait.
     ///
     /// May panic or yield unexpected results if `rgb` does not match the formats given.
-    pub fn read_rgb<T: RgbData>(&mut self, rgb: &T) {
+    pub fn read_rgb<T: RGBSource>(&mut self, rgb: &T) {
         let width = self.width;
         let height = self.height;
 
