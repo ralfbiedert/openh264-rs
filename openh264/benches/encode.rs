@@ -19,7 +19,7 @@ fn encode_512x512_from_yuv(b: &mut Bencher) {
 
     b.iter(|| {
         let api = OpenH264API::from_source();
-        let config = EncoderConfig::new(512, 512);
+        let config = EncoderConfig::new();
         let mut encoder = Encoder::with_config(api, config).unwrap();
 
         let stream = encoder.encode(&yuv).unwrap();
@@ -40,7 +40,7 @@ fn encode_1920x1080_from_yuv(b: &mut Bencher) {
 
     b.iter(|| {
         let api = OpenH264API::from_source();
-        let config = EncoderConfig::new(1920, 1080);
+        let config = EncoderConfig::new();
         let mut encoder = Encoder::with_config(api, config).unwrap();
 
         let stream = encoder.encode(&yuv).unwrap();
