@@ -33,7 +33,7 @@ for packet in nal_units(h264_in) {
 
 And **encode** the same YUV back to H.264:
 ```rust
-use openh264::encoder::{Encoder, EncoderConfig};
+use openh264::encoder::Encoder;
 
 let mut encoder = Encoder::new()?;
 

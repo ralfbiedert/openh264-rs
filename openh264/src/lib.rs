@@ -40,7 +40,7 @@
 //! ```rust
 //! # use openh264::decoder::Decoder;
 //! # use openh264::{Error, OpenH264API};
-//! use openh264::encoder::{Encoder, EncoderConfig};
+//! use openh264::encoder::Encoder;
 //! # fn main() -> Result<(), Error> {
 //! # let mut decoder = Decoder::new()?;
 //! # let mut rgb_out = vec![0; 512 * 512 * 3];
