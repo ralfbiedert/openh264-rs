@@ -1,5 +1,6 @@
 //! Handles conversions, e.g., between RGB and YUV.
 
+pub mod rgbdata;
 mod rgb2yuv;
 
 pub use rgb2yuv::YUVBuffer;
