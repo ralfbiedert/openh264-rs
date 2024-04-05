@@ -47,6 +47,7 @@ pub trait YUVSource {
 }
 
 /// Converts RGB to YUV data.
+#[must_use]
 pub struct YUVBuffer {
     yuv: Vec<u8>,
     width: usize,
@@ -174,6 +175,56 @@ impl YUVSource for YUVBuffer {
         let base_u = self.width * self.height;
         let base_v = base_u + base_u / 4;
         &self.yuv[base_v..]
+    }
+}
+
+/// Convenience wrapper if you already have YUV-sliced data from some other place.
+#[must_use]
+pub struct YUVSlices<'a> {
+    dimensions: (usize, usize),
+    yuv: (&'a [u8], &'a [u8], &'a [u8]),
+    strides: (usize, usize, usize),
+}
+
+impl<'a> YUVSlices<'a> {
+    /// Creates a new YUV slice.
+    pub fn new(yuv: (&'a [u8], &'a [u8], &'a [u8]), dimensions: (usize, usize), strides: (usize, usize, usize)) -> Self {
+        assert!(strides.0 >= dimensions.0);
+        assert!(strides.1 >= dimensions.0);
+        assert!(strides.2 >= dimensions.0);
+
+        assert_eq!(dimensions.1 * strides.0, yuv.0.len());
+        assert_eq!(dimensions.1 * strides.1, yuv.1.len());
+        assert_eq!(dimensions.1 * strides.2, yuv.2.len());
+
+        Self {
+            dimensions,
+            yuv,
+            strides,
+        }
+    }
+}
+
+impl<'a> YUVSource for YUVSlices<'a> {
+    fn dimensions(&self) -> (usize, usize) {
+        self.dimensions
+    }
+
+    fn strides(&self) -> (i32, i32, i32) {
+        let (y, u, v) = self.strides;
+        (y as i32, u as i32, v as i32)
+    }
+
+    fn y(&self) -> &[u8] {
+        self.yuv.0
+    }
+
+    fn u(&self) -> &[u8] {
+        self.yuv.1
+    }
+
+    fn v(&self) -> &[u8] {
+        self.yuv.2
     }
 }
 
