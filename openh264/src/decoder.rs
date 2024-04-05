@@ -255,8 +255,8 @@ impl Decoder {
     /// let mut decoder = Decoder::with_api_config(api, config)?;
     ///
     /// unsafe {
-    ///     let _ = decoder.raw_api();
-    /// };
+    ///     _ = decoder.raw_api();
+    /// }
     /// # Ok(())
     /// # }
     /// ```

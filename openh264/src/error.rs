@@ -134,6 +134,6 @@ mod test {
     #[test]
     #[cfg(feature = "backtrace")]
     fn backtrace_works() {
-        let _ = Error::from_native(1).backtrace.expect("Must have backtrace");
+        _ = Error::from_native(1).backtrace.expect("Must have backtrace");
     }
 }
