@@ -3,5 +3,7 @@
 mod rgb;
 mod yuv;
 
-pub use rgb::{AbgrSliceU32, ArgbSliceU32, BgrSliceU8, BgraSliceU32, BgraSliceU8, RGBSource, RgbSliceU8, RgbaSliceU8};
+pub use rgb::{
+    AbgrSliceU32, AbgrSliceU8, ArgbSliceU32, ArgbSliceU8, BgrSliceU8, BgraSliceU32, BgraSliceU8, RGBSource, RgbSliceU8, RgbaSliceU32, RgbaSliceU8
+};
 pub use yuv::{YUVBuffer, YUVSource};
