@@ -54,15 +54,37 @@ pub struct YUVBuffer {
 }
 
 impl YUVBuffer {
+    /// Creates a new YUV buffer from the given vec.
+    ///
+    /// The vec's length should be `3 * (width * height)) / 2`.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the given sizes are not multiples of 2, or the yuv buffer's size mismatches.
+    pub fn from_vec(yuv: Vec<u8>, width: usize, height: usize) -> Self {
+        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(yuv.len(), (3 * (width * height)) / 2, "YUV buffer needs to be properly sized");
+
+        Self { yuv, width, height }
+    }
+
     /// Allocates a new YUV buffer with the given width and height.
     ///
     /// Both dimensions must be even.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the given sizes are not multiples of 2.
     pub fn new(width: usize, height: usize) -> Self {
-        Self::verify(Self {
+        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(height % 2, 0, "height needs to be a multiple of 2");
+
+        Self {
             yuv: vec![0u8; (3 * (width * height)) / 2],
             width,
             height,
-        })
+        }
     }
 
     /// Allocates a new YUV buffer with the given width and height and data.
@@ -75,15 +97,6 @@ impl YUVBuffer {
         let mut rval = Self::new(rgb.dimensions().0, rgb.dimensions().1);
         rval.read_rgb(rgb);
         rval
-    }
-
-    /// Verify priors on inputs.
-    ///
-    /// Image dimensions must be even.
-    fn verify(self) -> Self {
-        assert_eq!(self.width % 2, 0, "width needs to be multiple of 2");
-        assert_eq!(self.height % 2, 0, "height needs to be a multiple of 2");
-        self
     }
 
     /// Reads an RGB buffer, converts it to YUV and stores it.

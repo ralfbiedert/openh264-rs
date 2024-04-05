@@ -107,9 +107,15 @@ macro_rules! impl_slice_wrapper_u8 {
     ($t:ty, $stride:expr, $offsets:expr) => {
         impl<'a> $t {
             /// Creates a new instance given the byte slice and dimensions.
+            ///
+            /// # Panics
+            ///
+            /// May panic if the given sizes are not multiples of 2, or if the slice length mismatches the given dimensions.
             #[allow(unused)]
             pub fn new(data: &'a [u8], dimensions: (usize, usize)) -> Self {
                 assert_eq!(data.len(), dimensions.0 * dimensions.1 * $stride);
+                assert_eq!(dimensions.0 % 2, 0, "width needs to be multiple of 2");
+                assert_eq!(dimensions.1 % 2, 0, "height needs to be a multiple of 2");
 
                 Self { data, dimensions }
             }
@@ -136,9 +142,15 @@ macro_rules! impl_slice_wrapper_u32 {
     ($t:ty, $offsets:expr) => {
         impl<'a> $t {
             /// Creates a new instance given the data slice and dimensions.
+            ///
+            /// # Panics
+            ///
+            /// May panic if the given sizes are not multiples of 2, or if the slice length mismatches the given dimensions.
             #[allow(unused)]
             pub fn new(data: &'a [u32], dimensions: (usize, usize)) -> Self {
                 assert_eq!(data.len(), dimensions.0 * dimensions.1);
+                assert_eq!(dimensions.0 % 2, 0, "width needs to be multiple of 2");
+                assert_eq!(dimensions.1 % 2, 0, "height needs to be a multiple of 2");
 
                 Self { data, dimensions }
             }
