@@ -4,7 +4,7 @@ description = "Idiomatic bindings for OpenH264."
 authors = ["Ralf Biedert <rb@xr.io>"]
 keywords = ["multimedia", "encoding", "video"]
 categories = ["api-bindings", "multimedia::video"]
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 rust-version = "1.65"
 license = "BSD-2-Clause"
@@ -21,7 +21,7 @@ backtrace = [] # Remove once backtrace feature is stable.
 
 
 [dependencies]
-openh264-sys2 = { path = "../openh264-sys2", version = "0.5.0", default-features = false }
+openh264-sys2 = { path = "../openh264-sys2", version = "0.6.0", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true
