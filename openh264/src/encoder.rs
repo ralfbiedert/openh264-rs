@@ -344,13 +344,14 @@ impl Encoder {
 
         unsafe {
             self.raw_api.encode_frame(&source, &mut self.bit_stream_info).ok()?;
-
-            Ok(EncodedBitStream {
-                bit_stream_info: &self.bit_stream_info,
-            })
         }
+
+        Ok(EncodedBitStream {
+            bit_stream_info: &self.bit_stream_info,
+        })
     }
 
+    #[rustfmt::skip]
     fn reinit(&mut self, width: i32, height: i32) -> Result<(), Error> {
         // https://github.com/cisco/openh264/blob/master/README.md
         // > Encoder errors when resolution exceeds 3840x2160
@@ -366,11 +367,11 @@ impl Encoder {
 
         unsafe { self.raw_api.get_default_params(&mut params).ok()? };
 
-        params.iPicWidth = width as c_int;
-        params.iPicHeight = height as c_int;
+        params.iPicWidth = width as c_int; // If we do .into() instead, could this fail to compile on some platforms?
+        params.iPicHeight = height as c_int; // If we do .into() instead, could this fail to compile on some platforms?
         params.iRCMode = self.config.rate_control_mode.to_c();
         params.bEnableFrameSkip = self.config.enable_skip_frame;
-        params.iTargetBitrate = self.config.target_bitrate as c_int;
+        params.iTargetBitrate = self.config.target_bitrate.try_into()?;
         params.bEnableDenoise = self.config.enable_denoise;
         params.fMaxFrameRate = self.config.max_frame_rate;
         params.eSpsPpsIdStrategy = self.config.sps_pps_strategy.to_c();
@@ -380,17 +381,11 @@ impl Encoder {
             if self.previous_dimensions.is_none() {
                 // First time we call initialize_ext
                 self.raw_api.initialize_ext(&params).ok()?;
-                self.raw_api
-                    .set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast())
-                    .ok()?;
-                self.raw_api
-                    .set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast())
-                    .ok()?;
+                self.raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast()).ok()?;
+                self.raw_api.set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast()).ok()?;
             } else {
                 // Subsequent times we call SetOption
-                self.raw_api
-                    .set_option(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, addr_of_mut!(params).cast())
-                    .ok()?;
+                self.raw_api.set_option(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, addr_of_mut!(params).cast()).ok()?;
 
                 // Start with a new keyframe.
                 self.raw_api.force_intra_frame(true);

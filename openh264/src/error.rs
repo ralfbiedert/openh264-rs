@@ -1,5 +1,6 @@
 use openh264_sys2::{dsErrorFree, DECODING_STATE};
 use std::fmt::{Debug, Display, Formatter};
+use std::num::TryFromIntError;
 
 /// Error struct if something goes wrong.
 #[derive(Debug)]
@@ -44,10 +45,27 @@ impl Error {
         }
     }
 
+    /// Creates a new [`Error`] with a custom message.
+    pub fn msg_string(msg: String) -> Self {
+        Error {
+            native: 0,
+            decoding_state: dsErrorFree,
+            misc: Some(msg),
+            #[cfg(feature = "backtrace")]
+            backtrace: Some(std::backtrace::Backtrace::capture()),
+        }
+    }
+
     /// Returns the backtrace, if available.
     #[cfg(feature = "backtrace")]
     pub fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
         self.backtrace.as_ref()
+    }
+}
+
+impl From<TryFromIntError> for Error {
+    fn from(value: TryFromIntError) -> Self {
+        Self::msg_string(format!("Could not covert value: {}", value))
     }
 }
 
