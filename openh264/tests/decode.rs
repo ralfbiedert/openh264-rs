@@ -45,7 +45,7 @@ fn can_decode_single() -> Result<(), Error> {
         let mut decoder = Decoder::with_api_config(api, config)?;
 
         let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Should not happen"))?;
-        let mut rgb = vec![0; yuv.estimate_rgb_size()];
+        let mut rgb = vec![0; yuv.estimate_rgb_u8_size()];
 
         yuv.write_rgb8(&mut rgb);
     }
@@ -144,7 +144,7 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
 
     // Generate image from decoded frame
     let decoded_frame = decoded.expect("No decoded data").expect("Image");
-    let mut frame_data = vec![0u8; decoded_frame.estimate_rgb_size()];
+    let mut frame_data = vec![0u8; decoded_frame.estimate_rgb_u8_size()];
     decoded_frame.write_rgb8(frame_data.as_mut_slice());
     let decoded_frame = RgbImage::from_vec(1024, 768, frame_data).expect("Failed to convert into image buffer");
 

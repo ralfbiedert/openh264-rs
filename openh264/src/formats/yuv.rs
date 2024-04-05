@@ -40,18 +40,22 @@ pub trait YUVSource {
     #[must_use]
     fn v(&self) -> &[u8];
 
-    /// Estimates how many bytes you'll need to store this YUV as RGB.
+    /// Estimates how many bytes you'll need to store this YUV in an `&[u8]` RGB array.
+    ///
+    /// This function should return `w * h * 3`.
     #[must_use]
-    fn estimate_rgb_size(&self) -> usize {
-        let (w, h) = self.dimensions_i32();
-        w as usize * h as usize * 3
+    fn estimate_rgb_u8_size(&self) -> usize {
+        let (w, h) = self.dimensions();
+        w * h * 3
     }
 
-    /// Estimates how many bytes you'll need to store this YUV as RGBA.
+    /// Estimates how many bytes you'll need to store this YUV in an `&[u8]` RGBA array.
+    ///
+    /// This function should return `w * h * 4`.
     #[must_use]
-    fn estimate_rgba_size(&self) -> usize {
-        let (w, h) = self.dimensions_i32();
-        w as usize * h as usize * 4
+    fn estimate_rgba_u8_size(&self) -> usize {
+        let (w, h) = self.dimensions();
+        w * h * 4
     }
 }
 
