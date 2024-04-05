@@ -296,10 +296,6 @@ impl Encoder {
     ///
     /// The resolution of the encoded frame is allowed to change. Each time it changes, the
     /// encoder is re-initialized with the new values.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the provided timestamp as milliseconds is out of range of i64.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream<'_>, Error> {
         self.encode_at(yuv_source, Timestamp::ZERO)
     }
