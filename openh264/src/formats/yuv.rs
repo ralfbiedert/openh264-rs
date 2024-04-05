@@ -103,10 +103,9 @@ impl YUVBuffer {
 
     /// Allocates a new YUV buffer with the given width and height and data.
     ///
-    /// Data `rgb` format is specified the configured [`RGBSource`] trait.
+    /// # Panics
     ///
-    /// Both dimensions must be even. May panic or yield unexpected results if `rgb`
-    /// does not match the formats given.
+    /// May panic if invoked with an RGB source where the dimensions are not multiples of 2.
     pub fn from_rgb_source<T: RGBSource>(rgb: T) -> Self {
         let mut rval = Self::new(rgb.dimensions().0, rgb.dimensions().1);
         rval.read_rgb(rgb);
@@ -115,9 +114,9 @@ impl YUVBuffer {
 
     /// Reads an RGB buffer, converts it to YUV and stores it.
     ///
-    /// Data `rgb` format is specified the configured [`RGBSource`] trait.
+    /// # Panics
     ///
-    /// May panic or yield unexpected results if `rgb` does not match the formats given.
+    /// May panic if the given `rgb` does not match the internal format.
     pub fn read_rgb<T: RGBSource>(&mut self, rgb: T) {
         // Make sure we only attempt to read sources that match our own size.
         assert_eq!(self.dimensions(), rgb.dimensions());
