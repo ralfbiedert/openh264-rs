@@ -1,4 +1,50 @@
-use crate::formats::{RGBSource, YUVSource};
+use crate::formats::RGBSource;
+
+/// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
+pub trait YUVSource {
+    /// Size of the image as `(w, h)`.
+    #[must_use]
+    fn dimensions_i32(&self) -> (i32, i32) {
+        let (w, h) = self.dimensions();
+        (w as i32, h as i32)
+    }
+
+    /// Size of the image as `(w, h)`.
+    #[must_use]
+    fn dimensions(&self) -> (usize, usize);
+
+    /// YUV strides as `(y, u, v)`.
+    ///
+    /// For now you should make sure `u == v`.
+    #[must_use]
+    fn strides(&self) -> (i32, i32, i32);
+
+    /// Y buffer, should be of size `dimension.1 * strides.0`.
+    #[must_use]
+    fn y(&self) -> &[u8];
+
+    /// U buffer, should be of size `dimension.1 * strides.1`.
+    #[must_use]
+    fn u(&self) -> &[u8];
+
+    /// V buffer, should be of size `dimension.1 * strides.2`.
+    #[must_use]
+    fn v(&self) -> &[u8];
+
+    /// Estimates how many bytes you'll need to store this YUV as RGB.
+    #[must_use]
+    fn estimate_rgb_size(&self) -> usize {
+        let (w, h) = self.dimensions_i32();
+        w as usize * h as usize * 3
+    }
+
+    /// Estimates how many bytes you'll need to store this YUV as RGBA.
+    #[must_use]
+    fn estimate_rgba_size(&self) -> usize {
+        let (w, h) = self.dimensions_i32();
+        w as usize * h as usize * 4
+    }
+}
 
 /// Converts RGB to YUV data.
 pub struct YUVBuffer {
@@ -25,8 +71,8 @@ impl YUVBuffer {
     ///
     /// Both dimensions must be even. May panic or yield unexpected results if `rgb`
     /// does not match the formats given.
-    pub fn with_rgb<T: RGBSource>(width: usize, height: usize, rgb: &T) -> Self {
-        let mut rval = Self::new(width, height);
+    pub fn from_rgb_source<T: RGBSource>(rgb: T) -> Self {
+        let mut rval = Self::new(rgb.dimensions().0, rgb.dimensions().1);
         rval.read_rgb(rgb);
         rval
     }
@@ -45,7 +91,7 @@ impl YUVBuffer {
     /// Data `rgb` format is specified the configured [`RGBSource`] trait.
     ///
     /// May panic or yield unexpected results if `rgb` does not match the formats given.
-    pub fn read_rgb<T: RGBSource>(&mut self, rgb: &T) {
+    pub fn read_rgb<T: RGBSource>(&mut self, rgb: T) {
         let width = self.width;
         let height = self.height;
 
@@ -70,10 +116,10 @@ impl YUVBuffer {
             for j in 0..height / 2 {
                 let px = i * 2;
                 let py = j * 2;
-                let pix0x0 = rgb.pixel(px, py, width, height);
-                let pix0x1 = rgb.pixel(px, py + 1, width, height);
-                let pix1x0 = rgb.pixel(px + 1, py, width, height);
-                let pix1x1 = rgb.pixel(px + 1, py + 1, width, height);
+                let pix0x0 = rgb.pixel_f32(px, py);
+                let pix0x1 = rgb.pixel_f32(px, py + 1);
+                let pix1x0 = rgb.pixel_f32(px + 1, py);
+                let pix1x1 = rgb.pixel_f32(px + 1, py + 1);
                 let avg_pix = (
                     (pix0x0.0 as u32 + pix0x1.0 as u32 + pix1x0.0 as u32 + pix1x1.0 as u32) as f32 / 4.0,
                     (pix0x0.1 as u32 + pix0x1.1 as u32 + pix1x0.1 as u32 + pix1x1.1 as u32) as f32 / 4.0,
@@ -91,8 +137,8 @@ impl YUVBuffer {
 }
 
 impl YUVSource for YUVBuffer {
-    fn dimensions(&self) -> (i32, i32) {
-        (self.width as i32, self.height as i32)
+    fn dimensions(&self) -> (usize, usize) {
+        (self.width, self.height)
     }
 
     fn strides(&self) -> (i32, i32, i32) {
@@ -118,11 +164,12 @@ impl YUVSource for YUVBuffer {
 #[cfg(test)]
 mod tests {
     use super::YUVBuffer;
-    use crate::formats::YUVSource;
+    use crate::formats::{RgbSliceU8, YUVSource};
 
     #[test]
     fn rgb_to_yuv_conversion_black_2x2() {
-        let yuv = YUVBuffer::with_rgb(2, 2, &[0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]);
+        let rgb_source = RgbSliceU8::new(&[0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8], (2, 2));
+        let yuv = YUVBuffer::from_rgb_source(rgb_source);
         assert_eq!(yuv.y(), [16u8, 16u8, 16u8, 16u8]);
         assert_eq!(yuv.u(), [128u8]);
         assert_eq!(yuv.v(), [128u8]);
@@ -133,14 +180,12 @@ mod tests {
 
     #[test]
     fn rgb_to_yuv_conversion_white_4x2() {
-        let yuv = YUVBuffer::with_rgb(
-            4,
-            2,
-            &[
-                255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
-                255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
-            ],
-        );
+        let data = &[
+            255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
+            255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8, 255u8,
+        ];
+        let rgb_source = RgbSliceU8::new(data, (4, 2));
+        let yuv = YUVBuffer::from_rgb_source(rgb_source);
         assert_eq!(yuv.y(), [235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8]);
         assert_eq!(yuv.u(), [128u8, 128u8]);
         assert_eq!(yuv.v(), [128u8, 128u8]);
@@ -151,14 +196,13 @@ mod tests {
 
     #[test]
     fn rgb_to_yuv_conversion_red_2x4() {
-        let yuv = YUVBuffer::with_rgb(
-            4,
-            2,
-            &[
-                255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8,
-                0u8, 255u8, 0u8, 0u8,
-            ],
-        );
+        let data = &[
+            255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8, 0u8, 255u8, 0u8,
+            0u8, 255u8, 0u8, 0u8,
+        ];
+        let rgb_source = RgbSliceU8::new(data, (4, 2));
+        let yuv = YUVBuffer::from_rgb_source(rgb_source);
+
         assert_eq!(yuv.y(), [81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8]);
         assert_eq!(yuv.u(), [90u8, 90u8]);
         assert_eq!(yuv.v(), [239u8, 239u8]);

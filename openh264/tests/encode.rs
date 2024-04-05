@@ -2,7 +2,7 @@
 
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
-use openh264::formats::YUVBuffer;
+use openh264::formats::{RgbSliceU8, YUVBuffer};
 use openh264::{Error, OpenH264API, Timestamp};
 
 #[test]
@@ -27,12 +27,11 @@ fn can_get_encoder_default() -> Result<(), Error> {
 #[cfg(feature = "source")]
 fn encode() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
+    let rgb_source = RgbSliceU8::new(src, (128, 128));
+    let yuv = YUVBuffer::from_rgb_source(rgb_source);
+
     let mut encoder = Encoder::new()?;
-    let mut converter = YUVBuffer::new(128, 128);
-
-    converter.read_rgb(src);
-
-    let stream = encoder.encode(&converter)?;
+    let stream = encoder.encode(&yuv)?;
 
     assert_eq!(stream.frame_type(), FrameType::IDR);
     assert_eq!(stream.num_layers(), 2);
@@ -62,16 +61,15 @@ fn encode() -> Result<(), Error> {
 #[cfg(feature = "source")]
 fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
+    let rgb_source = RgbSliceU8::new(src, (128, 128));
+    let yuv = YUVBuffer::from_rgb_source(rgb_source);
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
     let mut encoder = Encoder::with_api_config(api, config)?;
-    let mut converter = YUVBuffer::new(128, 128);
-
-    converter.read_rgb(src);
 
     let timestamp = Timestamp::from_millis(64);
-    let encoded = encoder.encode_at(&converter, timestamp)?.to_vec();
+    let encoded = encoder.encode_at(&yuv, timestamp)?.to_vec();
 
     let api = OpenH264API::from_source();
     let config = DecoderConfig::default();
@@ -91,15 +89,14 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 #[cfg(feature = "source")]
 fn encoder_sps_pps() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
+    let rgb_source = RgbSliceU8::new(src, (128, 128));
+    let yuv = YUVBuffer::from_rgb_source(rgb_source);
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
+
     let mut encoder = Encoder::with_api_config(api, config)?;
-    let mut converter = YUVBuffer::new(128, 128);
-
-    converter.read_rgb(src);
-
-    let stream = encoder.encode(&converter)?;
+    let stream = encoder.encode(&yuv)?;
 
     let layer_0 = stream.layer(0).unwrap();
     let raw_sps = layer_0.nal_unit(0).unwrap();
@@ -155,32 +152,25 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
 #[test]
 #[cfg(feature = "source")]
 fn encode_change_resolution() -> Result<(), Error> {
-    let src1 = include_bytes!("data/lenna_128x128.rgb");
-    let src2 = include_bytes!("data/lenna_512x512.rgb");
+    let src = include_bytes!("data/lenna_128x128.rgb");
+    let rgb_source = RgbSliceU8::new(src, (128, 128));
+    let yuv1 = YUVBuffer::from_rgb_source(rgb_source);
+
+    let src = include_bytes!("data/lenna_512x512.rgb");
+    let rgb_source = RgbSliceU8::new(src, (512, 512));
+    let yuv2 = YUVBuffer::from_rgb_source(rgb_source);
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
     let mut encoder = Encoder::with_api_config(api, config)?;
 
-    let converter1 = {
-        let mut buf = YUVBuffer::new(128, 128);
-        buf.read_rgb(src1);
-        buf
-    };
-
-    let stream = encoder.encode(&converter1)?;
+    let stream = encoder.encode(&yuv1)?;
 
     assert_eq!(stream.frame_type(), FrameType::IDR);
     assert_eq!(stream.num_layers(), 2);
     assert_eq!(stream.layer(0).unwrap().nal_count(), 2);
 
-    let converter2 = {
-        let mut buf = YUVBuffer::new(512, 512);
-        buf.read_rgb(src2);
-        buf
-    };
-
-    let stream = encoder.encode(&converter2)?;
+    let stream = encoder.encode(&yuv2)?;
 
     assert_eq!(stream.frame_type(), FrameType::IDR);
     assert_eq!(stream.num_layers(), 2);

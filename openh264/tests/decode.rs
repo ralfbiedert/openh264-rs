@@ -2,7 +2,7 @@ use std::io::{Cursor, Read};
 
 use image::RgbImage;
 use openh264::decoder::{Decoder, DecoderConfig};
-use openh264::formats::YUVSource;
+use openh264::formats::{RgbSliceU8, YUVSource};
 use openh264::{nal_units, Error, OpenH264API};
 
 #[test]
@@ -108,15 +108,14 @@ fn what_goes_around_comes_around() -> Result<(), Error> {
     use openh264::formats::YUVBuffer;
 
     let src = include_bytes!("data/lenna_128x128.rgb");
+    let rgb_source = RgbSliceU8::new(src, (128, 128));
+    let yuv = YUVBuffer::from_rgb_source(rgb_source);
 
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
     let mut encoder = Encoder::with_api_config(api, config)?;
-    let mut converter = YUVBuffer::new(128, 128);
 
-    converter.read_rgb(src);
-
-    let stream = encoder.encode(&converter)?;
+    let stream = encoder.encode(&yuv)?;
 
     let api = OpenH264API::from_source();
     let src = stream.to_vec();

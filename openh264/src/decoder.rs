@@ -436,8 +436,12 @@ impl<'a> DecodedYUV<'a> {
 }
 
 impl<'a> YUVSource for DecodedYUV<'a> {
-    fn dimensions(&self) -> (i32, i32) {
+    fn dimensions_i32(&self) -> (i32, i32) {
         (self.info.iWidth, self.info.iHeight)
+    }
+
+    fn dimensions(&self) -> (usize, usize) {
+        (self.info.iWidth as usize, self.info.iHeight as usize)
     }
 
     fn strides(&self) -> (i32, i32, i32) {
