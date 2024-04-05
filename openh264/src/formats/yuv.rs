@@ -92,6 +92,9 @@ impl YUVBuffer {
     ///
     /// May panic or yield unexpected results if `rgb` does not match the formats given.
     pub fn read_rgb<T: RGBSource>(&mut self, rgb: T) {
+        // Make sure we only attempt to read sources that match our own size.
+        assert_eq!(self.dimensions(), rgb.dimensions());
+
         let width = self.width;
         let height = self.height;
 

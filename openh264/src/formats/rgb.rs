@@ -109,6 +109,8 @@ macro_rules! impl_slice_wrapper_u8 {
             /// Creates a new instance given the byte slice and dimensions.
             #[allow(unused)]
             pub fn new(data: &'a [u8], dimensions: (usize, usize)) -> Self {
+                assert_eq!(data.len(), dimensions.0 * dimensions.1 * $stride);
+
                 Self { data, dimensions }
             }
         }
@@ -136,6 +138,8 @@ macro_rules! impl_slice_wrapper_u32 {
             /// Creates a new instance given the data slice and dimensions.
             #[allow(unused)]
             pub fn new(data: &'a [u32], dimensions: (usize, usize)) -> Self {
+                assert_eq!(data.len(), dimensions.0 * dimensions.1);
+
                 Self { data, dimensions }
             }
         }
