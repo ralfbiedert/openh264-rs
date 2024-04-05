@@ -3,6 +3,7 @@
 extern crate test;
 
 use openh264::decoder::Decoder;
+use openh264::formats::YUVSource;
 use test::{black_box, Bencher};
 
 #[bench]
@@ -13,7 +14,7 @@ fn decode_yuv_single_512x512_cavlc(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions_rgb();
+        let dim = yuv.dimensions();
 
         black_box(dim);
     });
@@ -27,7 +28,7 @@ fn decode_yuv_single_512x512_cabac(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions_rgb();
+        let dim = yuv.dimensions();
 
         black_box(dim);
     });
@@ -41,7 +42,7 @@ fn decode_yuv_single_1920x1080(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions_rgb();
+        let dim = yuv.dimensions();
 
         black_box(dim);
     });
@@ -55,7 +56,7 @@ fn decode_yuv_multi_512x512(b: &mut Bencher) {
 
     b.iter(|| {
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions_rgb();
+        let dim = yuv.dimensions();
 
         black_box(dim);
     });
@@ -69,7 +70,7 @@ fn whole_decoder(b: &mut Bencher) {
     b.iter(|| {
         let mut decoder = Decoder::new().unwrap();
         let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions_rgb();
+        let dim = yuv.dimensions();
 
         black_box(dim);
     });

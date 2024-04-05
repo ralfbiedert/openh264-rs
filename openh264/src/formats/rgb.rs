@@ -1,16 +1,18 @@
 /// Source of arbitrarily formatted RGB data.
 pub trait RGBSource {
+    /// Returns the underlying image size as an `i32` tuple `(w, h)`.
     #[must_use]
     fn dimensions_i32(&self) -> (i32, i32) {
         let (w, h) = self.dimensions();
         (w as i32, h as i32)
     }
 
+    /// Returns the underlying image size as an `usize` tuple `(w, h)`.
     #[must_use]
     fn dimensions(&self) -> (usize, usize);
 
     /// Extract the pixel value at the specified location. Pixel values are
-    /// expected to be floats in the range `[0, 256)` (`u8` represented as `f32`).
+    /// expected to be floats in the range `[0, 255]` (`u8` represented as `f32`).
     #[must_use]
     fn pixel_f32(&self, x: usize, y: usize) -> (f32, f32, f32);
 }

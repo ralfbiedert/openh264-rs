@@ -324,7 +324,7 @@ impl Encoder {
             self.previous_dimensions = Some(new_dimensions);
         }
 
-        let strides = yuv_source.strides();
+        let strides = yuv_source.strides_i32();
 
         // Converting *const u8 to *mut u8 should be fine because the encoder _should_
         // only read these arrays (TODO: needs verification).

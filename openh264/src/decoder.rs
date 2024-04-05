@@ -286,60 +286,11 @@ pub struct DecodedYUV<'a> {
 }
 
 impl<'a> DecodedYUV<'a> {
-    /// Returns the Y (luma) array, including padding.
-    ///
-    /// You can use [`strides_yuv()`](Self::strides_yuv) to compute unpadded pixel positions.
-    pub fn y_with_stride(&self) -> &'a [u8] {
-        self.y
-    }
-
-    /// Returns the U (blue projection) array, including padding.
-    ///
-    /// You can use [`strides_yuv()`](Self::strides_yuv) to compute unpadded pixel positions.
-    pub fn u_with_stride(&self) -> &'a [u8] {
-        self.u
-    }
-
-    /// Returns the V (red projection) array, including padding.
-    ///
-    /// You can use [`strides_yuv()`](Self::strides_yuv) to compute unpadded pixel positions.
-    pub fn v_with_stride(&self) -> &'a [u8] {
-        self.v
-    }
-
-    /// Returns the unpadded, image size in pixels when using [`write_rgb8()`](Self::write_rgb8).
-    pub fn dimensions_rgb(&self) -> (usize, usize) {
-        (self.info.iWidth as usize, self.info.iHeight as usize)
-    }
-
-    /// Returns the unpadded Y size.
-    ///
-    /// This may or may not be smaller than the image size.
-    pub fn dimensions_y(&self) -> (usize, usize) {
-        (self.info.iWidth as usize, self.info.iHeight as usize)
-    }
-
     /// Returns the unpadded U size.
     ///
     /// This is often smaller (by half) than the image size.
-    pub fn dimensions_u(&self) -> (usize, usize) {
+    pub fn dimensions_uv(&self) -> (usize, usize) {
         (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
-    }
-
-    /// Returns the unpadded V size.
-    ///
-    /// This is often smaller (by half) than the image size.
-    pub fn dimensions_v(&self) -> (usize, usize) {
-        (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
-    }
-
-    /// Returns strides for the (Y,U,V) arrays.
-    pub fn strides_yuv(&self) -> (usize, usize, usize) {
-        (
-            self.info.iStride[0] as usize,
-            self.info.iStride[1] as usize,
-            self.info.iStride[1] as usize,
-        )
     }
 
     /// Timestamp of this frame in milliseconds(?) with respect to the video stream.
@@ -354,8 +305,8 @@ impl<'a> DecodedYUV<'a> {
     ///
     /// Panics if the target image dimension don't match the configured format.
     pub fn write_rgb8(&self, target: &mut [u8]) {
-        let dim = self.dimensions_rgb();
-        let strides = self.strides_yuv();
+        let dim = self.dimensions();
+        let strides = self.strides();
         let wanted = dim.0 * dim.1 * 3;
 
         // This needs some love, and better architecture.
@@ -397,8 +348,8 @@ impl<'a> DecodedYUV<'a> {
     ///
     /// Panics if the target image dimension don't match the configured format.
     pub fn write_rgba8(&self, target: &mut [u8]) {
-        let dim = self.dimensions_rgb();
-        let strides = self.strides_yuv();
+        let dim = self.dimensions();
+        let strides = self.strides();
         let wanted = dim.0 * dim.1 * 4;
 
         // This needs some love, and better architecture.
@@ -444,7 +395,16 @@ impl<'a> YUVSource for DecodedYUV<'a> {
         (self.info.iWidth as usize, self.info.iHeight as usize)
     }
 
-    fn strides(&self) -> (i32, i32, i32) {
+    fn strides(&self) -> (usize, usize, usize) {
+        // iStride is an array of size 2, so indices are really (0, 1, 1)
+        (
+            self.info.iStride[0] as usize,
+            self.info.iStride[1] as usize,
+            self.info.iStride[1] as usize,
+        )
+    }
+
+    fn strides_i32(&self) -> (i32, i32, i32) {
         // iStride is an array of size 2, so indices are really (0, 1, 1)
         (self.info.iStride[0], self.info.iStride[1], self.info.iStride[1])
     }

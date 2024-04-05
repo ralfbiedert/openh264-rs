@@ -17,7 +17,16 @@ pub trait YUVSource {
     ///
     /// For now you should make sure `u == v`.
     #[must_use]
-    fn strides(&self) -> (i32, i32, i32);
+    fn strides(&self) -> (usize, usize, usize);
+
+    /// YUV strides as `(y, u, v)`.
+    ///
+    /// For now you should make sure `u == v`.
+    #[must_use]
+    fn strides_i32(&self) -> (i32, i32, i32) {
+        let (y, u, v) = self.strides();
+        (y as i32, u as i32, v as i32)
+    }
 
     /// Y buffer, should be of size `dimension.1 * strides.0`.
     #[must_use]
@@ -158,8 +167,8 @@ impl YUVSource for YUVBuffer {
         (self.width, self.height)
     }
 
-    fn strides(&self) -> (i32, i32, i32) {
-        (self.width as i32, (self.width / 2) as i32, (self.width / 2) as i32)
+    fn strides(&self) -> (usize, usize, usize) {
+        (self.width, self.width / 2, self.width / 2)
     }
 
     fn y(&self) -> &[u8] {
@@ -211,9 +220,8 @@ impl<'a> YUVSource for YUVSlices<'a> {
         self.dimensions
     }
 
-    fn strides(&self) -> (i32, i32, i32) {
-        let (y, u, v) = self.strides;
-        (y as i32, u as i32, v as i32)
+    fn strides(&self) -> (usize, usize, usize) {
+        self.strides
     }
 
     fn y(&self) -> &[u8] {
@@ -241,9 +249,9 @@ mod tests {
         assert_eq!(yuv.y(), [16u8, 16u8, 16u8, 16u8]);
         assert_eq!(yuv.u(), [128u8]);
         assert_eq!(yuv.v(), [128u8]);
-        assert_eq!(yuv.strides().0, 2);
-        assert_eq!(yuv.strides().1, 1);
-        assert_eq!(yuv.strides().2, 1);
+        assert_eq!(yuv.strides_i32().0, 2);
+        assert_eq!(yuv.strides_i32().1, 1);
+        assert_eq!(yuv.strides_i32().2, 1);
     }
 
     #[test]
@@ -257,9 +265,9 @@ mod tests {
         assert_eq!(yuv.y(), [235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8, 235u8]);
         assert_eq!(yuv.u(), [128u8, 128u8]);
         assert_eq!(yuv.v(), [128u8, 128u8]);
-        assert_eq!(yuv.strides().0, 4);
-        assert_eq!(yuv.strides().1, 2);
-        assert_eq!(yuv.strides().2, 2);
+        assert_eq!(yuv.strides_i32().0, 4);
+        assert_eq!(yuv.strides_i32().1, 2);
+        assert_eq!(yuv.strides_i32().2, 2);
     }
 
     #[test]
@@ -274,8 +282,8 @@ mod tests {
         assert_eq!(yuv.y(), [81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8, 81u8]);
         assert_eq!(yuv.u(), [90u8, 90u8]);
         assert_eq!(yuv.v(), [239u8, 239u8]);
-        assert_eq!(yuv.strides().0, 4);
-        assert_eq!(yuv.strides().1, 2);
-        assert_eq!(yuv.strides().2, 2);
+        assert_eq!(yuv.strides_i32().0, 4);
+        assert_eq!(yuv.strides_i32().1, 2);
+        assert_eq!(yuv.strides_i32().2, 2);
     }
 }
