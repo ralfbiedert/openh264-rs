@@ -190,72 +190,72 @@ mod tests {
     use super::{AbgrSliceU32, ArgbSliceU32, BgrSliceU8, BgraSliceU32, RGBSource, RgbSliceU8, RgbaSliceU32};
 
     #[test]
-    fn rgb_slice_3x3() {
-        let vec: Vec<u8> = (0..27).collect();
-        let slice = RgbSliceU8::new(&vec, (3, 3));
-        assert_eq!(slice.pixel_f32(0, 0), (0f32, 1f32, 2f32));
-        assert_eq!(slice.pixel_f32(1, 0), (3f32, 4f32, 5f32));
-        assert_eq!(slice.pixel_f32(2, 0), (6f32, 7f32, 8f32));
-        assert_eq!(slice.pixel_f32(0, 1), (9f32, 10f32, 11f32));
-        assert_eq!(slice.pixel_f32(1, 1), (12f32, 13f32, 14f32));
-        assert_eq!(slice.pixel_f32(2, 1), (15f32, 16f32, 17f32));
-        assert_eq!(slice.pixel_f32(0, 2), (18f32, 19f32, 20f32));
-        assert_eq!(slice.pixel_f32(1, 2), (21f32, 22f32, 23f32));
-        assert_eq!(slice.pixel_f32(2, 2), (24f32, 25f32, 26f32));
+    fn rgb_slice_4x4() {
+        let vec: Vec<u8> = (0..4 * 4 * 3).collect();
+        let slice = RgbSliceU8::new(&vec, (4, 4));
+        assert_eq!(slice.pixel_f32(0, 0), (0., 1., 2.));
+        assert_eq!(slice.pixel_f32(1, 0), (3., 4., 5.));
+        assert_eq!(slice.pixel_f32(2, 0), (6., 7., 8.));
+        assert_eq!(slice.pixel_f32(0, 1), (12., 13., 14.));
+        assert_eq!(slice.pixel_f32(1, 1), (15., 16., 17.));
+        assert_eq!(slice.pixel_f32(2, 1), (18., 19., 20.));
+        assert_eq!(slice.pixel_f32(0, 2), (24., 25., 26.));
+        assert_eq!(slice.pixel_f32(1, 2), (27., 28., 29.));
+        assert_eq!(slice.pixel_f32(2, 2), (30., 31., 32.));
     }
 
     #[test]
-    fn bgr_slice_3x3() {
-        let vec: Vec<u8> = (0..27).collect();
-        let slice = BgrSliceU8::new(&vec, (3, 3));
-        assert_eq!(slice.pixel_f32(0, 0), (2f32, 1f32, 0f32));
-        assert_eq!(slice.pixel_f32(1, 0), (5f32, 4f32, 3f32));
-        assert_eq!(slice.pixel_f32(2, 0), (8f32, 7f32, 6f32));
-        assert_eq!(slice.pixel_f32(0, 1), (11f32, 10f32, 9f32));
-        assert_eq!(slice.pixel_f32(1, 1), (14f32, 13f32, 12f32));
-        assert_eq!(slice.pixel_f32(2, 1), (17f32, 16f32, 15f32));
-        assert_eq!(slice.pixel_f32(0, 2), (20f32, 19f32, 18f32));
-        assert_eq!(slice.pixel_f32(1, 2), (23f32, 22f32, 21f32));
-        assert_eq!(slice.pixel_f32(2, 2), (26f32, 25f32, 24f32));
+    fn bgr_slice_4x4() {
+        let vec: Vec<u8> = (0..4 * 4 * 3).collect();
+        let slice = BgrSliceU8::new(&vec, (4, 4));
+        assert_eq!(slice.pixel_f32(0, 0), (2., 1., 0.));
+        assert_eq!(slice.pixel_f32(1, 0), (5., 4., 3.));
+        assert_eq!(slice.pixel_f32(2, 0), (8., 7., 6.));
+        assert_eq!(slice.pixel_f32(0, 1), (14.0, 13.0, 12.0));
+        assert_eq!(slice.pixel_f32(1, 1), (17.0, 16.0, 15.0));
+        assert_eq!(slice.pixel_f32(2, 1), (20.0, 19.0, 18.0));
+        assert_eq!(slice.pixel_f32(0, 2), (26.0, 25.0, 24.0));
+        assert_eq!(slice.pixel_f32(1, 2), (29.0, 28.0, 27.0));
+        assert_eq!(slice.pixel_f32(2, 2), (32.0, 31.0, 30.0));
     }
 
     #[test]
     fn rgba_slice_2x2() {
         let data: [u32; 5] = [0xFF000102, 0xFF010002, 0xFF000201, 0xFF020001, 0xAABBCCDD];
         let slice = RgbaSliceU32::new(&data[1..], (2, 2));
-        assert_eq!(slice.pixel_f32(0, 0), (255f32, 1f32, 0f32));
-        assert_eq!(slice.pixel_f32(1, 0), (255f32, 0f32, 2f32));
-        assert_eq!(slice.pixel_f32(0, 1), (255f32, 2f32, 0f32));
-        assert_eq!(slice.pixel_f32(1, 1), (170f32, 187f32, 204f32));
+        assert_eq!(slice.pixel_f32(0, 0), (255., 1., 0.));
+        assert_eq!(slice.pixel_f32(1, 0), (255., 0., 2.));
+        assert_eq!(slice.pixel_f32(0, 1), (255., 2., 0.));
+        assert_eq!(slice.pixel_f32(1, 1), (170., 187., 204.));
     }
 
     #[test]
     fn argb_slice_2x2() {
         let data: [u32; 5] = [0xFF000102, 0xFF010002, 0xFF000201, 0xFF020001, 0xAABBCCDD];
         let slice = ArgbSliceU32::new(&data[1..], (2, 2));
-        assert_eq!(slice.pixel_f32(0, 0), (1f32, 0f32, 2f32));
-        assert_eq!(slice.pixel_f32(1, 0), (0f32, 2f32, 1f32));
-        assert_eq!(slice.pixel_f32(0, 1), (2f32, 0f32, 1f32));
-        assert_eq!(slice.pixel_f32(1, 1), (187f32, 204f32, 221f32));
+        assert_eq!(slice.pixel_f32(0, 0), (1., 0., 2.));
+        assert_eq!(slice.pixel_f32(1, 0), (0., 2., 1.));
+        assert_eq!(slice.pixel_f32(0, 1), (2., 0., 1.));
+        assert_eq!(slice.pixel_f32(1, 1), (187., 204., 221.));
     }
 
     #[test]
     fn bgra_slice_2x2() {
         let data: [u32; 5] = [0xFF000102, 0xFF010002, 0xFF000201, 0xFF020001, 0xAABBCCDD];
         let slice = BgraSliceU32::new(&data[1..], (2, 2));
-        assert_eq!(slice.pixel_f32(0, 0), (0f32, 1f32, 255f32));
-        assert_eq!(slice.pixel_f32(1, 0), (2f32, 0f32, 255f32));
-        assert_eq!(slice.pixel_f32(0, 1), (0f32, 2f32, 255f32));
-        assert_eq!(slice.pixel_f32(1, 1), (204f32, 187f32, 170f32));
+        assert_eq!(slice.pixel_f32(0, 0), (0., 1., 255.));
+        assert_eq!(slice.pixel_f32(1, 0), (2., 0., 255.));
+        assert_eq!(slice.pixel_f32(0, 1), (0., 2., 255.));
+        assert_eq!(slice.pixel_f32(1, 1), (204., 187., 170.));
     }
 
     #[test]
     fn abgr_slice_2x2() {
         let data: [u32; 5] = [0xFF000102, 0xFF010002, 0xFF000201, 0xFF020001, 0xAABBCCDD];
         let slice = AbgrSliceU32::new(&data[1..], (2, 2));
-        assert_eq!(slice.pixel_f32(0, 0), (2f32, 0f32, 1f32));
-        assert_eq!(slice.pixel_f32(1, 0), (1f32, 2f32, 0f32));
-        assert_eq!(slice.pixel_f32(0, 1), (1f32, 0f32, 2f32));
-        assert_eq!(slice.pixel_f32(1, 1), (221f32, 204f32, 187f32));
+        assert_eq!(slice.pixel_f32(0, 0), (2., 0., 1.));
+        assert_eq!(slice.pixel_f32(1, 0), (1., 2., 0.));
+        assert_eq!(slice.pixel_f32(0, 1), (1., 0., 2.));
+        assert_eq!(slice.pixel_f32(1, 1), (221., 204., 187.));
     }
 }

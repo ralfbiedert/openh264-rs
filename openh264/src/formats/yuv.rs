@@ -188,6 +188,7 @@ pub struct YUVSlices<'a> {
 
 impl<'a> YUVSlices<'a> {
     /// Creates a new YUV slice.
+    #[allow(unused)] // TODO: add nice unit test
     pub fn new(yuv: (&'a [u8], &'a [u8], &'a [u8]), dimensions: (usize, usize), strides: (usize, usize, usize)) -> Self {
         assert!(strides.0 >= dimensions.0);
         assert!(strides.1 >= dimensions.0);
