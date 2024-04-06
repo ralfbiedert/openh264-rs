@@ -1,4 +1,52 @@
 //! Converts NAL packets to YUV images.
+//!
+//! # Examples
+//!
+//! Basic [Decoder] use looks as follows. In practice, you might get your `h256`
+//! bitstream from reading a file or network source.
+//!
+//! ```rust
+//! use openh264::decoder::Decoder;
+//! use openh264::nal_units;
+//!
+//! # use openh264::{Error, OpenH264API};
+//! # fn main() -> Result<(), Error> {
+//! let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
+//! let mut decoder = Decoder::new()?;
+//!
+//! for packet in nal_units(h264_in) {
+//!     // If everything goes well this should yield a `DecodedYUV`.
+//!     // It can also be `Err()` if the bitstream had errors, or
+//!     // `Ok(None)` if no pictures were available (yet).
+//!     let Ok(Some(yuv)) = decoder.decode(packet) else { continue };
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Once you have your `yuv`, which should be of type [`DecodedYUV`], you can proceed to converting it to RGB:
+//!
+//! ```rust
+//! # use openh264::decoder::Decoder;
+//! # use openh264::nal_units;
+//! use openh264::formats::YUVSource;
+//!
+//! # use openh264::{Error, OpenH264API};
+//! # fn main() -> Result<(), Error> {
+//! #
+//! # let h264_in = include_bytes!("../tests/data/multi_512x512.h264");
+//! # let mut decoder = Decoder::new()?;
+//! #
+//! # for packet in nal_units(h264_in) {
+//! #    let Ok(Some(yuv)) = decoder.decode(packet) else { continue; };
+//! let rgb_len = yuv.estimate_rgb_u8_size();
+//! let mut rgb_raw = vec![0; rgb_len];
+//!
+//! yuv.write_rgb8(&mut rgb_raw);
+//! # }
+//! # Ok(())
+//! # }
+//! ```
 
 use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;

@@ -5,7 +5,7 @@
 //!
 //! # Examples
 //!
-//! Load a _vanilla_ 3x8 bytes per pixel RGB slice into a [YUVBuffer]:
+//! Load a _vanilla_ 3x8 bit-per-pixel RGB slice into a [YUVBuffer]:
 //!
 //! ```rust
 //! use openh264::formats::{RgbSliceU8, YUVBuffer};
