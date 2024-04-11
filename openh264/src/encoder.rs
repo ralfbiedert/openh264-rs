@@ -776,17 +776,17 @@ impl Encoder {
         }
 
         unsafe {
-            if self.previous_dimensions.is_none() {
-                // First time we call initialize_ext
-                self.raw_api.initialize_ext(&raw const params).ok()?;
-                self.raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast()).ok()?;
-                self.raw_api.set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast()).ok()?;
-            } else {
+            if self.is_initialized() {
                 // Subsequent times we call SetOption
                 self.raw_api.set_option(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, addr_of_mut!(params).cast()).ok()?;
 
                 // Start with a new keyframe after dimensions changed.
                 self.force_intra_frame();
+            } else {
+                // First time we call initialize_ext
+                self.raw_api.initialize_ext(&raw const params).ok()?;
+                self.raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast()).ok()?;
+                self.raw_api.set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast()).ok()?;
             }
         }
 
@@ -800,6 +800,10 @@ impl Encoder {
         unsafe {
             self.raw_api.force_intra_frame(true);
         }
+    }
+
+    const fn is_initialized(&self) -> bool {
+        self.previous_dimensions.is_some()
     }
 
     /// Obtain the raw API for advanced use cases.
