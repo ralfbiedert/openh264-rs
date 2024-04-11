@@ -5,9 +5,9 @@ use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     videoFormatI420, ELevelIdc, EProfileIdc, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase,
-    SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, API, DEBLOCKING_IDC_0, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
-    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, SM_SINGLE_SLICE, SM_SIZELIMITED_SLICE,
-    VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, API, DEBLOCKING_IDC_0, ENCODER_OPTION, ENCODER_OPTION_BITRATE,
+    ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, SM_SINGLE_SLICE,
+    SM_SIZELIMITED_SLICE, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, from_mut, null, null_mut};
@@ -804,6 +804,35 @@ impl Encoder {
 
     const fn is_initialized(&self) -> bool {
         self.previous_dimensions.is_some()
+    }
+
+    /// Sets the target bit rate "runtime".
+    ///
+    /// If the encoder is already running, this uses the openh264 API to change it without
+    /// reinitializing the encoder.
+    ///
+    /// # Errors
+    ///
+    /// This might error for various reasons, many of which aren't clearly documented in OpenH264.
+    pub fn set_target_bitrate(&mut self, bps: BitRate) -> Result<(), Error> {
+        if self.config.target_bitrate == bps {
+            return Ok(());
+        }
+
+        self.config.target_bitrate = bps;
+
+        // If raw_api is already initialized, we do a runtime change, otherwise
+        // rely on the bitrate being set when calling initialize_ext()
+        if self.is_initialized() {
+            unsafe {
+                let mut bps = bps;
+                self.raw_api
+                    .set_option(ENCODER_OPTION_BITRATE, from_mut(&mut bps.0).cast())
+                    .ok()?;
+            }
+        }
+
+        Ok(())
     }
 
     /// Obtain the raw API for advanced use cases.
