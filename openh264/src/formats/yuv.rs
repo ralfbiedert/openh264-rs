@@ -76,8 +76,8 @@ impl YUVBuffer {
     ///
     /// May panic if the given sizes are not multiples of 2, or the yuv buffer's size mismatches.
     pub fn from_vec(yuv: Vec<u8>, width: usize, height: usize) -> Self {
-        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
-        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(width % 2, 0, "width needs to be a multiple of 2");
+        assert_eq!(height % 2, 0, "height needs to be a multiple of 2");
         assert_eq!(yuv.len(), (3 * (width * height)) / 2, "YUV buffer needs to be properly sized");
 
         Self { yuv, width, height }
@@ -91,7 +91,7 @@ impl YUVBuffer {
     ///
     /// May panic if the given sizes are not multiples of 2.
     pub fn new(width: usize, height: usize) -> Self {
-        assert_eq!(width % 2, 0, "width needs to be multiple of 2");
+        assert_eq!(width % 2, 0, "width needs to be a multiple of 2");
         assert_eq!(height % 2, 0, "height needs to be a multiple of 2");
 
         Self {
@@ -200,15 +200,14 @@ pub struct YUVSlices<'a> {
 
 impl<'a> YUVSlices<'a> {
     /// Creates a new YUV slice.
-    #[allow(unused)] // TODO: add nice unit test
     pub fn new(yuv: (&'a [u8], &'a [u8], &'a [u8]), dimensions: (usize, usize), strides: (usize, usize, usize)) -> Self {
         assert!(strides.0 >= dimensions.0);
-        assert!(strides.1 >= dimensions.0);
-        assert!(strides.2 >= dimensions.0);
+        assert!(strides.1 >= dimensions.0 / 2);
+        assert!(strides.2 >= dimensions.0 / 2);
 
         assert_eq!(dimensions.1 * strides.0, yuv.0.len());
-        assert_eq!(dimensions.1 * strides.1, yuv.1.len());
-        assert_eq!(dimensions.1 * strides.2, yuv.2.len());
+        assert_eq!((dimensions.1 / 2) * strides.1, yuv.1.len());
+        assert_eq!((dimensions.1 / 2) * strides.2, yuv.2.len());
 
         Self {
             dimensions,
@@ -242,7 +241,7 @@ impl<'a> YUVSource for YUVSlices<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::YUVBuffer;
+    use super::{YUVBuffer, YUVSlices};
     use crate::formats::{RgbSliceU8, YUVSource};
 
     #[test]
@@ -288,5 +287,67 @@ mod tests {
         assert_eq!(yuv.strides_i32().0, 4);
         assert_eq!(yuv.strides_i32().1, 2);
         assert_eq!(yuv.strides_i32().2, 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_stride_less_than_width() {
+        let y = vec![0u8; 10];
+        let u = vec![0u8; 5];
+        let v = vec![0u8; 5];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 1), (9, 5, 5));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_u_stride_less_than_half_width() {
+        let y = vec![0u8; 20];
+        let u = vec![0u8; 5];
+        let v = vec![0u8; 5];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 4, 5));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_v_stride_less_than_half_width() {
+        let y = vec![0u8; 20];
+        let u = vec![0u8; 5];
+        let v = vec![0u8; 5];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 4));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_y_length_not_matching() {
+        let y = vec![0u8; 19];
+        let u = vec![0u8; 5];
+        let v = vec![0u8; 5];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 5));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_u_length_not_matching() {
+        let y = vec![0u8; 20];
+        let u = vec![0u8; 4];
+        let v = vec![0u8; 5];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 5));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_v_length_not_matching() {
+        let y = vec![0u8; 20];
+        let u = vec![0u8; 5];
+        let v = vec![0u8; 4];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 5));
+    }
+
+    #[test]
+    fn test_new_valid() {
+        let y = vec![0u8; 20];
+        let u = vec![0u8; 5];
+        let v = vec![0u8; 5];
+        let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 5));
     }
 }
