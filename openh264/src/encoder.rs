@@ -391,6 +391,15 @@ impl Encoder {
         Ok(())
     }
 
+    /// Forces the encoder to generate an intra frame (I-frame) immediately.
+    ///
+    /// # Safety
+    ///
+    /// Unsafe due to direct raw API calls, ensure encoder state validity.
+    pub unsafe fn force_intra_frame(&mut self) {
+        self.raw_api.force_intra_frame(true);
+    }
+
     /// Obtain the raw API for advanced use cases.
     ///
     /// When resorting to this call, please consider filing an issue / PR.
