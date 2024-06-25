@@ -70,7 +70,7 @@ pub struct YUVBuffer {
 impl YUVBuffer {
     /// Creates a new YUV buffer from the given vec.
     ///
-    /// The vec's length should be `3 * (width * height)) / 2`.
+    /// The vec's length should be `3 * (width * height) / 2`.
     ///
     /// # Panics
     ///
@@ -199,7 +199,16 @@ pub struct YUVSlices<'a> {
 }
 
 impl<'a> YUVSlices<'a> {
-    /// Creates a new YUV slice.
+    /// Creates a new YUV slice in 4:2:0 format.
+    ///
+    /// Assume you have some dimension `(w, h)` that is your actual image size. In addition,
+    /// you will have strides `(sy, su, sv)` that specify how many pixels / bytes per row
+    /// are actually used be used. Strides must be larger or equal than `w` (y) or `w / 2` (uv)
+    /// respectively.
+    ///
+    /// # Panics
+    ///
+    /// This will panic if the given slices, strides or dimensions don't match.
     pub fn new(yuv: (&'a [u8], &'a [u8], &'a [u8]), dimensions: (usize, usize), strides: (usize, usize, usize)) -> Self {
         assert!(strides.0 >= dimensions.0);
         assert!(strides.1 >= dimensions.0 / 2);

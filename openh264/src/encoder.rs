@@ -383,21 +383,21 @@ impl Encoder {
                 // Subsequent times we call SetOption
                 self.raw_api.set_option(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, addr_of_mut!(params).cast()).ok()?;
 
-                // Start with a new keyframe.
-                self.raw_api.force_intra_frame(true);
+                // Start with a new keyframe after dimensions changed.
+                self.force_intra_frame();
             }
         }
 
         Ok(())
     }
 
-    /// Forces the encoder to generate an intra frame (I-frame) immediately.
-    ///
-    /// # Safety
-    ///
-    /// Unsafe due to direct raw API calls, ensure encoder state validity.
-    pub unsafe fn force_intra_frame(&mut self) {
-        self.raw_api.force_intra_frame(true);
+    /// Forces the encoder to emit an intra frame (I-frame, "keyframe") for the next encoded frame.
+    pub fn force_intra_frame(&mut self) {
+        // SAFETY: This should be safe, simply as there is no indication why it shouldn't be. We are
+        // initialized at this point, and forcing an IDR should be straightforward.
+        unsafe {
+            self.raw_api.force_intra_frame(true);
+        }
     }
 
     /// Obtain the raw API for advanced use cases.
