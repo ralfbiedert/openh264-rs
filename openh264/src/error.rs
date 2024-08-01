@@ -117,6 +117,7 @@ mod test {
     use openh264_sys2::dsRefListNullPtrs;
 
     #[test]
+    #[allow(unused_must_use)]
     fn errors_wont_panic() {
         format!("{}", Error::from_native(1));
         format!("{}", Error::from_decoding_state(dsRefListNullPtrs));
