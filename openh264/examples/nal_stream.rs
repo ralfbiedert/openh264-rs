@@ -21,7 +21,6 @@ fn main() {
     println!("  -> found first NAL mark, continue to catch the next one: **{:?}**", r);
 
     // without reading the buffer we try to search in the current one
-    np.send_stream(&mut buffer);
     let r = np.get_packet();
     println!(
         "  -> unfortunately, no NAL mark withing this buffer found, read more: **{:?}**",
