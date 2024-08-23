@@ -208,7 +208,6 @@ mod utils;
 pub mod decoder;
 pub mod encoder;
 pub mod formats;
-pub mod stream;
 
 pub use error::Error;
 pub use time::Timestamp;

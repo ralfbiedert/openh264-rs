@@ -46,7 +46,7 @@ fn nth_nal_index(stream: &[u8], nth: usize) -> Option<usize> {
 /// NAL units in the middle are split at their boundaries, the last packet is returned
 /// as-is.
 ///
-pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item = &[u8]> {
+pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item=&[u8]> {
     std::iter::from_fn(move || {
         let first = nth_nal_index(stream, 0);
         let next = nth_nal_index(stream, 1);
@@ -67,9 +67,78 @@ pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item = &[u8]> {
     })
 }
 
+
+/// Splits a growing bitstream into NAL units.
+///
+/// This searches for `001` marks in a byte stream, and deals with cross-boundary checks when
+/// a frame is partially read.
+pub struct NalParser {
+    leftover_buffer: Vec<u8>,
+    curr_offset: usize,
+    last_nal: Option<usize>,
+}
+
+impl NalParser {
+    /// Creates a new NAL parser.
+    pub fn new() -> Self {
+        Self {
+            leftover_buffer: Vec::new(),
+            curr_offset: 0,
+            last_nal: None,
+        }
+    }
+
+    /// Tries to retrieve the next NAL unit, if present.
+    ///
+    /// After feeding new data you should keep calling this method until it returns `None`.
+    pub fn next(&mut self) -> Option<Vec<u8>> {
+        if self.leftover_buffer.is_empty() {
+            return None;
+        }
+
+        if let Some(idx) = self.get_nal_mark() {
+            if let Some(last_offset) = self.last_nal {
+                // Last mark and current mark found, process packet
+                let packet = self.leftover_buffer[last_offset..idx].to_vec();
+                self.leftover_buffer = self.leftover_buffer[idx..].to_vec();
+                self.last_nal = Some(0);
+                self.curr_offset = 2;
+                Some(packet)
+            } else {
+                // Try your luck searching for 0, 0, 1
+                // In case there is no 0, 0, 1 in the next try, you get ReadMore
+                self.curr_offset = idx + 2;
+                self.last_nal = Some(idx);
+                None
+            }
+        } else {
+            // No 0, 0, 1 mark here, read more data
+            None
+        }
+    }
+
+    /// Feeds more data to the processor.
+    ///
+    /// After calling this method, there may be between 0 to M new NAL units present, which you can query with [`next()`].
+    pub fn feed(&mut self, buffer: impl AsRef<[u8]>) {
+        self.leftover_buffer.extend_from_slice(buffer.as_ref());
+    }
+
+    fn get_nal_mark(&self) -> Option<usize> {
+        for i in self.curr_offset..self.leftover_buffer.len() - 2 {
+            if self.leftover_buffer[i] == 0 && self.leftover_buffer[i + 1] == 0 && self.leftover_buffer[i + 2] == 1 {
+                return Some(i);
+            }
+        }
+        None
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::nal_units;
+    use super::NalParser;
+
 
     #[test]
     fn splits_at_nal() {
@@ -108,5 +177,75 @@ mod test {
         assert_eq!(split.next().unwrap(), &[0, 0, 1, 2, 3]);
         assert_eq!(split.next().unwrap(), &[0, 0, 1]);
         assert!(split.next().is_none());
+    }
+
+
+    #[test]
+    fn nal_mark_stream_boundary() {
+        let v1 = [1, 2, 3, 0];
+        let v2 = [0, 1, 104, 238, 56, 127, 0];
+        let v3 = [0, 0, 1, 104, 238, 56, 128, 0];
+
+        let mut np = NalParser::new();
+
+        // nothing read, read some data
+        assert_eq!(None, np.next());
+        
+        np.feed(&v1);
+        assert_eq!(None, np.next());
+
+        np.feed(&v2);
+        assert_eq!(None, np.next());
+
+        np.feed(&v3);
+        assert_eq!(Some(vec![0, 0, 1, 104, 238, 56, 127, 0]), np.next());
+        assert_eq!(None, np.next());
+    }
+
+    #[test]
+    fn nal_mark_empty() {
+        let mut np = NalParser::new();
+        assert_eq!(None, np.next());
+    }
+
+    #[test]
+    fn nal_mark_no_mark() {
+        let mut np = NalParser::new();
+        np.feed(&[2, 3]);
+        assert_eq!(None, np.next());
+    }
+
+    #[test]
+    fn nal_mark_single_mark() {
+        let mut np = NalParser::new();
+        np.feed(&[0, 0, 1]);
+        assert_eq!(None, np.next());
+    }
+
+    #[test]
+    fn nal_mark_multiple_marks_same_vec() {
+        let mut np = NalParser::new();
+        np.feed(&[1, 2, 3, 4, 5, 0, 0, 1, 22, 33, 44, 0, 0, 0, 1, 0, 5, 6, 7, 0, 0, 1, 7, 8, 9]);
+        assert_eq!(None, np.next());
+        assert_eq!(Some(vec![0, 0, 1, 22, 33, 44, 0]), np.next());
+        assert_eq!(Some(vec![0, 0, 1, 0, 5, 6, 7]), np.next());
+        assert_eq!(None, np.next());
+    }
+
+    #[test]
+    fn nal_mark_multiple_marks() {
+        let mut np = NalParser::new();
+
+        np.feed(&[0, 0, 1, 2, 3, 4, 0, 0, 1]);
+        assert_eq!(None, np.next());
+        assert_eq!(Some(vec![0, 0, 1, 2, 3, 4]), np.next());
+        assert_eq!(None, np.next());
+
+        np.feed(&[2, 2, 2]);
+        assert_eq!(None, np.next());
+
+        np.feed(&[3, 3, 3, 0, 0, 1, 5, 6, 7]);
+        assert_eq!(Some(vec![0, 0, 1, 2, 2, 2, 3, 3, 3]), np.next());
+        assert_eq!(None, np.next());
     }
 }
