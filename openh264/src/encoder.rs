@@ -350,13 +350,16 @@ impl Encoder {
     #[rustfmt::skip]
     fn reinit(&mut self, width: i32, height: i32) -> Result<(), Error> {
         // https://github.com/cisco/openh264/blob/master/README.md
-        // > Encoder errors when resolution exceeds 3840x2160
+        // > Encoder errors when resolution exceeds 3840x2160 or 2160x3840
         //
         // Some more detail here:
         // https://github.com/cisco/openh264/issues/3553
         // > Currently the encoder/decoder could only support up to level 5.2,
-        if width > 3840 || height > 2160 {
-            return Err(Error::msg("Encoder max resolution 3840x2160"));
+        let greater_dim = std::cmp::max(width, height);
+        let smaller_dim = std::cmp::min(width, height);
+
+        if greater_dim > 3840 || smaller_dim > 2160 {
+            return Err(Error::msg("Encoder max resolution 3840x2160 horizontal or 2160x3840 vertical"));
         }
 
         let mut params = SEncParamExt::default();
