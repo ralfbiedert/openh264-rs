@@ -68,7 +68,7 @@ pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item=&[u8]> {
 }
 
 
-/// Splits a growing bitstream into NAL units.
+/// Splits an incrementally arriving bitstream into NAL units.
 ///
 /// This searches for `001` marks in a byte stream, and deals with cross-boundary checks when
 /// a frame is partially read.
