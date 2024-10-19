@@ -6,6 +6,7 @@ PROJECT_ROOT="$( cd "$(dirname "$0")/.." ; pwd -P )" # this file
 
 VANILLA_UPSTREAM="$PROJECT_ROOT/../_thirdparty/openh264" # <--- BEFORE RUNNING THIS SCRIPT YOU PROBABLY WANT TO UPDATE THIS PATH
 OUR_UPSTREAM="$PROJECT_ROOT/openh264-sys2/upstream"
+FIND=/usr/bin/find
 
 mkdir -p "$OUR_UPSTREAM"
 
@@ -16,11 +17,11 @@ cp "$VANILLA_UPSTREAM/LICENSE" "$OUR_UPSTREAM"
 
 # DELETE UNWANTED FILES
 rm -rf "$OUR_UPSTREAM/codec/build"
-find "$OUR_UPSTREAM" -name "*.d" -delete
-find "$OUR_UPSTREAM" -name "*.o" -delete
-find "$OUR_UPSTREAM" -name "*.build" -delete
-find "$OUR_UPSTREAM" -name "*.mk" -delete
-find "$OUR_UPSTREAM" -name "*.sh" -delete
+$FIND "$OUR_UPSTREAM" -name "*.d" -delete
+$FIND "$OUR_UPSTREAM" -name "*.o" -delete
+$FIND "$OUR_UPSTREAM" -name "*.build" -delete
+$FIND "$OUR_UPSTREAM" -name "*.mk" -delete
+$FIND "$OUR_UPSTREAM" -name "*.sh" -delete
 
 # Update version info
 pushd "$VANILLA_UPSTREAM"
