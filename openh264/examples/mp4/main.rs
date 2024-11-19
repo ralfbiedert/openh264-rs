@@ -2,13 +2,24 @@ mod mp4_bitstream_converter;
 
 use crate::mp4_bitstream_converter::Mp4BitstreamConverter;
 use anyhow::{anyhow, Error};
-use openh264::decoder::Decoder;
-use std::io::Cursor;
+use openh264::decoder::{Decoder, DecoderConfig};
+use std::{
+    fs::File,
+    io::{Cursor, Read, Write},
+};
 
 #[cfg(feature = "source")]
 fn main() -> Result<(), Error> {
-    let mp4 = include_bytes!("../../tests/data/multi_512x512.mp4");
-    let mut mp4 = mp4::Mp4Reader::read_header(Cursor::new(mp4), mp4.len() as u64)?;
+    let mut args = std::env::args();
+    let bin = args.next().unwrap_or(String::from("mp4"));
+    let path = args.next().ok_or(anyhow!("usage: {bin} <filename> [out]"))?;
+    let out = args.next().unwrap_or(String::from("."));
+
+    let mut file = std::fs::File::open(path.clone()).unwrap();
+    let mut mp4 = Vec::new();
+    file.read_to_end(&mut mp4).unwrap();
+
+    let mut mp4 = mp4::Mp4Reader::read_header(Cursor::new(&mp4), mp4.len() as u64)?;
 
     let track = mp4
         .tracks()
@@ -17,16 +28,19 @@ fn main() -> Result<(), Error> {
         .ok_or_else(|| anyhow!("Must exist"))?
         .1;
     let track_id = track.track_id();
+    let width = track.width() as usize;
+    let height = track.height() as usize;
 
     // mp4 spits out length-prefixed NAL units, but openh264 expects start codes
     // the mp4 stream also lacks parameter sets, so we need to add them
     // Mp4BitstreamConverter does this for us
     let mut bitstream_converter = Mp4BitstreamConverter::for_mp4_track(track)?;
-    let mut decoder = Decoder::new()?;
+    let mut decoder = Decoder::with_api_config(openh264::OpenH264API::from_source(), DecoderConfig::new().debug(true)).unwrap();
 
     let mut buffer = Vec::new();
-    let mut rgb = [0; 512 * 512 * 3];
+    let mut rgb = vec![0; width * height * 3];
 
+    let mut frame_idx = 0;
     for i in 1..track.sample_count() + 1 {
         let Some(sample) = mp4.read_sample(track_id, i)? else {
             continue;
@@ -34,10 +48,26 @@ fn main() -> Result<(), Error> {
 
         // convert the packet from mp4 representation to one that openh264 can decode
         bitstream_converter.convert_packet(&sample.bytes, &mut buffer);
-
-        if let Some(image) = decoder.decode(&buffer)? {
-            image.write_rgb8(&mut rgb);
+        match decoder.decode_no_flush(&buffer) {
+            Ok(Some(image)) => {
+                image.write_rgb8(&mut rgb);
+                save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
+                frame_idx += 1;
+            }
+            Ok(None) => {
+                // decoder is not ready to provide an image
+                continue;
+            }
+            Err(err) => {
+                println!("error frame {i}: {err}");
+            }
         }
+    }
+
+    for image in decoder.flush_all()? {
+        image.write_rgb8(&mut rgb);
+        save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
+        frame_idx += 1;
     }
 
     Ok(())
@@ -45,3 +75,10 @@ fn main() -> Result<(), Error> {
 
 #[cfg(not(feature = "source"))]
 fn main() {}
+
+fn save_file(filename: &str, frame: &[u8], width: usize, height: usize) -> std::result::Result<(), std::io::Error> {
+    let mut file = File::create(filename)?;
+    file.write_all(format!("P6\n{} {}\n255\n", width, height).as_bytes())?;
+    file.write_all(frame)?;
+    Ok(())
+}
