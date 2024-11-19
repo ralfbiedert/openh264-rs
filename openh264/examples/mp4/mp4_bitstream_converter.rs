@@ -93,7 +93,7 @@ struct NalUnit<'a> {
 
 impl<'a> NalUnit<'a> {
     /// Reads a NAL unit from a slice of bytes in MP4, returning the unit, and the remaining stream after that slice.
-    fn from_stream(mut stream: &'a [u8], length_size: u8) -> Option<(Self, &[u8])> {
+    fn from_stream(mut stream: &'a [u8], length_size: u8) -> Option<(Self, &'a [u8])> {
         let mut nal_size = 0;
 
         // Construct nal_size from first bytes in MP4 stream.
