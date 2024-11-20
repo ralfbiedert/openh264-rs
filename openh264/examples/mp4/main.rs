@@ -2,7 +2,7 @@ mod mp4_bitstream_converter;
 
 use crate::mp4_bitstream_converter::Mp4BitstreamConverter;
 use anyhow::{anyhow, Error};
-use openh264::decoder::{Decoder, DecoderConfig};
+use openh264::decoder::{DecodeOptions, Decoder, DecoderConfig};
 use std::{
     fs::File,
     io::{Cursor, Read, Write},
@@ -48,7 +48,7 @@ fn main() -> Result<(), Error> {
 
         // convert the packet from mp4 representation to one that openh264 can decode
         bitstream_converter.convert_packet(&sample.bytes, &mut buffer);
-        match decoder.decode_no_flush(&buffer) {
+        match decoder.decode_with_options(&buffer, DecodeOptions::NoFlush) {
             Ok(Some(image)) => {
                 image.write_rgb8(&mut rgb);
                 save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
