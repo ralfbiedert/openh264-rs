@@ -52,7 +52,9 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, TagBufferInfo, API,
+    DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+    DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -181,6 +183,13 @@ impl DecoderConfig {
     }
 }
 
+#[derive(Default)]
+pub enum DecodeOptions {
+    #[default]
+    Flush,
+    NoFlush,
+}
+
 /// An [OpenH264](https://github.com/cisco/openh264) decoder.
 pub struct Decoder {
     raw_api: DecoderRawAPI,
@@ -215,6 +224,17 @@ impl Decoder {
 
     /// Decodes a series of H.264 NAL packets and returns the latest picture.
     ///
+    /// This is a convenience wrapper around [`decode_with_options`](Self::decode_with_options) that uses default decoding options.
+    ///
+    /// # Errors
+    ///
+    /// The function returns an error if the bitstream was corrupted.
+    pub fn decode(&mut self, packet: &[u8]) -> Result<Option<DecodedYUV<'_>>, Error> {
+        self.decode_with_options(packet, DecodeOptions::default())
+    }
+
+    /// Decodes a series of H.264 NAL packets and returns the latest picture.
+    ///
     /// This function can be called with:
     ///
     /// - only a complete SPS / PPS header (usually the first some 30 bytes of a H.264 stream)
@@ -222,12 +242,13 @@ impl Decoder {
     /// - new frames after previous headers and frames were successfully decoded.
     ///
     /// In each case, it will return `Some(decoded)` image in YUV format if an image was available, or `None`
-    /// if more data needs to be provided.
+    /// if more data needs to be provided. If `options` is set to [`Flush`](DecodeOptions::Flush), it will try
+    /// to flush a frame if the image was unavailable.
     ///
     /// # Errors
     ///
     /// The function returns an error if the bitstream was corrupted.
-    pub fn decode(&mut self, packet: &[u8]) -> Result<Option<DecodedYUV<'_>>, Error> {
+    pub fn decode_with_options(&mut self, packet: &[u8], options: DecodeOptions) -> Result<Option<DecodedYUV<'_>>, Error> {
         let mut dst = [null_mut::<u8>(); 3];
         let mut buffer_info = SBufferInfo::default();
 
@@ -238,48 +259,69 @@ impl Decoder {
 
             // Buffer status == 0 means frame data is not ready.
             if buffer_info.iBufferStatus == 0 {
-                let mut num_frames: DECODER_OPTION = 0;
-                self.raw_api()
-                    .get_option(
-                        DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
-                        addr_of_mut!(num_frames).cast(),
-                    )
-                    .ok()?;
+                match options {
+                    DecodeOptions::Flush => {
+                        let mut num_frames: DECODER_OPTION = 0;
+                        self.raw_api()
+                            .get_option(
+                                DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+                                addr_of_mut!(num_frames).cast(),
+                            )
+                            .ok()?;
 
-                // If we have outstanding frames flush them, if then still no frame data ready we have an error.
-                if num_frames > 0 {
-                    self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
+                        // If we have outstanding frames flush them, if then still no frame data ready we have an error.
+                        if num_frames > 0 {
+                            self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
 
-                    if buffer_info.iBufferStatus == 0 {
-                        return Err(Error::msg(
-                            "Buffer status invalid, we have outstanding frames but failed to flush them.",
-                        ));
+                            if buffer_info.iBufferStatus == 0 {
+                                return Err(Error::msg(
+                                    "Buffer status invalid, we have outstanding frames but failed to flush them.",
+                                ));
+                            }
+                        }
+                    }
+                    DecodeOptions::NoFlush => {
+                        return Ok(None);
                     }
                 }
             }
 
-            let info = buffer_info.UsrData.sSystemBuffer;
-            let timestamp = Timestamp::from_millis(buffer_info.uiInBsTimeStamp); // TODO: Is this the right one?
-
-            // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
-            // the user should try to continue decoding.
-            if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
-                return Ok(None);
-            }
-
-            // https://github.com/cisco/openh264/issues/2379
-            let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
-            let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
-            let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
-
-            Ok(Some(DecodedYUV {
-                info,
-                timestamp,
-                y,
-                u,
-                v,
-            }))
+            Ok(DecodedYUV::new(&dst, &buffer_info))
         }
+    }
+
+    /// Flush and return every frames in buffer.
+    ///
+    /// This function should be called after decoding every frames of the stream.
+    ///
+    /// # Errors
+    ///
+    /// The function returns an error if the bitstream was corrupted.
+    pub fn flush_all(&mut self) -> Result<Vec<DecodedYUV>, Error> {
+        let mut frames = Vec::new();
+
+        unsafe {
+            let mut dst = [null_mut::<u8>(); 3];
+            let mut buffer_info = SBufferInfo::default();
+
+            let mut num_frames: DECODER_OPTION = 0;
+            self.raw_api()
+                .get_option(
+                    DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+                    addr_of_mut!(num_frames).cast(),
+                )
+                .ok()?;
+
+            for _ in 0..num_frames {
+                self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
+
+                if let Some(image) = DecodedYUV::new(&dst, &buffer_info) {
+                    frames.push(image);
+                };
+            }
+        }
+
+        Ok(frames)
     }
 
     /// Obtain the raw API for advanced use cases.
@@ -334,6 +376,30 @@ pub struct DecodedYUV<'a> {
 }
 
 impl<'a> DecodedYUV<'a> {
+    unsafe fn new(dst: &[*mut u8; 3], buffer_info: &TagBufferInfo) -> Option<Self> {
+        let info = buffer_info.UsrData.sSystemBuffer;
+        let timestamp = Timestamp::from_millis(buffer_info.uiInBsTimeStamp); // TODO: Is this the right one?
+
+        // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
+        // the user should try to continue decoding.
+        if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
+            return None;
+        }
+
+        // https://github.com/cisco/openh264/issues/2379
+        let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
+        let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
+        let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
+
+        Some(Self {
+            info,
+            timestamp,
+            y,
+            u,
+            v,
+        })
+    }
+
     /// Returns the unpadded U size.
     ///
     /// This is often smaller (by half) than the image size.
