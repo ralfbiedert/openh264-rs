@@ -54,6 +54,8 @@ use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::slice::ParallelSliceMut;
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
 
@@ -369,24 +371,26 @@ impl<'a> DecodedYUV<'a> {
             target.len()
         );
 
-        for y in 0..dim.1 {
-            for x in 0..dim.0 {
-                let base_tgt = (y * dim.0 + x) * 3;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
+        target.par_chunks_mut(3).enumerate().for_each(|(idx, rgb_pixel)| {
+            let x = idx % dim.0;
+            let y = idx / dim.0;
+            
+            let base_y = y * strides.0 + x;
+            let base_u = (y / 2 * strides.1) + (x / 2);
+            let base_v = (y / 2 * strides.2) + (x / 2);
+            
+            let y = self.y[base_y] as f32;
+            let u = self.u[base_u] as f32;
+            let v = self.v[base_v] as f32;
 
-                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
-
-                let y = self.y[base_y] as f32;
-                let u = self.u[base_u] as f32;
-                let v = self.v[base_v] as f32;
-
-                rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
-                rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
-                rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
-            }
-        }
+            let r = (y + 1.402 * (v - 128.0)) as u8;
+            let g = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
+            let b = (y + 1.772 * (u - 128.0)) as u8;
+            
+            rgb_pixel[0] = r;
+            rgb_pixel[1] = g;
+            rgb_pixel[2] = b;
+        });
     }
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
