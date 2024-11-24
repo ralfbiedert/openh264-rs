@@ -389,6 +389,63 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
+    pub fn write_rgb8_int_math(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+        let wanted = dim.0 * dim.1 * 3;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+        assert_eq!(
+            target.len(),
+            wanted,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
+        
+        const FACTOR: f32 = 1024.;
+        const RV_FACT: i32 = (1.402 * FACTOR) as i32;
+        const UV_SUB: i32 = 128 * FACTOR as i32;
+        const GU_FACT: i32 = (0.344 * FACTOR) as i32;
+        const GV_FACT: i32 = (0.714 * FACTOR) as i32;
+        const BU_FACT: i32 = (1.772 * FACTOR) as i32;
+
+        for y in 0..dim.0 {
+            for x in 0..dim.1 {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+
+                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+
+                let y2 = (self.y[base_y] as i32) << 20;
+                let u2 = (self.u[base_u] as i32) << 10;
+                let v2 = (self.v[base_v] as i32) << 10;
+                
+                let rv = RV_FACT * (v2 - UV_SUB);
+                let r2 = (y2 + rv) >> 20;
+                let r2 = r2.clamp(0, 255) as u8;
+                
+                let g2u = GU_FACT * (u2 - UV_SUB);
+                let g2v = GV_FACT * (v2 - UV_SUB);
+                let g2 = (y2 - g2u - g2v) >> 20;
+                let g2 = g2.clamp(0, 255) as u8;
+                
+                let bu = BU_FACT * (u2 - UV_SUB);
+                let b2 = (y2 + bu) >> 20;
+                let b2 = b2.clamp(0, 255) as u8;
+        
+                rgb_pixel[0] = r2;
+                rgb_pixel[1] = g2;
+                rgb_pixel[2] = b2;
+            }
+        }
+    }
+
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*4`.
     ///
@@ -429,6 +486,35 @@ impl<'a> DecodedYUV<'a> {
                 rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
                 rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
                 rgb_pixel[3] = 255;
+            }
+        }
+    }
+}
+
+#[test]
+fn test_write_rgb8_int_math() {
+    let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+    
+    let tgt = &mut rgb[0..rgb_len];
+    yuv.write_rgb8(tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    yuv.write_rgb8_int_math(&mut tgt2);
+
+    if tgt != tgt2 {
+        // allow a difference of maximally (1 / 255) = ca. 0.4% per pixel
+        for (a, b) in tgt.iter().zip(tgt2) {
+            if (*a as i32 - b as i32).abs() > 1 {
+                assert!(false);
             }
         }
     }
