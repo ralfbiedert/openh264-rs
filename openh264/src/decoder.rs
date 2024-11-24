@@ -369,10 +369,6 @@ impl<'a> DecodedYUV<'a> {
             target.len()
         );
 
-        self.write_rgb8_unchecked(target, dim, strides);
-    }
-
-    fn write_rgb8_unchecked(&self, target: &mut [u8], dim: (usize, usize), strides: (usize, usize, usize)) {
         for y in 0..dim.1 {
             for x in 0..dim.0 {
                 let base_tgt = (y * dim.0 + x) * 3;
@@ -393,27 +389,6 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
-    fn write_rgb8_unchecked_mul(&self, target: &mut [u8], dim: (usize, usize), strides: (usize, usize, usize)) {
-        for y in 0..dim.1 {
-            for x in 0..dim.0 {
-                let base_tgt = (y * dim.0 + x) * 3;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
-
-                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
-
-                let y = self.y[base_y] as u32 * 1024;
-                let u = self.u[base_u] as u32 * 1024;
-                let v = self.v[base_v] as u32 * 1024;
-
-                rgb_pixel[0] = ((y + 1402 * (v - 128_000)) / 1024) as u8;
-                rgb_pixel[1] = ((y - 0344 * (u - 128_000) - 0714 * (v - 128_000)) / 1024) as u8;
-                rgb_pixel[2] = ((y + 1772 * (u - 128_000)) / 1024) as u8;
-            }
-        }
-    }
-    
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*4`.
     ///
