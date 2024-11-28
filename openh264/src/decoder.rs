@@ -389,6 +389,59 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
+
+    pub fn write_rgb8_x8(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+        let wanted = dim.0 * dim.1 * 3;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+        assert_eq!(
+            target.len(),
+            wanted,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
+
+        for y in 0..dim.1 {
+            for x in (0..dim.0).step_by(8) {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+                
+                let pixels = &mut target[base_tgt..(base_tgt + (3 * 8))];
+
+                let y_pack: [f32; 8] = [
+                    self.y[base_y] as f32, self.y[base_y + 1] as f32, self.y[base_y + 2] as f32, self.y[base_y + 3] as f32,
+                    self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
+                ];
+                let u_pack: [f32; 8] = [
+                    self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32,
+                    self.u[base_u + 4] as f32, self.u[base_u + 5] as f32, self.u[base_u + 6] as f32, self.u[base_u + 7] as f32
+                ];
+                let v_pack: [f32; 8] = [
+                    self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32,
+                    self.v[base_v + 4] as f32, self.v[base_v + 5] as f32, self.v[base_v + 6] as f32, self.v[base_v + 7] as f32
+                ];
+
+                for i in 0..8 {
+                    let y = y_pack[i];
+                    let u = u_pack[i];
+                    let v = v_pack[i];
+    
+                    pixels[(3 * i) + 0] = (y + 1.402 * (v - 128.0)) as u8;
+                    pixels[(3 * i) + 1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
+                    pixels[(3 * i) + 2] = (y + 1.772 * (u - 128.0)) as u8;
+                }
+            }
+        }
+    }
+
     pub fn write_rgb8_int_math(&self, target: &mut [u8]) {
         let dim = self.dimensions();
         let strides = self.strides();
@@ -405,7 +458,7 @@ impl<'a> DecodedYUV<'a> {
             wanted,
             target.len()
         );
-        
+
         const FACTOR: f32 = 1024.;
         const RV_FACT: i32 = (1.402 * FACTOR) as i32;
         const UV_SUB: i32 = 128 * FACTOR as i32;
@@ -489,6 +542,32 @@ impl<'a> DecodedYUV<'a> {
             }
         }
     }
+
+    pub fn copy_planes(&self) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+        let (y_stride, u_stride, v_stride) = self.strides();
+        
+        let (y_plane, u_plane, v_plane) = (
+            Self::copy_plane(self.y, y_stride, self.dimensions()), 
+            Self::copy_plane(self.u, u_stride, self.dimensions_uv()), 
+            Self::copy_plane(self.v, v_stride, self.dimensions_uv()), 
+        );
+
+        (y_plane, u_plane, v_plane)
+    }
+
+    fn copy_plane(buffer: &[u8], stride: usize, dimensions: (usize, usize)) -> Vec<u8> {
+        let rows = buffer.chunks_exact(stride);
+        assert!(rows.remainder().is_empty());
+
+        let (width, height) = dimensions;
+        let mut plane = Vec::with_capacity(width * height);
+
+        for row in rows {
+            plane.extend_from_slice(&row[..stride]);
+        }
+
+        plane
+    }
 }
 
 #[test]
@@ -515,6 +594,34 @@ fn test_write_rgb8_int_math() {
         for (a, b) in tgt.iter().zip(tgt2) {
             if (*a as i32 - b as i32).abs() > 1 {
                 assert!(false);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_write_rgb8_x8() {
+    let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+    
+    let tgt = &mut rgb[0..rgb_len];
+    yuv.write_rgb8(tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    yuv.write_rgb8_x8(&mut tgt2);
+    if tgt != tgt2 {
+        // allow a difference of maximally (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(&tgt2).enumerate() {
+            if (*a as i32 - *b as i32).abs() > 1 {
+                assert_eq!(*a, *b, "mismatch @ {i}");
             }
         }
     }
