@@ -126,3 +126,18 @@ fn convert_yuv_to_rgb_512x512_copy_planes(b: &mut Bencher) {
         yuv.copy_planes();
     });
 }
+
+#[bench]
+#[cfg(feature = "source")]
+fn convert_yuv_to_rgb_512x512_copy_planes_x8(b: &mut Bencher) {
+    let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
+    
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+
+    b.iter(|| {
+        yuv.copy_planes_x8();
+    });
+}

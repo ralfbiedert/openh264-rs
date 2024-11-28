@@ -568,6 +568,50 @@ impl<'a> DecodedYUV<'a> {
 
         plane
     }
+
+    pub fn copy_planes_x8(&self) -> (Vec<[u8; 8]>, Vec<[u8; 8]>, Vec<[u8; 8]>) {
+        let (y_stride, u_stride, v_stride) = self.strides();
+        
+        let (y_plane, u_plane, v_plane) = (
+            Self::copy_plane_x8(self.y, y_stride, self.dimensions()), 
+            Self::copy_plane_x8(self.u, u_stride, self.dimensions_uv()), 
+            Self::copy_plane_x8(self.v, v_stride, self.dimensions_uv()), 
+        );
+
+        (y_plane, u_plane, v_plane)
+    }
+
+
+    pub fn copy_plane_x8(buffer: &[u8], stride: usize, dimensions: (usize, usize)) -> Vec<[u8; 8]> {
+        let (width, height) = dimensions;
+        let mut result = Vec::with_capacity((width * height) / 8);
+    
+        for y in 0..height {
+            let row_start = y * stride;
+            let row_slice = &buffer[row_start..row_start + width];
+            
+            result.extend(
+                row_slice.chunks_exact(8)
+                    .map(|chunk| [
+                        chunk[0], chunk[1], 
+                        chunk[2], chunk[3],
+                        chunk[4], chunk[5], 
+                        chunk[6], chunk[7]
+                    ])
+            );
+    
+            let remainder = row_slice.chunks_exact(8).remainder();
+            if !remainder.is_empty() {
+                let mut chunk = [0; 8];
+                for (i, &value) in remainder.iter().enumerate() {
+                    chunk[i] = value;
+                }
+                result.push(chunk);
+            }
+        }
+        
+        result
+    }
 }
 
 #[test]
