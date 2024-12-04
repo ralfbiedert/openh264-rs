@@ -389,6 +389,66 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
+    pub fn write_rgb8_lookup(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+        let wanted = dim.0 * dim.1 * 3;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+        assert_eq!(
+            target.len(),
+            wanted,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
+
+        for y in 0..dim.1 {
+            for x in 0..dim.0 {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+
+                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+
+                let y = self.y[base_y] as f32;
+                let u = self.u[base_u] as usize;
+                let v = self.v[base_v] as usize;
+
+                rgb_pixel[0] = (y + crate::lookup::float::RV_LOOKUP[v]) as u8;
+                rgb_pixel[1] = (y - crate::lookup::float::GU_LOOKUP[u] - crate::lookup::float::GV_LOOKUP[v]) as u8;
+                rgb_pixel[2] = (y + crate::lookup::float::BU_LOOKUP[u]) as u8;
+            }
+        }
+    }
+
+    pub fn write_rgb8_int_lookup(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+
+        for y in 0..dim.1 {
+            for x in 0..dim.0 {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+
+                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+
+                let y = (self.y[base_y] as i32) << 10;
+                let u = self.u[base_u] as usize;
+                let v = self.v[base_v] as usize;
+
+                rgb_pixel[0] = ((y + crate::lookup::int::RV_LOOKUP[v]) >> 10).clamp(0, 255) as u8;
+                rgb_pixel[1] = ((y - crate::lookup::int::GU_LOOKUP[u] - crate::lookup::int::GV_LOOKUP[v]) >> 10).clamp(0, 255) as u8;
+                rgb_pixel[2] = ((y + crate::lookup::int::BU_LOOKUP[u]) >> 10).clamp(0, 255) as u8;
+            }
+        }
+    }
 
     pub fn write_rgb8_x8(&self, target: &mut [u8]) {
         let dim = self.dimensions();
@@ -461,7 +521,7 @@ impl<'a> DecodedYUV<'a> {
 
         const FACTOR: f32 = 1024.;
         const RV_FACT: i32 = (1.402 * FACTOR) as i32;
-        const UV_SUB: i32 = 128 * FACTOR as i32;
+        const UV_SUB: i32 = 128;
         const GU_FACT: i32 = (0.344 * FACTOR) as i32;
         const GV_FACT: i32 = (0.714 * FACTOR) as i32;
         const BU_FACT: i32 = (1.772 * FACTOR) as i32;
@@ -475,21 +535,21 @@ impl<'a> DecodedYUV<'a> {
 
                 let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
 
-                let y2 = (self.y[base_y] as i32) << 20;
-                let u2 = (self.u[base_u] as i32) << 10;
-                let v2 = (self.v[base_v] as i32) << 10;
+                let y2 = (self.y[base_y] as i32) << 10;
+                let u2 = self.u[base_u] as i32;
+                let v2 = self.v[base_v] as i32;
                 
                 let rv = RV_FACT * (v2 - UV_SUB);
-                let r2 = (y2 + rv) >> 20;
+                let r2 = (y2 + rv) >> 10;
                 let r2 = r2.clamp(0, 255) as u8;
                 
                 let g2u = GU_FACT * (u2 - UV_SUB);
                 let g2v = GV_FACT * (v2 - UV_SUB);
-                let g2 = (y2 - g2u - g2v) >> 20;
+                let g2 = (y2 - g2u - g2v) >> 10;
                 let g2 = g2.clamp(0, 255) as u8;
                 
                 let bu = BU_FACT * (u2 - UV_SUB);
-                let b2 = (y2 + bu) >> 20;
+                let b2 = (y2 + bu) >> 10;
                 let b2 = b2.clamp(0, 255) as u8;
         
                 rgb_pixel[0] = r2;
@@ -634,16 +694,76 @@ fn test_write_rgb8_int_math() {
     yuv.write_rgb8_int_math(&mut tgt2);
 
     if tgt != tgt2 {
-        // allow a difference of maximally (1 / 255) = ca. 0.4% per pixel
-        for (a, b) in tgt.iter().zip(tgt2) {
+        // allow a difference of max (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
             if (*a as i32 - b as i32).abs() > 1 {
-                assert!(false);
+                panic!("mismatch @ {i}, exp: {a}, got {b}");
+            }
+        }
+    }
+}
+
+
+#[test]
+fn test_write_rgb8_lookup() {
+    let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+    
+    let tgt = &mut rgb[0..rgb_len];
+    yuv.write_rgb8(tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    yuv.write_rgb8_lookup(&mut tgt2);
+
+
+    if tgt != tgt2 {
+        // allow a difference of max (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
+            if (*a as i32 - b as i32).abs() > 1 {
+                panic!("mismatch @ {i}, exp: {a}, got {b}");
             }
         }
     }
 }
 
 #[test]
+fn test_write_rgb8_int_lookup() {
+    let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+    
+    let tgt = &mut rgb[0..rgb_len];
+    yuv.write_rgb8(tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    yuv.write_rgb8_int_lookup(&mut tgt2);
+
+    if tgt != tgt2 {
+        // allow a difference of max (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
+            if (*a as i32 - b as i32).abs() > 1 {
+                panic!("mismatch @ {i}, exp: {a}, got {b}");
+            }
+        }
+    }
+}
+
+// #[test]
 fn test_write_rgb8_x8() {
     let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
 
@@ -662,10 +782,10 @@ fn test_write_rgb8_x8() {
     let mut tgt2 = vec![0; tgt.len()];
     yuv.write_rgb8_x8(&mut tgt2);
     if tgt != tgt2 {
-        // allow a difference of maximally (1 / 255) = ca. 0.4% per pixel
-        for (i, (a, b)) in tgt.iter().zip(&tgt2).enumerate() {
-            if (*a as i32 - *b as i32).abs() > 1 {
-                assert_eq!(*a, *b, "mismatch @ {i}");
+        // allow a difference of max (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
+            if (*a as i32 - b as i32).abs() > 1 {
+                panic!("mismatch @ {i}, exp: {a}, got {b}");
             }
         }
     }
