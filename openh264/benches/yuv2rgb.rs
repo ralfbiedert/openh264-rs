@@ -186,17 +186,25 @@ fn convert_yuv_to_rgb_512x512_copy_planes_x8(b: &mut Bencher) {
     });
 }
 
+macro_rules! gen_range {
+    ($range:expr, $count:expr) => {{
+        let mut rng = rand::thread_rng();
+        (0..1).map(move |_| rand::Rng::gen_range(&mut rng, $range)).cycle().take($count).collect()        
+    }};
+}
+
 #[bench]
 #[cfg(feature = "source")]
 fn clamping_i32_u8(b: &mut Bencher) {
     use std::hint::black_box;
 
-    let nums: Vec<i32> = (0..511).cycle().map(|i| i - 256).take(512 * 512 * 3).collect();
+    let nums: Vec<i32> = gen_range!(-227..480, 512 * 512 * 3);
     assert_eq!(512 * 512 * 3, nums.len());
     
+    let mut dump = [0u8; 1];
     b.iter(|| {
         for n in nums.iter() {
-            black_box((*n).clamp(0, 255) as u8);
+            dump[0] = black_box((*n).clamp(0, 255) as u8);
         }
     });
 }
@@ -206,13 +214,14 @@ fn clamping_i32_u8(b: &mut Bencher) {
 fn clamping_f32_u8(b: &mut Bencher) {
     use std::hint::black_box;
 
-    let nums: Vec<f32> = (0..511).cycle().map(|i| i as f32 - 256.).take(512 * 512 * 3).collect();
+    let nums: Vec<i32> = gen_range!(-227..480, 512 * 512 * 3);
     assert_eq!(512 * 512 * 3, nums.len());
 
+    let mut dump = [0u8; 1];
     b.iter(|| {
         for n in nums.iter() {
             // clamps implicitly
-            black_box((*n) as u8);
+            dump[0] = black_box((*n) as u8);
         }
     });
 }
@@ -220,8 +229,11 @@ fn clamping_f32_u8(b: &mut Bencher) {
 #[bench]
 #[cfg(feature = "source")]
 fn clamping_lookup(b: &mut Bencher) {
+    use std::hint::black_box;
     
     /*
+        lookup table as described in Etienne Dupuis paper, works like hard-sigmoid function
+
         Unclamped values:
         yuv 0, 0, 0
         yields rbg -180, 135, -227
@@ -233,29 +245,35 @@ fn clamping_lookup(b: &mut Bencher) {
         yields rgb 433, 120, 480    
     */
 
+    // generate a lookup table where:
+    // - the first 227 values are mapped to 0
+    // - 227 to (227 + 255) linear mapping from 0 to 255
+    // - (227 + 255) to end are mapped to 255
+    // for the all possible blue values [-227, 480], we have an indexed lookup,
+    // mapping all over/underflowing values into the valid u8 range    
     let mut blue_lookup = [0u8; 480 + 227];
     for (i, v) in (0..(480 + 227 as i32)).map(|i| (i - 227).clamp(0, 255) as u8).enumerate() {
         blue_lookup[i] = v;
     }
 
-    let p = unsafe { blue_lookup.as_ptr().offset(227) };
-    assert_eq!(0, unsafe { *p });
-    assert_eq!(0, unsafe { *p.offset(-1) });
-    assert_eq!(1, unsafe { *p.offset(1) });
-    assert_eq!(255, unsafe { *p.offset(255) });
-    assert_eq!(255, unsafe { *p.offset(256) });
+    // index 227 is the "origin"
+    assert_eq!(0, blue_lookup[227]);
+    // values before the origin are mapped to 0
+    assert_eq!(0, blue_lookup[226]);
+    // values after the origin are mapped to positive numbers
+    assert_eq!(1, blue_lookup[228]);    
+    assert_eq!(255, blue_lookup[228 + 255]);
+    assert_eq!(255, blue_lookup[228 + 256]);
     
-    let mut dump = [0u8; 512];
-    let indices: Vec<isize> = (0..(480 + 227 as i32)).cycle().map(|i| (i - 227) as isize).take(512 * 512 * 3).collect();
-    assert_eq!(512 * 512 * 3, indices.len());
+    let nums: Vec<isize> = gen_range!(-227..480, 512 * 512 * 3);
+    assert_eq!(512 * 512 * 3, nums.len());
+
+    let mut dump = [0u8; 1];
     b.iter(|| {
-        for i in &indices {
-            dump[0] = std::hint::black_box(unsafe { index(p, *i) });
+        for i in &nums {
+            dump[0] = black_box(
+                blue_lookup[(i + 227) as usize]
+            );
         }
     });
-}
-
-#[inline]
-unsafe fn index(p: *const u8, i: isize) -> u8 {
-    *(p.offset(i))
 }
