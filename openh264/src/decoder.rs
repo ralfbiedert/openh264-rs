@@ -426,9 +426,69 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
-    pub fn write_rgb8_int_lookup(&self, target: &mut [u8]) {
+    pub fn write_rgb8_i16_math(&self, target: &mut [u8]) {
         let dim = self.dimensions();
         let strides = self.strides();
+        let wanted = dim.0 * dim.1 * 3;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+        assert_eq!(
+            target.len(),
+            wanted,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
+
+        const F: u8 = 6; // powers of two
+        const FACTOR: f32 = (1 << F) as f32;
+        const UV_SUB: i16 = 128;
+        const RV_FACT: i16 = (1.402 * FACTOR) as i16;
+        const GU_FACT: i16 = (0.344 * FACTOR) as i16;
+        const GV_FACT: i16 = (0.714 * FACTOR) as i16;
+        const BU_FACT: i16 = (1.772 * FACTOR) as i16;
+        
+        for y in 0..dim.0 {
+            for x in 0..dim.1 {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+
+                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+
+                let y2 = (self.y[base_y] as i16) << F;
+                let u2 = self.u[base_u] as i16;
+                let v2 = self.v[base_v] as i16;
+
+                let rv = RV_FACT * (v2 - UV_SUB);
+                let r2 = (y2 + rv) >> F;
+                let r2 = r2.clamp(0, 255) as u8;
+
+                let g2u = GU_FACT * (u2 - UV_SUB);
+                let g2v = GV_FACT * (v2 - UV_SUB);
+                let g2 = (y2 - g2u - g2v) >> F;
+                let g2 = g2.clamp(0, 255) as u8;
+
+                let bu = BU_FACT * (u2 - UV_SUB);            
+                let b2 = (y2 + bu) >> F;
+                let b2 = b2.clamp(0, 255) as u8;
+        
+                rgb_pixel[0] = r2;
+                rgb_pixel[1] = g2;
+                rgb_pixel[2] = b2;
+            }
+        }
+    }  
+
+    pub fn write_rgb8_i16_lookup(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+
+        const F: u8 = 6; // powers of two
 
         for y in 0..dim.1 {
             for x in 0..dim.0 {
@@ -439,13 +499,13 @@ impl<'a> DecodedYUV<'a> {
 
                 let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
 
-                let y = (self.y[base_y] as i32) << 10;
+                let y = (self.y[base_y] as i16) << F;
                 let u = self.u[base_u] as usize;
                 let v = self.v[base_v] as usize;
 
-                rgb_pixel[0] = ((y + crate::lookup::int::RV_LOOKUP[v]) >> 10).clamp(0, 255) as u8;
-                rgb_pixel[1] = ((y - crate::lookup::int::GU_LOOKUP[u] - crate::lookup::int::GV_LOOKUP[v]) >> 10).clamp(0, 255) as u8;
-                rgb_pixel[2] = ((y + crate::lookup::int::BU_LOOKUP[u]) >> 10).clamp(0, 255) as u8;
+                rgb_pixel[0] = ((y + crate::lookup::int16::RV_LOOKUP[v]) >> F).clamp(0, 255) as u8;
+                rgb_pixel[1] = ((y - crate::lookup::int16::GU_LOOKUP[u] - crate::lookup::int16::GV_LOOKUP[v]) >> F).clamp(0, 255) as u8;
+                rgb_pixel[2] = ((y + crate::lookup::int16::BU_LOOKUP[u]) >> F).clamp(0, 255) as u8;
             }
         }
     }
@@ -501,63 +561,6 @@ impl<'a> DecodedYUV<'a> {
             }
         }
     }
-
-    pub fn write_rgb8_int_math(&self, target: &mut [u8]) {
-        let dim = self.dimensions();
-        let strides = self.strides();
-        let wanted = dim.0 * dim.1 * 3;
-
-        // This needs some love, and better architecture.
-        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
-        assert_eq!(
-            target.len(),
-            wanted,
-            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
-            dim.0,
-            dim.1,
-            wanted,
-            target.len()
-        );
-
-        const FACTOR: f32 = 1024.;
-        const RV_FACT: i32 = (1.402 * FACTOR) as i32;
-        const UV_SUB: i32 = 128;
-        const GU_FACT: i32 = (0.344 * FACTOR) as i32;
-        const GV_FACT: i32 = (0.714 * FACTOR) as i32;
-        const BU_FACT: i32 = (1.772 * FACTOR) as i32;
-
-        for y in 0..dim.0 {
-            for x in 0..dim.1 {
-                let base_tgt = (y * dim.0 + x) * 3;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
-
-                let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
-
-                let y2 = (self.y[base_y] as i32) << 10;
-                let u2 = self.u[base_u] as i32;
-                let v2 = self.v[base_v] as i32;
-                
-                let rv = RV_FACT * (v2 - UV_SUB);
-                let r2 = (y2 + rv) >> 10;
-                let r2 = r2.clamp(0, 255) as u8;
-                
-                let g2u = GU_FACT * (u2 - UV_SUB);
-                let g2v = GV_FACT * (v2 - UV_SUB);
-                let g2 = (y2 - g2u - g2v) >> 10;
-                let g2 = g2.clamp(0, 255) as u8;
-                
-                let bu = BU_FACT * (u2 - UV_SUB);
-                let b2 = (y2 + bu) >> 10;
-                let b2 = b2.clamp(0, 255) as u8;
-        
-                rgb_pixel[0] = r2;
-                rgb_pixel[1] = g2;
-                rgb_pixel[2] = b2;
-            }
-        }
-    }  
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*4`.
@@ -621,7 +624,7 @@ fn test_write_rgb8_int_math() {
     yuv.write_rgb8(tgt);
 
     let mut tgt2 = vec![0; tgt.len()];
-    yuv.write_rgb8_int_math(&mut tgt2);
+    yuv.write_rgb8_i16_math(&mut tgt2);
 
     if tgt != tgt2 {
         // allow a difference of max (1 / 255) = ca. 0.4% per pixel
@@ -680,7 +683,7 @@ fn test_write_rgb8_int_lookup() {
     yuv.write_rgb8(tgt);
 
     let mut tgt2 = vec![0; tgt.len()];
-    yuv.write_rgb8_int_lookup(&mut tgt2);
+    yuv.write_rgb8_i16_lookup(&mut tgt2);
 
     if tgt != tgt2 {
         // allow a difference of max (1 / 255) = ca. 0.4% per pixel
