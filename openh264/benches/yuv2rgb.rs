@@ -94,7 +94,7 @@ fn convert_yuv_to_rgb_512x512_lookup(b: &mut Bencher) {
 
 #[bench]
 #[cfg(feature = "source")]
-fn convert_yuv_to_rgb_512x512_int_lookup(b: &mut Bencher) {
+fn convert_yuv_to_rgb_512x512_i16_lookup(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
 
     let api = OpenH264API::from_source();
@@ -109,14 +109,13 @@ fn convert_yuv_to_rgb_512x512_int_lookup(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgb8_int_lookup(tgt);
+        yuv.write_rgb8_i16_lookup(tgt);
     });
 }
 
-
 #[bench]
 #[cfg(feature = "source")]
-fn convert_yuv_to_rgb_512x512_int_math(b: &mut Bencher) {
+fn convert_yuv_to_rgb_512x512_i16_math(b: &mut Bencher) {
     let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
     
     let api = OpenH264API::from_source();
@@ -131,7 +130,7 @@ fn convert_yuv_to_rgb_512x512_int_math(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgb8_int_math(tgt);
+        yuv.write_rgb8_i16_math(tgt);
     });
 }
 
