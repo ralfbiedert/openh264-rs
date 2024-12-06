@@ -536,27 +536,32 @@ impl<'a> DecodedYUV<'a> {
                 
                 let pixels = &mut target[base_tgt..(base_tgt + (3 * 8))];
 
-                let y_pack: [f32; 8] = [
+                // Use 8 Y value
+                let y_pack: wide::f32x8 = wide::f32x8::from([
                     self.y[base_y] as f32, self.y[base_y + 1] as f32, self.y[base_y + 2] as f32, self.y[base_y + 3] as f32,
                     self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
-                ];
-                let u_pack: [f32; 8] = [
+                ]);
+
+                // Use 4 U & V values
+                // one chroma sample is shared between two pixels
+                let u_pack: wide::f32x8 = wide::f32x8::from([
                     self.u[base_u] as f32, self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 1] as f32,
                     self.u[base_u + 2] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32, self.u[base_u + 3] as f32
-                ];
-                let v_pack: [f32; 8] = [
+                ]);
+                let v_pack: wide::f32x8 = wide::f32x8::from([
                     self.v[base_v] as f32, self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 1] as f32,
                     self.v[base_v + 2] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32, self.v[base_v + 3] as f32
-                ];
+                ]);
+
+                let r_pack = y_pack + 1.402 * (v_pack - 128.0);
+                let g_pack = y_pack - 0.344 * (u_pack - 128.0) - 0.714 * (v_pack - 128.0);
+                let b_pack = y_pack + 1.772 * (u_pack - 128.0);
+                let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
                 for i in 0..8 {
-                    let y = y_pack[i];
-                    let u = u_pack[i];
-                    let v = v_pack[i];
-    
-                    pixels[(3 * i) + 0] = (y + 1.402 * (v - 128.0)) as u8;
-                    pixels[(3 * i) + 1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
-                    pixels[(3 * i) + 2] = (y + 1.772 * (u - 128.0)) as u8;
+                    pixels[(3 * i) + 0] = r_pack[i] as u8;
+                    pixels[(3 * i) + 1] = g_pack[i] as u8;
+                    pixels[(3 * i) + 2] = b_pack[i] as u8;
                 }
             }
         }
