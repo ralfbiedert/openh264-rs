@@ -22,6 +22,7 @@ backtrace = [] # Remove once backtrace feature is stable.
 
 [dependencies]
 openh264-sys2 = { path = "../openh264-sys2", version = "0.6.0", default-features = false }
+wide = "0.7.30"
 
 [package.metadata.docs.rs]
 all-features = true
