@@ -481,12 +481,12 @@ impl<'a> DecodedYUV<'a> {
                     self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
                 ];
                 let u_pack: [f32; 8] = [
-                    self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32,
-                    self.u[base_u + 4] as f32, self.u[base_u + 5] as f32, self.u[base_u + 6] as f32, self.u[base_u + 7] as f32
+                    self.u[base_u] as f32, self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 1] as f32,
+                    self.u[base_u + 2] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32, self.u[base_u + 3] as f32
                 ];
                 let v_pack: [f32; 8] = [
-                    self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32,
-                    self.v[base_v + 4] as f32, self.v[base_v + 5] as f32, self.v[base_v + 6] as f32, self.v[base_v + 7] as f32
+                    self.v[base_v] as f32, self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 1] as f32,
+                    self.v[base_v + 2] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32, self.v[base_v + 3] as f32
                 ];
 
                 for i in 0..8 {
@@ -557,7 +557,7 @@ impl<'a> DecodedYUV<'a> {
                 rgb_pixel[2] = b2;
             }
         }
-    }
+    }  
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*4`.
@@ -763,7 +763,7 @@ fn test_write_rgb8_int_lookup() {
     }
 }
 
-// #[test]
+#[test]
 fn test_write_rgb8_x8() {
     let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
 
