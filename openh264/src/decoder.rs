@@ -602,76 +602,6 @@ impl<'a> DecodedYUV<'a> {
             }
         }
     }
-
-    pub fn copy_planes(&self) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-        let (y_stride, u_stride, v_stride) = self.strides();
-        
-        let (y_plane, u_plane, v_plane) = (
-            Self::copy_plane(self.y, y_stride, self.dimensions()), 
-            Self::copy_plane(self.u, u_stride, self.dimensions_uv()), 
-            Self::copy_plane(self.v, v_stride, self.dimensions_uv()), 
-        );
-
-        (y_plane, u_plane, v_plane)
-    }
-
-    fn copy_plane(buffer: &[u8], stride: usize, dimensions: (usize, usize)) -> Vec<u8> {
-        let rows = buffer.chunks_exact(stride);
-        assert!(rows.remainder().is_empty());
-
-        let (width, height) = dimensions;
-        let mut plane = Vec::with_capacity(width * height);
-
-        for row in rows {
-            plane.extend_from_slice(&row[..stride]);
-        }
-
-        plane
-    }
-
-    pub fn copy_planes_x8(&self) -> (Vec<[u8; 8]>, Vec<[u8; 8]>, Vec<[u8; 8]>) {
-        let (y_stride, u_stride, v_stride) = self.strides();
-        
-        let (y_plane, u_plane, v_plane) = (
-            Self::copy_plane_x8(self.y, y_stride, self.dimensions()), 
-            Self::copy_plane_x8(self.u, u_stride, self.dimensions_uv()), 
-            Self::copy_plane_x8(self.v, v_stride, self.dimensions_uv()), 
-        );
-
-        (y_plane, u_plane, v_plane)
-    }
-
-
-    pub fn copy_plane_x8(buffer: &[u8], stride: usize, dimensions: (usize, usize)) -> Vec<[u8; 8]> {
-        let (width, height) = dimensions;
-        let mut result = Vec::with_capacity((width * height) / 8);
-    
-        for y in 0..height {
-            let row_start = y * stride;
-            let row_slice = &buffer[row_start..row_start + width];
-            
-            result.extend(
-                row_slice.chunks_exact(8)
-                    .map(|chunk| [
-                        chunk[0], chunk[1], 
-                        chunk[2], chunk[3],
-                        chunk[4], chunk[5], 
-                        chunk[6], chunk[7]
-                    ])
-            );
-    
-            let remainder = row_slice.chunks_exact(8).remainder();
-            if !remainder.is_empty() {
-                let mut chunk = [0; 8];
-                for (i, &value) in remainder.iter().enumerate() {
-                    chunk[i] = value;
-                }
-                result.push(chunk);
-            }
-        }
-        
-        result
-    }
 }
 
 #[test]
@@ -702,7 +632,6 @@ fn test_write_rgb8_int_math() {
         }
     }
 }
-
 
 #[test]
 fn test_write_rgb8_lookup() {
@@ -790,6 +719,7 @@ fn test_write_rgb8_x8() {
         }
     }
 }
+
 
 impl<'a> YUVSource for DecodedYUV<'a> {
     fn dimensions_i32(&self) -> (i32, i32) {
