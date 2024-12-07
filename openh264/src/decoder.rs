@@ -527,6 +527,9 @@ impl<'a> DecodedYUV<'a> {
             target.len()
         );
 
+        let upper_bound = wide::f32x8::splat(255.0);
+        let lower_bound = wide::f32x8::splat(0.0);
+
         for y in 0..dim.1 {
             for x in (0..dim.0).step_by(8) {
                 let base_tgt = (y * dim.0 + x) * 3;
@@ -536,7 +539,7 @@ impl<'a> DecodedYUV<'a> {
                 
                 let pixels = &mut target[base_tgt..(base_tgt + (3 * 8))];
 
-                // Use 8 Y value
+                // Use 8 Y values
                 let y_pack: wide::f32x8 = wide::f32x8::from([
                     self.y[base_y] as f32, self.y[base_y + 1] as f32, self.y[base_y + 2] as f32, self.y[base_y + 3] as f32,
                     self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
@@ -556,6 +559,81 @@ impl<'a> DecodedYUV<'a> {
                 let r_pack = y_pack + 1.402 * (v_pack - 128.0);
                 let g_pack = y_pack - 0.344 * (u_pack - 128.0) - 0.714 * (v_pack - 128.0);
                 let b_pack = y_pack + 1.772 * (u_pack - 128.0);
+
+                let (r_pack, g_pack, b_pack) = (
+                    r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
+                    g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
+                    b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int());
+                let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
+
+                for i in 0..8 {
+                    pixels[(3 * i) + 0] = r_pack[i] as u8;
+                    pixels[(3 * i) + 1] = g_pack[i] as u8;
+                    pixels[(3 * i) + 2] = b_pack[i] as u8;
+                }
+            }
+        }
+    }
+
+    pub fn write_rgb8_x8_mul_add(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+        let wanted = dim.0 * dim.1 * 3;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+        assert_eq!(
+            target.len(),
+            wanted,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
+
+        let rv_mul = wide::f32x8::splat(1.402);
+        let gu_mul = wide::f32x8::splat(-0.344);
+        let gv_mul = wide::f32x8::splat(-0.714);
+        let bu_mul = wide::f32x8::splat(1.772);
+
+        let upper_bound = wide::f32x8::splat(255.0);
+        let lower_bound = wide::f32x8::splat(0.0);
+        
+        for y in 0..dim.1 {
+            for x in (0..dim.0).step_by(8) {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+                
+                let pixels = &mut target[base_tgt..(base_tgt + (3 * 8))];
+
+                // Use 8 Y values
+                let y_pack: wide::f32x8 = wide::f32x8::from([
+                    self.y[base_y] as f32, self.y[base_y + 1] as f32, self.y[base_y + 2] as f32, self.y[base_y + 3] as f32,
+                    self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
+                ]);
+
+                // Use 4 U & V values
+                // one chroma sample is shared between two pixels
+                let u_pack: wide::f32x8 = wide::f32x8::from([
+                    self.u[base_u] as f32, self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 1] as f32,
+                    self.u[base_u + 2] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32, self.u[base_u + 3] as f32
+                ]);
+                let v_pack: wide::f32x8 = wide::f32x8::from([
+                    self.v[base_v] as f32, self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 1] as f32,
+                    self.v[base_v + 2] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32, self.v[base_v + 3] as f32
+                ]);
+                
+                let r_pack = (v_pack - 128.0).mul_add(rv_mul, y_pack);
+                let g_pack = (v_pack - 128.0).mul_add(gv_mul, (u_pack - 128.0).mul_add(gu_mul, y_pack));
+                let b_pack = (u_pack - 128.0).mul_add(bu_mul, y_pack);
+
+                let (r_pack, g_pack, b_pack) = (
+                    r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
+                    g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
+                    b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int());
                 let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
                 for i in 0..8 {
@@ -718,6 +796,34 @@ fn test_write_rgb8_x8() {
 
     let mut tgt2 = vec![0; tgt.len()];
     yuv.write_rgb8_x8(&mut tgt2);
+    if tgt != tgt2 {
+        // allow a difference of max (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
+            if (*a as i32 - b as i32).abs() > 1 {
+                panic!("mismatch @ {i}, exp: {a}, got {b}");
+            }
+        }
+    }
+}
+
+#[test]
+fn test_write_rgb8_x8_mul_add() {
+    let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+    
+    let tgt = &mut rgb[0..rgb_len];
+    yuv.write_rgb8(tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    yuv.write_rgb8_x8_mul_add(&mut tgt2);
     if tgt != tgt2 {
         // allow a difference of max (1 / 255) = ca. 0.4% per pixel
         for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {

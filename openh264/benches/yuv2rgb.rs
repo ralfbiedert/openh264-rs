@@ -155,6 +155,27 @@ fn convert_yuv_to_rgb_512x512_x8(b: &mut Bencher) {
     });
 }
 
+#[bench]
+#[cfg(feature = "source")]
+fn convert_yuv_to_rgb_512x512_x8_mul_add(b: &mut Bencher) {
+    let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
+    
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+
+    let tgt = &mut rgb[0..rgb_len];
+
+    b.iter(|| {
+        yuv.write_rgb8_x8_mul_add(tgt);
+    });
+}
+
 macro_rules! gen_range {
     ($range:expr, $count:expr) => {{
         let mut rng = rand::thread_rng();
