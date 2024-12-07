@@ -333,6 +333,52 @@ pub struct DecodedYUV<'a> {
     v: &'a [u8],
 }
 
+macro_rules! f32x8_y_from {
+    ($buf:expr, $idx:ident) => {{
+        // Use 16 Y values
+        wide::f32x8::from([
+            ($buf[$idx] as f32), ($buf[$idx + 1] as f32), ($buf[$idx + 2] as f32), ($buf[$idx + 3] as f32),
+            ($buf[$idx + 4] as f32), ($buf[$idx + 5] as f32), ($buf[$idx + 6] as f32), ($buf[$idx + 7] as f32),
+        ])
+    }}
+}
+
+macro_rules! f32x8_uv_from {
+    ($buf:expr, $idx:ident) => {{
+        // Use 8 U & V values
+        // one chroma sample is shared between two pixels
+        wide::f32x8::from([
+            $buf[$idx] as f32, $buf[$idx] as f32, $buf[$idx + 1] as f32, $buf[$idx + 1] as f32,
+            $buf[$idx + 2] as f32, $buf[$idx + 2] as f32, $buf[$idx + 3] as f32, $buf[$idx + 3] as f32,
+        ])
+    }};
+}
+
+macro_rules! i16x16_y_from {
+    ($buf:expr, $idx:ident) => {{
+        // Use 16 Y values
+        wide::i16x16::from([
+            ($buf[$idx] as i16), ($buf[$idx + 1] as i16), ($buf[$idx + 2] as i16), ($buf[$idx + 3] as i16),
+            ($buf[$idx + 4] as i16), ($buf[$idx + 5] as i16), ($buf[$idx + 6] as i16), ($buf[$idx + 7] as i16),
+            ($buf[$idx + 8] as i16), ($buf[$idx + 9] as i16), ($buf[$idx + 10] as i16), ($buf[$idx + 11] as i16),
+            ($buf[$idx + 12] as i16), ($buf[$idx + 13] as i16), ($buf[$idx + 14] as i16), ($buf[$idx + 15] as i16),
+        ])
+    }};
+}
+
+macro_rules! i16x16_uv_from {
+    ($buf:expr, $idx:ident) => {{
+        // Use 8 U & V values
+        // one chroma sample is shared between two pixels
+        wide::i16x16::from([
+            $buf[$idx] as i16, $buf[$idx] as i16, $buf[$idx + 1] as i16, $buf[$idx + 1] as i16,
+            $buf[$idx + 2] as i16, $buf[$idx + 2] as i16, $buf[$idx + 3] as i16, $buf[$idx + 3] as i16,
+            $buf[$idx + 4] as i16, $buf[$idx + 4] as i16, $buf[$idx + 5] as i16, $buf[$idx + 5] as i16,
+            $buf[$idx + 6] as i16, $buf[$idx + 6] as i16, $buf[$idx + 7] as i16, $buf[$idx + 7] as i16,
+        ])
+    }};
+}
+
 impl<'a> DecodedYUV<'a> {
     /// Returns the unpadded U size.
     ///
@@ -530,35 +576,24 @@ impl<'a> DecodedYUV<'a> {
         let upper_bound = wide::f32x8::splat(255.0);
         let lower_bound = wide::f32x8::splat(0.0);
 
+        const STEP: usize = 8;
+
         for y in 0..dim.1 {
-            for x in (0..dim.0).step_by(8) {
+            for x in (0..dim.0).step_by(STEP) {
                 let base_tgt = (y * dim.0 + x) * 3;
                 let base_y = y * strides.0 + x;
                 let base_u = (y / 2 * strides.1) + (x / 2);
                 let base_v = (y / 2 * strides.2) + (x / 2);
                 
-                let pixels = &mut target[base_tgt..(base_tgt + (3 * 8))];
+                let pixels = &mut target[base_tgt..(base_tgt + (3 * STEP))];
 
-                // Use 8 Y values
-                let y_pack: wide::f32x8 = wide::f32x8::from([
-                    self.y[base_y] as f32, self.y[base_y + 1] as f32, self.y[base_y + 2] as f32, self.y[base_y + 3] as f32,
-                    self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
-                ]);
+                let y_pack: wide::f32x8 = f32x8_y_from!(self.y, base_y);
+                let u_pack: wide::f32x8 = f32x8_uv_from!(self.u, base_u) - 128.0;
+                let v_pack: wide::f32x8 = f32x8_uv_from!(self.v, base_v) - 128.0;
 
-                // Use 4 U & V values
-                // one chroma sample is shared between two pixels
-                let u_pack: wide::f32x8 = wide::f32x8::from([
-                    self.u[base_u] as f32, self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 1] as f32,
-                    self.u[base_u + 2] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32, self.u[base_u + 3] as f32
-                ]);
-                let v_pack: wide::f32x8 = wide::f32x8::from([
-                    self.v[base_v] as f32, self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 1] as f32,
-                    self.v[base_v + 2] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32, self.v[base_v + 3] as f32
-                ]);
-
-                let r_pack = y_pack + 1.402 * (v_pack - 128.0);
-                let g_pack = y_pack - 0.344 * (u_pack - 128.0) - 0.714 * (v_pack - 128.0);
-                let b_pack = y_pack + 1.772 * (u_pack - 128.0);
+                let r_pack = y_pack + 1.402 * v_pack;
+                let g_pack = y_pack - 0.344 * u_pack - 0.714 * v_pack;
+                let b_pack = y_pack + 1.772 * u_pack;
 
                 let (r_pack, g_pack, b_pack) = (
                     r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
@@ -566,7 +601,7 @@ impl<'a> DecodedYUV<'a> {
                     b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int());
                 let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
-                for i in 0..8 {
+                for i in 0..STEP {
                     pixels[(3 * i) + 0] = r_pack[i] as u8;
                     pixels[(3 * i) + 1] = g_pack[i] as u8;
                     pixels[(3 * i) + 2] = b_pack[i] as u8;
@@ -600,35 +635,24 @@ impl<'a> DecodedYUV<'a> {
         let upper_bound = wide::f32x8::splat(255.0);
         let lower_bound = wide::f32x8::splat(0.0);
         
+        const STEP: usize = 8;
+
         for y in 0..dim.1 {
-            for x in (0..dim.0).step_by(8) {
+            for x in (0..dim.0).step_by(STEP) {
                 let base_tgt = (y * dim.0 + x) * 3;
                 let base_y = y * strides.0 + x;
                 let base_u = (y / 2 * strides.1) + (x / 2);
                 let base_v = (y / 2 * strides.2) + (x / 2);
                 
-                let pixels = &mut target[base_tgt..(base_tgt + (3 * 8))];
+                let pixels = &mut target[base_tgt..(base_tgt + (3 * STEP))];
 
-                // Use 8 Y values
-                let y_pack: wide::f32x8 = wide::f32x8::from([
-                    self.y[base_y] as f32, self.y[base_y + 1] as f32, self.y[base_y + 2] as f32, self.y[base_y + 3] as f32,
-                    self.y[base_y + 4] as f32, self.y[base_y + 5] as f32, self.y[base_y + 6] as f32, self.y[base_y + 7] as f32
-                ]);
-
-                // Use 4 U & V values
-                // one chroma sample is shared between two pixels
-                let u_pack: wide::f32x8 = wide::f32x8::from([
-                    self.u[base_u] as f32, self.u[base_u] as f32, self.u[base_u + 1] as f32, self.u[base_u + 1] as f32,
-                    self.u[base_u + 2] as f32, self.u[base_u + 2] as f32, self.u[base_u + 3] as f32, self.u[base_u + 3] as f32
-                ]);
-                let v_pack: wide::f32x8 = wide::f32x8::from([
-                    self.v[base_v] as f32, self.v[base_v] as f32, self.v[base_v + 1] as f32, self.v[base_v + 1] as f32,
-                    self.v[base_v + 2] as f32, self.v[base_v + 2] as f32, self.v[base_v + 3] as f32, self.v[base_v + 3] as f32
-                ]);
+                let y_pack: wide::f32x8 = f32x8_y_from!(self.y, base_y);
+                let u_pack: wide::f32x8 = f32x8_uv_from!(self.u, base_u) - 128.0;
+                let v_pack: wide::f32x8 = f32x8_uv_from!(self.v, base_v) - 128.0;
                 
-                let r_pack = (v_pack - 128.0).mul_add(rv_mul, y_pack);
-                let g_pack = (v_pack - 128.0).mul_add(gv_mul, (u_pack - 128.0).mul_add(gu_mul, y_pack));
-                let b_pack = (u_pack - 128.0).mul_add(bu_mul, y_pack);
+                let r_pack = v_pack.mul_add(rv_mul, y_pack);
+                let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_pack));
+                let b_pack = u_pack.mul_add(bu_mul, y_pack);
 
                 let (r_pack, g_pack, b_pack) = (
                     r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
@@ -636,7 +660,77 @@ impl<'a> DecodedYUV<'a> {
                     b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int());
                 let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
-                for i in 0..8 {
+                for i in 0..STEP {
+                    pixels[(3 * i) + 0] = r_pack[i] as u8;
+                    pixels[(3 * i) + 1] = g_pack[i] as u8;
+                    pixels[(3 * i) + 2] = b_pack[i] as u8;
+                }
+            }
+        }
+    }
+
+    pub fn write_rgb8_i16x16(&self, target: &mut [u8]) {
+        let dim = self.dimensions();
+        let strides = self.strides();
+        let wanted = dim.0 * dim.1 * 3;
+
+        // This needs some love, and better architecture.
+        assert_eq!(self.info.iFormat, videoFormatI420 as i32);
+        assert_eq!(
+            target.len(),
+            wanted,
+            "Target RGB8 array does not match image dimensions. Wanted: {} * {} * 3 = {}, got {}",
+            dim.0,
+            dim.1,
+            wanted,
+            target.len()
+        );
+
+
+        use std::ops::{Shr,Shl};
+        const F: u8 = 6; // powers of two
+        const FACTOR: f32 = (1 << F) as f32;
+        const UV_SUB: i16 = 128;
+        const RV_FACT: i16 = (1.402 * FACTOR) as i16;
+        const GU_FACT: i16 = (0.344 * FACTOR) as i16;
+        const GV_FACT: i16 = (0.714 * FACTOR) as i16;
+        const BU_FACT: i16 = (1.772 * FACTOR) as i16;
+        
+        let uv_sub = wide::i16x16::splat(UV_SUB);
+        let rv_fact = wide::i16x16::splat(RV_FACT);
+        let gu_fact = wide::i16x16::splat(GU_FACT);
+        let gv_fact = wide::i16x16::splat(GV_FACT);
+        let bu_fact = wide::i16x16::splat(BU_FACT);
+        
+        let upper_bound = wide::i16x16::splat(255);
+        let lower_bound = wide::i16x16::splat(0);
+
+        const STEP: usize = 16;
+
+        for y in 0..dim.1 {
+            for x in (0..dim.0).step_by(STEP) {
+                let base_tgt = (y * dim.0 + x) * 3;
+                let base_y = y * strides.0 + x;
+                let base_u = (y / 2 * strides.1) + (x / 2);
+                let base_v = (y / 2 * strides.2) + (x / 2);
+                
+                let pixels = &mut target[base_tgt..(base_tgt + (3 * STEP))];
+
+                let y_pack: wide::i16x16 = i16x16_y_from!(self.y, base_y).shl(F);
+                let u_pack: wide::i16x16 = i16x16_uv_from!(self.u, base_u) - uv_sub;
+                let v_pack: wide::i16x16 = i16x16_uv_from!(self.v, base_v) - uv_sub;
+
+                let r_pack = y_pack + rv_fact * v_pack;
+                let g_pack = y_pack - gu_fact * u_pack - gv_fact * v_pack;
+                let b_pack = y_pack + bu_fact * u_pack;
+
+                let (r_pack, g_pack, b_pack) = (
+                    r_pack.shr(F).min(upper_bound).max(lower_bound), 
+                    g_pack.shr(F).min(upper_bound).max(lower_bound), 
+                    b_pack.shr(F).min(upper_bound).max(lower_bound));
+                    
+                let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
+                for i in 0..STEP {
                     pixels[(3 * i) + 0] = r_pack[i] as u8;
                     pixels[(3 * i) + 1] = g_pack[i] as u8;
                     pixels[(3 * i) + 2] = b_pack[i] as u8;
@@ -824,6 +918,34 @@ fn test_write_rgb8_x8_mul_add() {
 
     let mut tgt2 = vec![0; tgt.len()];
     yuv.write_rgb8_x8_mul_add(&mut tgt2);
+    if tgt != tgt2 {
+        // allow a difference of max (1 / 255) = ca. 0.4% per pixel
+        for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
+            if (*a as i32 - b as i32).abs() > 1 {
+                panic!("mismatch @ {i}, exp: {a}, got {b}");
+            }
+        }
+    }
+}
+
+#[test]
+fn test_write_rgb8_i16x16() {
+    let source = include_bytes!("../tests/data/single_512x512_cabac.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+    
+    let tgt = &mut rgb[0..rgb_len];
+    yuv.write_rgb8(tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    yuv.write_rgb8_i16x16(&mut tgt2);
     if tgt != tgt2 {
         // allow a difference of max (1 / 255) = ca. 0.4% per pixel
         for (i, (a, b)) in tgt.iter().zip(tgt2).enumerate() {
