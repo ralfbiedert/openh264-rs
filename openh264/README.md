@@ -168,7 +168,8 @@ Especially needed:
 - [ ] User-pluggable and color conversions
 - [ ] WASM investigation (either patch, or evidence it can't be fixed)
 - [ ] Feedback which platforms successfully built on
-- [x] Faster YUV to RGB conversion (done in [#66](https://github.com/ralfbiedert/openh264-rs/pull/66))
+- [ ] Faster RGB-to-YUV conversion similar to the current SIMD YUV-to-RGB one.
+- [x] Faster YUV-to-RGB conversion (done in [#66](https://github.com/ralfbiedert/openh264-rs/pull/66))
 
 Big shout-out to all the [contributors](https://github.com/ralfbiedert/openh264-rs/graphs/contributors) who have filed
 PRs so far.
