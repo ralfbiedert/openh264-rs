@@ -14,97 +14,105 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        nasm: [nasm, no-nasm]
+        nasm: [ nasm, no-nasm ]
         target:
           - i686-unknown-linux-gnu
           - x86_64-unknown-linux-gnu
           # eh, actually it doesn't seem easy to get musl working
           # because openh265 requires a C++ compiler, and musl doesn't provide one
-#          - x86_64-unknown-linux-musl
+          #          - x86_64-unknown-linux-musl
           - armv7-unknown-linux-gnueabihf
           # the target below fails installing "Additional packages", with ...
           # /bin/bash: -c: line 1: syntax error near unexpected token `newline'
           # /bin/bash: -c: line 1: `<h1>Internal Server Error</h1>'
           # ... any help fixing this would be welcome.
-#         - aarch64-unknown-linux-gnu
+          #         - aarch64-unknown-linux-gnu
           - x86_64-apple-darwin
           - aarch64-apple-darwin
           - i686-pc-windows-msvc
-#          - i686-pc-windows-gnu
-#          - x86_64-pc-windows-gnu
+          #          - i686-pc-windows-gnu
+          #          - x86_64-pc-windows-gnu
           - x86_64-pc-windows-msvc
           - aarch64-pc-windows-msvc
         include:
           - target: i686-unknown-linux-gnu
             runs-on: ubuntu-latest
             packages: gcc-multilib g++-multilib # provides 32-bit headers
+            do-test: true
           - target: x86_64-unknown-linux-gnu
             runs-on: ubuntu-latest
+            style-check: true
+            do-test: true
           - target: armv7-unknown-linux-gnueabihf
             runs-on: ubuntu-latest
             packages: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf # provides armv7 headers
-            no-test: true
           - target: aarch64-unknown-linux-gnu
             runs-on: ubuntu-latest
             packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu # provides aarch64 headers
-            no-test: true
-#          - target: x86_64-unknown-linux-musl
-#            runs-on: ubuntu-latest
-#            packages: musl-tools # provides musl-gcc
-          - target: x86_64-apple-darwin
-            runs-on: macos-latest
+          #          - target: x86_64-unknown-linux-musl
+          #            runs-on: ubuntu-latest
+          #            packages: musl-tools # provides musl-gcc
+          #          - target: x86_64-apple-darwin
+          #            runs-on: macos-latest
           - target: aarch64-apple-darwin
             runs-on: macos-latest
-            no-test: true
-#          - target: i686-pc-windows-gnu
-#            runs-on: windows-latest
-#            mingw: x86
+          #          - target: i686-pc-windows-gnu
+          #            runs-on: windows-latest
+          #            mingw: x86
           - target: i686-pc-windows-msvc
             runs-on: windows-latest
-#          - target: x86_64-pc-windows-gnu
-#            runs-on: windows-latest
-#            mingw: x64
+            do-test: true
+          #          - target: x86_64-pc-windows-gnu
+          #            runs-on: windows-latest
+          #            mingw: x64
           - target: x86_64-pc-windows-msvc
             runs-on: windows-latest
+            do-test: true
           - target: aarch64-pc-windows-msvc
             runs-on: windows-latest
-            no-test: true
 
     runs-on: ${{ matrix.runs-on }}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        lfs: true
-    - name: Install Rust toolchain
-      id: actions-rs
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        target: ${{ matrix.target }}
-    - name: Install NASM
-      uses: ilammy/setup-nasm@v1
-      if: matrix.nasm == 'nasm'
-      with:
-        version: 2.15.05
-    - name: Install Additional packages
-      uses: awalsh128/cache-apt-pkgs-action@v1.2.4
-      if: matrix.packages != ''
-      with:
-        packages: ${{ matrix.packages }}
-        version: 1.0
-    - name: Set up MinGW
-      uses: egor-tensin/setup-mingw@v2
-      if: matrix.mingw != ''
-      with:
-        platform: ${{ matrix.mingw }}
-    - name: LFS Checkout
-      run: git lfs checkout
-    - name: Version
-      run: rustc -Vv
-    - name: Build
-      run: cargo build --verbose --target=${{ matrix.target }} --tests --all-features
-    - name: Test
-      run: cargo test --verbose --target=${{ matrix.target }} --all-features -- --test-threads=1 --nocapture
-      if: matrix.no-test != true
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          lfs: true
+      - name: Install Rust toolchain
+        id: actions-rs
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+      - name: Install NASM
+        uses: ilammy/setup-nasm@v1
+        if: matrix.nasm == 'nasm'
+        with:
+          version: 2.15.05
+      - name: Install Additional packages
+        uses: awalsh128/cache-apt-pkgs-action@v1.2.4
+        if: matrix.packages != ''
+        with:
+          packages: ${{ matrix.packages }}
+          version: 1.0
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        if: matrix.mingw != ''
+        with:
+          platform: ${{ matrix.mingw }}
+      - name: LFS Checkout
+        run: git lfs checkout
+      - name: Rust - Version
+        run: rustc -Vv
+      - name: Rust - Build
+        run: cargo build --verbose --target=${{ matrix.target }} --tests --all-features
+      - name: Rust - Style
+        if: matrix.style-check == true
+        run: cargo fmt --check
+      - name: Rust - Clippy
+        if: matrix.style-check == true
+        run: cargo clippy -- -D warnings
+      - name: Rust - Test
+        if: matrix.do-test == true
+        run: cargo test --verbose --target=${{ matrix.target }} --all-features -- --test-threads=1 --nocapture

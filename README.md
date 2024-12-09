@@ -132,11 +132,11 @@ test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
 - **Can I get a performance boost?**
 
   - Make sure you have the command `nasm` somewhere in your PATH for your current platform (should be a single, standalone
-  executable you don't even need to install). If found by `build.rs` it should be used automatically for an up to 3x speed
-  boost for encoding / decoding.
+    executable you don't even need to install). If found by `build.rs` it should be used automatically for an up to 3x speed
+    boost for encoding / decoding.
   - Also compile your project with `target-cpu=native` for a 3x speed boost for YUV-to-RGB conversion (e.g., check
-   our `.cargo/config.toml` how you can easily do that for your project. Note this only works if you are an application,
-   not a library wrapping us).
+    our `.cargo/config.toml` how you can easily do that for your project. Note this only works if you are an application,
+    not a library wrapping us).
 
 
 - **Decoder::decode() returned an error, is this a bug?**
