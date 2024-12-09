@@ -67,13 +67,10 @@ jobs:
         with:
           lfs: true
       - name: Install Rust toolchain
-        id: actions-rs
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: ${{ matrix.target }}
+          components: rustfmt,clippy
+          targets: ${{ matrix.target }}
       - name: Install NASM
         uses: ilammy/setup-nasm@v1
         if: matrix.nasm == 'nasm'
