@@ -397,7 +397,7 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
-    pub fn write_rgb8_scalar(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
+    pub(crate) fn write_rgb8_scalar(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
         for y in 0..dim.1 {
             for x in 0..dim.0 {
                 let base_tgt = (y * dim.0 + x) * 3;
@@ -418,8 +418,7 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
-
-    pub fn write_rgb8_f32x8(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
+    pub(crate) fn write_rgb8_f32x8(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
         let rv_mul = wide::f32x8::splat(1.402);
         let gu_mul = wide::f32x8::splat(-0.344);
         let gv_mul = wide::f32x8::splat(-0.714);
@@ -507,7 +506,7 @@ impl<'a> DecodedYUV<'a> {
     }
 }
 
-/// Test every YUV value and see, if the SIMD version delivers the same RGB value.
+/// Test every YUV value and see, if the SIMD version delivers a similar RGB value.
 #[test]
 fn test_write_rgb8_f32x8_spectrum() {
     
@@ -525,7 +524,13 @@ fn test_write_rgb8_f32x8_spectrum() {
                 let mut target2 = vec![0; dim.0 * 3];
                 DecodedYUV::write_rgb8_f32x8(&y_plane, &u_plane, &v_plane, dim, strides, &mut target2);
 
-                assert_eq!(&target[..3], &target2[..3], "YUV: {:?} yielded different results", (y, u, v));
+                // compare first pixel
+                for i in 0..3 {
+                    // Due to different CPU architectures the values may slightly change and may not be exactly equal.
+                    // allow difference of 1 / 255 (ca. 0.4%)
+                    let diff = (target[i] as i32 - target2[i] as i32).abs();
+                    assert!(diff <= 1, "YUV: {:?} yielded different results", (y, u, v));
+                }
             }
         }
     }
