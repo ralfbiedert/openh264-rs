@@ -52,7 +52,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -333,25 +333,21 @@ pub struct DecodedYUV<'a> {
     v: &'a [u8],
 }
 
-macro_rules! f32x8_y_from {
-    ($buf:expr, $idx:ident) => {{
+/// Converts 8 float values into a f32x8 SIMD lane, taking into account block size.
+///
+/// If you have a (pixel buffer) slice of at least 8 f32 values like so `[012345678...]`, this function
+/// will convert the first N <= 8 elements into a packed f32x8 SIMD struct. For example
+///
+/// - if block size `1` (like for Y values), you will get  `f32x8(012345678)`.
+/// - if block size is `2` (for U and V), you will get `f32x8(00112233)`
+macro_rules! f32x8_from_slice_with_blocksize {
+    ($buf:expr, $block_size:expr) => {{
         // Use 16 Y values
         wide::f32x8::from([
-            ($buf[$idx] as f32), ($buf[$idx + 1] as f32), ($buf[$idx + 2] as f32), ($buf[$idx + 3] as f32),
-            ($buf[$idx + 4] as f32), ($buf[$idx + 5] as f32), ($buf[$idx + 6] as f32), ($buf[$idx + 7] as f32),
+            ($buf[0] as f32), ($buf[1 / $block_size] as f32), ($buf[2 / $block_size] as f32), ($buf[3 / $block_size] as f32),
+            ($buf[4 / $block_size] as f32), ($buf[5 / $block_size] as f32), ($buf[6 / $block_size] as f32), ($buf[7 / $block_size] as f32),
         ])
     }}
-}
-
-macro_rules! f32x8_uv_from {
-    ($buf:expr, $idx:ident) => {{
-        // Use 8 U & V values
-        // one chroma sample is shared between two pixels
-        wide::f32x8::from([
-            $buf[$idx] as f32, $buf[$idx] as f32, $buf[$idx + 1] as f32, $buf[$idx + 1] as f32,
-            $buf[$idx + 2] as f32, $buf[$idx + 2] as f32, $buf[$idx + 3] as f32, $buf[$idx + 3] as f32,
-        ])
-    }};
 }
 
 impl<'a> DecodedYUV<'a> {
@@ -418,6 +414,7 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
+    #[allow(clippy::identity_op)]
     pub(crate) fn write_rgb8_f32x8(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
         let rv_mul = wide::f32x8::splat(1.402);
         let gu_mul = wide::f32x8::splat(-0.344);
@@ -426,7 +423,7 @@ impl<'a> DecodedYUV<'a> {
 
         let upper_bound = wide::f32x8::splat(255.0);
         let lower_bound = wide::f32x8::splat(0.0);
-        
+
         const STEP: usize = 8;
 
         for y in 0..dim.1 {
@@ -435,21 +432,22 @@ impl<'a> DecodedYUV<'a> {
                 let base_y = y * strides.0 + x;
                 let base_u = (y / 2 * strides.1) + (x / 2);
                 let base_v = (y / 2 * strides.2) + (x / 2);
-                
+
                 let pixels = &mut target[base_tgt..(base_tgt + (3 * STEP))];
 
-                let y_pack: wide::f32x8 = f32x8_y_from!(y_plane, base_y);
-                let u_pack: wide::f32x8 = f32x8_uv_from!(u_plane, base_u) - 128.0;
-                let v_pack: wide::f32x8 = f32x8_uv_from!(v_plane, base_v) - 128.0;
-                
+                let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_plane[base_y..], 1);
+                let u_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(u_plane[base_u..], 2) - 128.0;
+                let v_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(v_plane[base_v..], 2) - 128.0;
+
                 let r_pack = v_pack.mul_add(rv_mul, y_pack);
                 let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_pack));
                 let b_pack = u_pack.mul_add(bu_mul, y_pack);
 
                 let (r_pack, g_pack, b_pack) = (
-                    r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
-                    g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(), 
+                    r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
+                    g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
                     b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int());
+
                 let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
                 for i in 0..STEP {
