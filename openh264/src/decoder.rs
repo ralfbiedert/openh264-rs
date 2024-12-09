@@ -52,7 +52,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -344,10 +344,16 @@ macro_rules! f32x8_from_slice_with_blocksize {
     ($buf:expr, $block_size:expr) => {{
         // Use 16 Y values
         wide::f32x8::from([
-            ($buf[0] as f32), ($buf[1 / $block_size] as f32), ($buf[2 / $block_size] as f32), ($buf[3 / $block_size] as f32),
-            ($buf[4 / $block_size] as f32), ($buf[5 / $block_size] as f32), ($buf[6 / $block_size] as f32), ($buf[7 / $block_size] as f32),
+            ($buf[0] as f32),
+            ($buf[1 / $block_size] as f32),
+            ($buf[2 / $block_size] as f32),
+            ($buf[3 / $block_size] as f32),
+            ($buf[4 / $block_size] as f32),
+            ($buf[5 / $block_size] as f32),
+            ($buf[6 / $block_size] as f32),
+            ($buf[7 / $block_size] as f32),
         ])
-    }}
+    }};
 }
 
 impl<'a> DecodedYUV<'a> {
@@ -393,7 +399,14 @@ impl<'a> DecodedYUV<'a> {
         }
     }
 
-    pub(crate) fn write_rgb8_scalar(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
+    pub(crate) fn write_rgb8_scalar(
+        y_plane: &[u8],
+        u_plane: &[u8],
+        v_plane: &[u8],
+        dim: (usize, usize),
+        strides: (usize, usize, usize),
+        target: &mut [u8],
+    ) {
         for y in 0..dim.1 {
             for x in 0..dim.0 {
                 let base_tgt = (y * dim.0 + x) * 3;
@@ -415,7 +428,14 @@ impl<'a> DecodedYUV<'a> {
     }
 
     #[allow(clippy::identity_op)]
-    pub(crate) fn write_rgb8_f32x8(y_plane: &[u8], u_plane: &[u8], v_plane: &[u8], dim: (usize, usize), strides: (usize, usize, usize), target: &mut [u8]) {
+    pub(crate) fn write_rgb8_f32x8(
+        y_plane: &[u8],
+        u_plane: &[u8],
+        v_plane: &[u8],
+        dim: (usize, usize),
+        strides: (usize, usize, usize),
+        target: &mut [u8],
+    ) {
         let rv_mul = wide::f32x8::splat(1.402);
         let gu_mul = wide::f32x8::splat(-0.344);
         let gv_mul = wide::f32x8::splat(-0.714);
@@ -446,7 +466,8 @@ impl<'a> DecodedYUV<'a> {
                 let (r_pack, g_pack, b_pack) = (
                     r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
                     g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-                    b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int());
+                    b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
+                );
 
                 let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 

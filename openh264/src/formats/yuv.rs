@@ -360,14 +360,12 @@ mod tests {
         let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 5));
     }
 
-
     /// Test every YUV value and see, if the SIMD version delivers a similar RGB value.
     #[test]
     fn test_write_rgb8_f32x8_spectrum() {
-        
         let dim = (8, 1);
         let strides = (8, 4, 4);
-        
+
         // build artificial YUV planes containing the entire YUV spectrum
         for y in 0..=255u8 {
             for u in 0..=255u8 {
@@ -390,5 +388,4 @@ mod tests {
             }
         }
     }
-
 }

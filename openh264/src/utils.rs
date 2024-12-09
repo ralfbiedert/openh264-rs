@@ -46,7 +46,7 @@ fn nth_nal_index(stream: &[u8], nth: usize) -> Option<usize> {
 /// NAL units in the middle are split at their boundaries, the last packet is returned
 /// as-is.
 ///
-pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item=&[u8]> {
+pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item = &[u8]> {
     std::iter::from_fn(move || {
         let first = nth_nal_index(stream, 0);
         let next = nth_nal_index(stream, 1);
@@ -66,7 +66,6 @@ pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item=&[u8]> {
         }
     })
 }
-
 
 /// Splits an incrementally arriving bitstream into NAL units.
 ///
@@ -136,9 +135,7 @@ impl NalParser {
 
 #[cfg(test)]
 mod test {
-    use super::nal_units;
-    use super::NalParser;
-
+    use super::{nal_units, NalParser};
 
     #[test]
     fn splits_at_nal() {
@@ -179,7 +176,6 @@ mod test {
         assert!(split.next().is_none());
     }
 
-
     #[test]
     fn nal_mark_stream_boundary() {
         let v1 = [1, 2, 3, 0];
@@ -190,7 +186,7 @@ mod test {
 
         // nothing read, read some data
         assert_eq!(None, np.next());
-        
+
         np.feed(&v1);
         assert_eq!(None, np.next());
 
