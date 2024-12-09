@@ -52,7 +52,7 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER, DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -356,7 +356,7 @@ macro_rules! f32x8_from_slice_with_blocksize {
     }};
 }
 
-impl<'a> DecodedYUV<'a> {
+impl DecodedYUV<'_> {
     /// Returns the unpadded U size.
     ///
     /// This is often smaller (by half) than the image size.
@@ -375,6 +375,7 @@ impl<'a> DecodedYUV<'a> {
     /// # Panics
     ///
     /// Panics if the target image dimension don't match the configured format.
+    #[allow(clippy::unnecessary_cast)]
     pub fn write_rgb8(&self, target: &mut [u8]) {
         let dim = self.dimensions();
         let strides = self.strides();
@@ -486,6 +487,7 @@ impl<'a> DecodedYUV<'a> {
     /// # Panics
     ///
     /// Panics if the target image dimension don't match the configured format.
+    #[allow(clippy::unnecessary_cast)]
     pub fn write_rgba8(&self, target: &mut [u8]) {
         let dim = self.dimensions();
         let strides = self.strides();
@@ -525,7 +527,7 @@ impl<'a> DecodedYUV<'a> {
     }
 }
 
-impl<'a> YUVSource for DecodedYUV<'a> {
+impl YUVSource for DecodedYUV<'_> {
     fn dimensions_i32(&self) -> (i32, i32) {
         (self.info.iWidth, self.info.iHeight)
     }

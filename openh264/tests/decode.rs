@@ -39,7 +39,7 @@ fn can_decode_single() -> Result<(), Error> {
         include_bytes!("data/single_512x512_cavlc.h264").as_slice(),
     ];
 
-    for (_, src) in sources.iter().enumerate() {
+    for src in sources.iter() {
         let api = OpenH264API::from_source();
         let config = DecoderConfig::default().debug(false);
         let mut decoder = Decoder::with_api_config(api, config)?;
@@ -166,7 +166,7 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
 // The packets in the file are written frame by frame
 // the first 4 bytes are frame length in little endian
 // followed by actual frame data
-pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>>
+pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item=Vec<u8>>
 where
     T: Read,
 {

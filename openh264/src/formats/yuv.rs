@@ -226,7 +226,7 @@ impl<'a> YUVSlices<'a> {
     }
 }
 
-impl<'a> YUVSource for YUVSlices<'a> {
+impl YUVSource for YUVSlices<'_> {
     fn dimensions(&self) -> (usize, usize) {
         self.dimensions
     }

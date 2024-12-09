@@ -42,6 +42,7 @@ use std::os::raw::{c_int, c_long};
 
 /// Abstraction over `source` or `libloading` APIs.
 #[rustfmt::skip]
+#[allow(clippy::missing_safety_doc)]
 pub trait API {
     unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int;
     unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder);
@@ -93,10 +94,11 @@ pub mod source {
     use crate::{ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
     use std::os::raw::{c_int, c_long};
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct APILoader {}
 
     #[rustfmt::skip]
+    #[allow(clippy::missing_safety_doc)]
     impl APILoader {
         pub fn new() -> Self { Self {} }
         pub unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int { crate::generated::fns_source::WelsCreateSVCEncoder(ppEncoder) }
@@ -109,6 +111,7 @@ pub mod source {
     }
 
     #[rustfmt::skip]
+    #[allow(clippy::missing_safety_doc)]
     impl super::API for APILoader {
         unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { APILoader::WelsCreateSVCEncoder(self, ppEncoder) }
         unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { APILoader::WelsDestroySVCEncoder(self, pEncoder) }
