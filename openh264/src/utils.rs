@@ -46,7 +46,7 @@ fn nth_nal_index(stream: &[u8], nth: usize) -> Option<usize> {
 /// NAL units in the middle are split at their boundaries, the last packet is returned
 /// as-is.
 ///
-pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item=&[u8]> {
+pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item = &[u8]> {
     std::iter::from_fn(move || {
         let first = nth_nal_index(stream, 0);
         let next = nth_nal_index(stream, 1);
@@ -122,7 +122,8 @@ impl NalParser {
     }
 
     fn get_nal_mark(&self) -> Option<usize> {
-        (self.curr_offset..self.leftover_buffer.len() - 2).find(|&i| self.leftover_buffer[i] == 0 && self.leftover_buffer[i + 1] == 0 && self.leftover_buffer[i + 2] == 1)
+        (self.curr_offset..self.leftover_buffer.len() - 2)
+            .find(|&i| self.leftover_buffer[i] == 0 && self.leftover_buffer[i + 1] == 0 && self.leftover_buffer[i + 2] == 1)
     }
 }
 
