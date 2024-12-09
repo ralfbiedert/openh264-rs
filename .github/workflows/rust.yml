@@ -80,7 +80,7 @@ jobs:
         with:
           version: 2.15.05
       - name: Install Additional packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.2.4
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.2
         if: matrix.packages != ''
         with:
           packages: ${{ matrix.packages }}
