@@ -27,7 +27,8 @@ jobs:
           # /bin/bash: -c: line 1: `<h1>Internal Server Error</h1>'
           # ... any help fixing this would be welcome.
           #         - aarch64-unknown-linux-gnu
-          - x86_64-apple-darwin
+          # And this target now fails due to M3 errors
+          #          - x86_64-apple-darwin
           - aarch64-apple-darwin
           - i686-pc-windows-msvc
           #          - i686-pc-windows-gnu
@@ -49,22 +50,11 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             runs-on: ubuntu-latest
             packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu # provides aarch64 headers
-          #          - target: x86_64-unknown-linux-musl
-          #            runs-on: ubuntu-latest
-          #            packages: musl-tools # provides musl-gcc
-          #          - target: x86_64-apple-darwin
-          #            runs-on: macos-latest
           - target: aarch64-apple-darwin
             runs-on: macos-latest
-          #          - target: i686-pc-windows-gnu
-          #            runs-on: windows-latest
-          #            mingw: x86
           - target: i686-pc-windows-msvc
             runs-on: windows-latest
             do-test: true
-          #          - target: x86_64-pc-windows-gnu
-          #            runs-on: windows-latest
-          #            mingw: x64
           - target: x86_64-pc-windows-msvc
             runs-on: windows-latest
             do-test: true
