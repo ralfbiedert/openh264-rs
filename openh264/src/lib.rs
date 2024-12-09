@@ -85,26 +85,26 @@
 //!
 //! ## Performance
 //!
-//! Tested on a i9-9900K, Windows 10, single threaded de- and encoding:
+//! Tested on a Ryzen 9 7950X3D, Windows 11, single threaded de- and encoding:
 //!
 //! ```text
 //! -- Default --
-//! test decode_yuv_single_1920x1080     ... bench:   9,243,380 ns/iter (+/- 497,200)
-//! test decode_yuv_single_512x512_cabac ... bench:   1,841,775 ns/iter (+/- 53,211)
-//! test decode_yuv_single_512x512_cavlc ... bench:   2,076,030 ns/iter (+/- 7,287)
-//! test encode_1920x1080_from_yuv       ... bench:  38,657,620 ns/iter (+/- 793,310)
-//! test encode_512x512_from_yuv         ... bench:   6,420,605 ns/iter (+/- 1,003,485)
+//! test decode_yuv_single_1920x1080     ... bench:   5,696,370.00 ns/iter (+/- 1,892,038.50)
+//! test decode_yuv_single_512x512_cabac ... bench:   1,103,065.00 ns/iter (+/- 49,763.50)
+//! test decode_yuv_single_512x512_cavlc ... bench:   1,358,595.00 ns/iter (+/- 52,667.00)
+//! test encode_1920x1080_from_yuv       ... bench:  23,720,860.00 ns/iter (+/- 1,610,097.00)
+//! test encode_512x512_from_yuv         ... bench:   3,954,905.00 ns/iter (+/- 566,698.00)
 //!
 //! -- If `nasm` available --
-//! test decode_yuv_single_1920x1080     ... bench:   4,265,260 ns/iter (+/- 89,438)
-//! test decode_yuv_single_512x512_cabac ... bench:     901,025 ns/iter (+/- 21,902)
-//! test decode_yuv_single_512x512_cavlc ... bench:   1,618,880 ns/iter (+/- 53,713)
-//! test encode_1920x1080_from_yuv       ... bench:  13,455,160 ns/iter (+/- 862,042)
-//! test encode_512x512_from_yuv         ... bench:   4,011,700 ns/iter (+/- 2,094,471)
+//! test decode_yuv_single_1920x1080     ... bench:   2,799,800.00 ns/iter (+/- 291,731.25)
+//! test decode_yuv_single_512x512_cabac ... bench:     532,370.00 ns/iter (+/- 33,115.00)
+//! test decode_yuv_single_512x512_cavlc ... bench:   1,038,490.00 ns/iter (+/- 56,953.25)
+//! test encode_1920x1080_from_yuv       ... bench:   8,178,290.00 ns/iter (+/- 1,325,363.50)
+//! test encode_512x512_from_yuv         ... bench:   1,828,287.50 ns/iter (+/- 190,976.50)
 //!
-//! -- Color Conversion --
-//! test convert_yuv_to_rgb_1920x1080    ... bench:   7,226,290 ns/iter (+/- 110,871)
-//! test convert_yuv_to_rgb_512x512      ... bench:     907,340 ns/iter (+/- 28,296)
+//! -- Color Conversion if "target-cpu=native" --
+//! test convert_yuv_to_rgb_1920x1080    ... bench:   1,510,065.00 ns/iter (+/- 25,921.00)
+//! test convert_yuv_to_rgb_512x512      ... bench:     187,495.00 ns/iter (+/- 2,758.75)
 //! ```
 //!
 //! ## Compile Features
