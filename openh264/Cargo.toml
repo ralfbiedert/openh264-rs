@@ -29,8 +29,8 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dev-dependencies]
-image = "0.24.6"
-image-compare = "0.3.0"
+image = "0.25.5"
+image-compare = "0.4.1"
 
 mp4 = "0.14.0"
 anyhow = "1.0.71"
