@@ -208,7 +208,6 @@ mod utils;
 pub mod decoder;
 pub mod encoder;
 pub mod formats;
-mod lookup;
 pub use error::Error;
 pub use time::Timestamp;
 pub use utils::{nal_units, NalParser};
