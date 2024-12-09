@@ -359,4 +359,36 @@ mod tests {
         let v = vec![0u8; 5];
         let _ = YUVSlices::new((&y, &u, &v), (10, 2), (10, 5, 5));
     }
+
+
+    /// Test every YUV value and see, if the SIMD version delivers a similar RGB value.
+    #[test]
+    fn test_write_rgb8_f32x8_spectrum() {
+        
+        let dim = (8, 1);
+        let strides = (8, 4, 4);
+        
+        // build artificial YUV planes containing the entire YUV spectrum
+        for y in 0..=255u8 {
+            for u in 0..=255u8 {
+                for v in 0..=255u8 {
+                    let (y_plane, u_plane, v_plane) = (vec![y; 8], vec![u; 4], vec![v; 4]);
+                    let mut target = vec![0; dim.0 * 3];
+                    crate::decoder::DecodedYUV::write_rgb8_scalar(&y_plane, &u_plane, &v_plane, dim, strides, &mut target);
+
+                    let mut target2 = vec![0; dim.0 * 3];
+                    crate::decoder::DecodedYUV::write_rgb8_f32x8(&y_plane, &u_plane, &v_plane, dim, strides, &mut target2);
+
+                    // compare first pixel
+                    for i in 0..3 {
+                        // Due to different CPU architectures the values may slightly change and may not be exactly equal.
+                        // allow difference of 1 / 255 (ca. 0.4%)
+                        let diff = (target[i] as i32 - target2[i] as i32).abs();
+                        assert!(diff <= 1, "YUV: {:?} yielded different results", (y, u, v));
+                    }
+                }
+            }
+        }
+    }
+
 }
