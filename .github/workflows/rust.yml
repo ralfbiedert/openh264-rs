@@ -70,7 +70,6 @@ jobs:
             do-test: true
           - target: aarch64-pc-windows-msvc
             runs-on: windows-latest
-
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout
