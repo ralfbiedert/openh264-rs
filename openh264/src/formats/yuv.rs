@@ -251,6 +251,7 @@ impl YUVSource for YUVSlices<'_> {
 #[cfg(test)]
 mod tests {
     use super::{YUVBuffer, YUVSlices};
+    use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar};
     use crate::formats::{RgbSliceU8, YUVSource};
 
     #[test]
@@ -372,10 +373,10 @@ mod tests {
                 for v in 0..=255u8 {
                     let (y_plane, u_plane, v_plane) = (vec![y; 16], vec![u; 4], vec![v; 4]);
                     let mut target = vec![0; dim.0 * dim.1 * 3];
-                    crate::decoder::DecodedYUV::write_rgb8_scalar(&y_plane, &u_plane, &v_plane, dim, strides, &mut target);
+                    write_rgb8_scalar(&y_plane, &u_plane, &v_plane, dim, strides, &mut target);
 
                     let mut target2 = vec![0; dim.0 * dim.1 * 3];
-                    crate::decoder::DecodedYUV::write_rgb8_f32x8(&y_plane, &u_plane, &v_plane, dim, strides, &mut target2);
+                    write_rgb8_f32x8(&y_plane, &u_plane, &v_plane, dim, strides, &mut target2);
 
                     // compare first pixel
                     for i in 0..3 {
