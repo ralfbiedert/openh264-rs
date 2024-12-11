@@ -1,7 +1,7 @@
 use std::io::{Cursor, Read};
 
 use image::RgbImage;
-use openh264::decoder::{Decoder, DecoderConfig};
+use openh264::decoder::{DecodeOptions, Decoder, DecoderConfig};
 use openh264::formats::{RgbSliceU8, YUVSource};
 use openh264::{nal_units, Error, OpenH264API};
 
@@ -158,6 +158,28 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
 
     // Images should be 99% similar
     assert!(result.score > 0.99, "Image similarity score: {}", result.score);
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "source")]
+fn decodes_file_with_bframes() -> Result<(), Error> {
+    let src = include_bytes!("data/big_buck_bunny_640x360.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config)?;
+
+    let mut frames = 0;
+    for packet in nal_units(src) {
+        if decoder.decode_with_options(packet, DecodeOptions::NoFlush)?.is_some() {
+            frames += 1;
+        }
+    }
+
+    frames += decoder.flush_all()?.len();
+    assert_eq!(frames, 300);
 
     Ok(())
 }
