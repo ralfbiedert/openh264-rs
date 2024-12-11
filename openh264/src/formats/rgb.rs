@@ -1,4 +1,7 @@
 /// Source of arbitrarily formatted RGB data.
+///
+/// This is the "compatible" trait for RGB sources, but it will
+/// be slow, since it only supports single pixel lookup.
 pub trait RGBSource {
     /// Returns the underlying image size as an `i32` tuple `(w, h)`.
     #[must_use]
@@ -17,7 +20,26 @@ pub trait RGBSource {
     fn pixel_f32(&self, x: usize, y: usize) -> (f32, f32, f32);
 }
 
-/// Container for a slice of contiguous `[R G B R G B ...]` data.
+/// Source of RGB8 data for fast pixel access.
+///
+/// This is the "fast" trait for RGB sources. If you can expose continuous pixels
+/// slices with RGB8 data you might (eventually) be rewarded with SIMD conversion.
+pub trait RGB8Source: RGBSource {
+    /// Returns padded dimensions of the underlying slice.
+    ///
+    /// For example, the data might have a display format of 100x100, but the
+    /// underlying RGB8 array is of size 128x100.
+    #[must_use]
+    fn dimensions_padded(&self) -> (usize, usize);
+
+    /// Slice of RGB8 data, with given padding.
+    #[must_use]
+    fn rgb8_data(&self) -> &[u8];
+}
+
+/// Container for a slice of contiguous `[R G B R G B ...]` data.<sup>⭐</sup>
+///
+/// This is the preferred format for reading data, for use with `_rgb8` methods.
 #[derive(Copy, Clone, Debug)]
 #[must_use]
 pub struct RgbSliceU8<'a> {
@@ -186,6 +208,16 @@ impl_slice_wrapper_u32!(RgbaSliceU32<'a>, [24, 16, 8]);
 impl_slice_wrapper_u32!(BgraSliceU32<'a>, [8, 16, 24]);
 impl_slice_wrapper_u32!(AbgrSliceU32<'a>, [0, 8, 16]);
 impl_slice_wrapper_u32!(ArgbSliceU32<'a>, [16, 8, 0]);
+
+impl RGB8Source for RgbSliceU8<'_> {
+    fn dimensions_padded(&self) -> (usize, usize) {
+        self.dimensions()
+    }
+
+    fn rgb8_data(&self) -> &[u8] {
+        self.data
+    }
+}
 
 #[cfg(test)]
 mod tests {

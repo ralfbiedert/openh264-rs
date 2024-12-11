@@ -1,4 +1,5 @@
-use crate::formats::rgb2yuv::write_yuv_scalar;
+use crate::formats::rgb::RGB8Source;
+use crate::formats::rgb2yuv::{write_yuv_by_pixel, write_yuv_scalar};
 use crate::formats::RGBSource;
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
@@ -107,7 +108,21 @@ impl YUVBuffer {
     /// # Panics
     ///
     /// May panic if invoked with an RGB source where the dimensions are not multiples of 2.
-    pub fn from_rgb_source<T: RGBSource>(rgb: T) -> Self {
+    pub fn from_rgb_source(rgb: impl RGBSource) -> Self {
+        let mut rval = Self::new(rgb.dimensions().0, rgb.dimensions().1);
+        rval.read_rgb(rgb);
+        rval
+    }
+
+    /// Allocates a new YUV buffer with the given width and height and data.
+    ///
+    /// This is the faster version of [`Self::from_rgb_source`] and you should generally
+    /// use this one.
+    ///
+    /// # Panics
+    ///
+    /// May panic if invoked with an RGB source where the dimensions are not multiples of 2.
+    pub fn from_rgb8_source(rgb: impl RGB8Source) -> Self {
         let mut rval = Self::new(rgb.dimensions().0, rgb.dimensions().1);
         rval.read_rgb(rgb);
         rval
@@ -118,7 +133,23 @@ impl YUVBuffer {
     /// # Panics
     ///
     /// May panic if the given `rgb` does not match the internal format.
-    pub fn read_rgb<T: RGBSource>(&mut self, rgb: T) {
+    pub fn read_rgb(&mut self, rgb: impl RGBSource) {
+        let dimensions = self.dimensions();
+        let u_base = self.width * self.height;
+        let v_base = u_base / 4;
+        let (y_buf, uv_buf) = self.yuv.split_at_mut(u_base);
+        let (u_buf, v_buf) = uv_buf.split_at_mut(v_base);
+        write_yuv_by_pixel(rgb, dimensions, y_buf, u_buf, v_buf);
+    }
+
+    /// Reads an RGB8 buffer, converts it to YUV and stores it.
+    ///
+    /// This is the faster version of [`Self::read_rgb`] and you should generally use this one.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the given `rgb` does not match the internal format.
+    pub fn read_rgb8(&mut self, rgb: impl RGB8Source) {
         let dimensions = self.dimensions();
         let u_base = self.width * self.height;
         let v_base = u_base / 4;

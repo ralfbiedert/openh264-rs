@@ -163,7 +163,7 @@ mod test {
     use crate::OpenH264API;
 
     #[test]
-    fn convert_yuv_to_rgb_512x512() {
+    fn write_rgb8_f32x8_matches_scalar() {
         let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
 
         let api = OpenH264API::from_source();
