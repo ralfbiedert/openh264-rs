@@ -383,7 +383,6 @@ impl DecodedYUV<'_> {
         }
     }
 
-
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*4`.
     ///

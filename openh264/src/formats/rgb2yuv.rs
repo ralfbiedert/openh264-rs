@@ -1,7 +1,13 @@
 use crate::formats::RGBSource;
 
 /// Writes an RGB source into 420 Y, U and V buffers.
-pub(crate) fn write_yuv_scalar(rgb: impl RGBSource, dimensions: (usize, usize), y_buf: &mut [u8], u_buf: &mut [u8], v_buf: &mut [u8]) {
+pub(crate) fn write_yuv_scalar(
+    rgb: impl RGBSource,
+    dimensions: (usize, usize),
+    y_buf: &mut [u8],
+    u_buf: &mut [u8],
+    v_buf: &mut [u8],
+) {
     // Make sure we only attempt to read sources that match our own size.
     assert_eq!(rgb.dimensions(), dimensions);
 

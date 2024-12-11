@@ -20,7 +20,6 @@ macro_rules! f32x8_from_slice_with_blocksize {
     }};
 }
 
-
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
 pub(crate) fn write_rgb8_scalar(
     y_plane: &[u8],
@@ -155,7 +154,6 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
         base_tgt += TGT_STEP;
     }
 }
-
 
 #[cfg(test)]
 mod test {
