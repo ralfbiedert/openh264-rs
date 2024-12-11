@@ -343,7 +343,7 @@ pub struct DecodedYUV<'a> {
 /// - if block size `1` (like for Y values), you will get  `f32x8(012345678)`.
 /// - if block size is `2` (for U and V), you will get `f32x8(00112233)`
 macro_rules! f32x8_from_slice_with_blocksize {
-    ($buf:expr, $block_size:expr) => {{        
+    ($buf:expr, $block_size:expr) => {{
         wide::f32x8::from([
             ($buf[0] as f32),
             ($buf[1 / $block_size] as f32),
