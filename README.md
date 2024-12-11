@@ -89,8 +89,8 @@ test encode_1920x1080_from_yuv       ... bench:   8,178,290.00 ns/iter (+/- 1,32
 test encode_512x512_from_yuv         ... bench:   1,828,287.50 ns/iter (+/- 190,976.50)
 
 -- Color Conversion if "target-cpu=native" --
-test convert_yuv_to_rgb_1920x1080    ... bench:   1,510,065.00 ns/iter (+/- 25,921.00)
-test convert_yuv_to_rgb_512x512      ... bench:     187,495.00 ns/iter (+/- 2,758.75)
+test convert_yuv_to_rgb_1920x1080  ... bench:   1,362,640.00 ns/iter (+/- 23,317.00)
+test convert_yuv_to_rgb_512x512    ... bench:     174,687.50 ns/iter (+/- 7,185.75)
 ```
 
 ### Compile Features
