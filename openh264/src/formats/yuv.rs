@@ -1,3 +1,4 @@
+use crate::formats::rgb2yuv::write_yuv_scalar;
 use crate::formats::RGBSource;
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
@@ -118,50 +119,12 @@ impl YUVBuffer {
     ///
     /// May panic if the given `rgb` does not match the internal format.
     pub fn read_rgb<T: RGBSource>(&mut self, rgb: T) {
-        // Make sure we only attempt to read sources that match our own size.
-        assert_eq!(self.dimensions(), rgb.dimensions());
-
-        let width = self.width;
-        let height = self.height;
-
-        let u_base = width * height;
-        let v_base = u_base + u_base / 4;
-        let half_width = width / 2;
-
-        // y is full size, u, v is quarter size
-        let write_y = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[x + y * width] = (0.2578125 * rgb.0 + 0.50390625 * rgb.1 + 0.09765625 * rgb.2 + 16.0) as u8;
-        };
-
-        let write_u = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[u_base + x + y * half_width] = (-0.1484375 * rgb.0 + -0.2890625 * rgb.1 + 0.4375 * rgb.2 + 128.0) as u8;
-        };
-
-        let write_v = |yuv: &mut [u8], x: usize, y: usize, rgb: (f32, f32, f32)| {
-            yuv[v_base + x + y * half_width] = (0.4375 * rgb.0 + -0.3671875 * rgb.1 + -0.0703125 * rgb.2 + 128.0) as u8;
-        };
-
-        for i in 0..width / 2 {
-            for j in 0..height / 2 {
-                let px = i * 2;
-                let py = j * 2;
-                let pix0x0 = rgb.pixel_f32(px, py);
-                let pix0x1 = rgb.pixel_f32(px, py + 1);
-                let pix1x0 = rgb.pixel_f32(px + 1, py);
-                let pix1x1 = rgb.pixel_f32(px + 1, py + 1);
-                let avg_pix = (
-                    (pix0x0.0 as u32 + pix0x1.0 as u32 + pix1x0.0 as u32 + pix1x1.0 as u32) as f32 / 4.0,
-                    (pix0x0.1 as u32 + pix0x1.1 as u32 + pix1x0.1 as u32 + pix1x1.1 as u32) as f32 / 4.0,
-                    (pix0x0.2 as u32 + pix0x1.2 as u32 + pix1x0.2 as u32 + pix1x1.2 as u32) as f32 / 4.0,
-                );
-                write_y(&mut self.yuv[..], px, py, pix0x0);
-                write_y(&mut self.yuv[..], px, py + 1, pix0x1);
-                write_y(&mut self.yuv[..], px + 1, py, pix1x0);
-                write_y(&mut self.yuv[..], px + 1, py + 1, pix1x1);
-                write_u(&mut self.yuv[..], i, j, avg_pix);
-                write_v(&mut self.yuv[..], i, j, avg_pix);
-            }
-        }
+        let dimensions = self.dimensions();
+        let u_base = self.width * self.height;
+        let v_base = u_base / 4;
+        let (y_buf, uv_buf) = self.yuv.split_at_mut(u_base);
+        let (u_buf, v_buf) = uv_buf.split_at_mut(v_base);
+        write_yuv_scalar(rgb, dimensions, y_buf, u_buf, v_buf);
     }
 }
 
