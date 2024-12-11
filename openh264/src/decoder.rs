@@ -439,6 +439,48 @@ impl DecodedYUV<'_> {
         strides: (usize, usize, usize),
         target: &mut [u8],
     ) {
+        // this assumes we are decoding YUV420
+        assert_eq!(y_plane.len(), u_plane.len() * 4);
+        assert_eq!(y_plane.len(), v_plane.len() * 4);
+        assert!(dim.0 % 8 == 0);
+
+        let (width, height) = dim;
+        /// rgb pixel size in bytes
+        const RGB_PIXEL_LEN: usize = 3;
+        let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width;
+
+        for y in 0..(height / 2) {
+            // load U and V values for two rows of pixels
+            let base_u = y * strides.1;
+            let u_row = &u_plane[base_u..base_u + strides.1];
+            let base_v = y * strides.2;
+            let v_row = &v_plane[base_v..base_v + strides.2];
+
+            // load Y values for first row
+            let base_y = 2 * y * strides.0;
+            let y_row = &y_plane[base_y..base_y + strides.0];
+
+            // calculate first RGB row
+            let base_tgt = 2 * y * rgb_bytes_per_row;
+            let row_target = &mut target[base_tgt..base_tgt + rgb_bytes_per_row];
+            Self::write_rgb8_f32x8_row(&y_row, &u_row, &v_row, width, row_target);
+
+            // load Y values for second row
+            let base_y = (2 * y + 1) * strides.0;
+            let y_row = &y_plane[base_y..base_y + strides.0];
+
+            // calculate second RGB row
+            let base_tgt = (2 * y + 1) * rgb_bytes_per_row;
+            let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
+            Self::write_rgb8_f32x8_row(&y_row, &u_row, &v_row, width, row_target);
+        }
+    }
+
+    #[inline(always)]
+    fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, target: &mut [u8]) {
+        assert_eq!(y_row.len(), u_row.len() * 2);
+        assert_eq!(y_row.len(), v_row.len() * 2);
+
         let rv_mul = wide::f32x8::splat(1.402);
         let gu_mul = wide::f32x8::splat(-0.344);
         let gv_mul = wide::f32x8::splat(-0.714);
@@ -448,38 +490,47 @@ impl DecodedYUV<'_> {
         let lower_bound = wide::f32x8::splat(0.0);
 
         const STEP: usize = 8;
+        assert!(y_row.len() % STEP == 0);
 
-        for y in 0..dim.1 {
-            for x in (0..dim.0).step_by(STEP) {
-                let base_tgt = (y * dim.0 + x) * 3;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
+        const UV_STEP: usize = STEP / 2;
+        assert!(u_row.len() % UV_STEP == 0);
+        assert!(v_row.len() % UV_STEP == 0);
 
-                let pixels = &mut target[base_tgt..(base_tgt + (3 * STEP))];
+        const TGT_STEP: usize = STEP * 3;
+        assert!(target.len() % TGT_STEP == 0);
 
-                let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_plane[base_y..], 1);
-                let u_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(u_plane[base_u..], 2) - 128.0;
-                let v_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(v_plane[base_v..], 2) - 128.0;
+        let mut base_y = 0;
+        let mut base_uv = 0;
+        let mut base_tgt = 0;
 
-                let r_pack = v_pack.mul_add(rv_mul, y_pack);
-                let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_pack));
-                let b_pack = u_pack.mul_add(bu_mul, y_pack);
+        for _ in (0..width).step_by(STEP) {
+            let pixels = &mut target[base_tgt..(base_tgt + TGT_STEP)];
 
-                let (r_pack, g_pack, b_pack) = (
-                    r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-                    g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-                    b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-                );
+            let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_row[base_y..], 1);
+            let u_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(u_row[base_uv..], 2) - 128.0;
+            let v_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(v_row[base_uv..], 2) - 128.0;
 
-                let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
+            let r_pack = v_pack.mul_add(rv_mul, y_pack);
+            let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_pack));
+            let b_pack = u_pack.mul_add(bu_mul, y_pack);
 
-                for i in 0..STEP {
-                    pixels[(3 * i) + 0] = r_pack[i] as u8;
-                    pixels[(3 * i) + 1] = g_pack[i] as u8;
-                    pixels[(3 * i) + 2] = b_pack[i] as u8;
-                }
+            let (r_pack, g_pack, b_pack) = (
+                r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
+                g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
+                b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
+            );
+
+            let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
+
+            for i in 0..STEP {
+                pixels[(3 * i) + 0] = r_pack[i] as u8;
+                pixels[(3 * i) + 1] = g_pack[i] as u8;
+                pixels[(3 * i) + 2] = b_pack[i] as u8;
             }
+
+            base_y += STEP;
+            base_uv += UV_STEP;
+            base_tgt += TGT_STEP;
         }
     }
 
@@ -527,6 +578,29 @@ impl DecodedYUV<'_> {
             }
         }
     }
+}
+
+#[test]
+fn convert_yuv_to_rgb_512x512() {
+    let source = include_bytes!("../tests/data/single_512x512_cavlc.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default();
+    let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+    let mut rgb = vec![0; 2000 * 2000 * 3];
+    let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+    let dim = yuv.dimensions();
+    let rgb_len = dim.0 * dim.1 * 3;
+
+    let tgt = &mut rgb[0..rgb_len];
+
+    DecodedYUV::write_rgb8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), tgt);
+
+    let mut tgt2 = vec![0; tgt.len()];
+    DecodedYUV::write_rgb8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
+
+    assert_eq!(tgt, tgt2);
 }
 
 impl YUVSource for DecodedYUV<'_> {
