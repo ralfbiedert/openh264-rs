@@ -171,6 +171,7 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
     let config = DecoderConfig::default();
     let mut decoder = Decoder::with_api_config(api, config)?;
 
+    // Counting frames inside video
     let mut frames = 0;
     for packet in nal_units(src) {
         if decoder.decode_with_options(packet, DecodeOptions::NoFlush)?.is_some() {
@@ -178,7 +179,10 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
         }
     }
 
+    // Adding frames in buffer to the count
     frames += decoder.flush_all()?.len();
+
+    // Video should have exactly 300 frames
     assert_eq!(frames, 300);
 
     Ok(())
