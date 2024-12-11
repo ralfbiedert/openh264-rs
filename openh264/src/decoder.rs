@@ -492,14 +492,14 @@ impl DecodedYUV<'_> {
         let lower_bound = wide::f32x8::splat(0.0);
 
         const STEP: usize = 8;
-        assert!(y_row.len() % STEP == 0);
+        assert_eq!(y_row.len() % STEP, 0);
 
         const UV_STEP: usize = STEP / 2;
-        assert!(u_row.len() % UV_STEP == 0);
-        assert!(v_row.len() % UV_STEP == 0);
+        assert_eq!(u_row.len() % UV_STEP, 0);
+        assert_eq!(v_row.len() % UV_STEP, 0);
 
         const TGT_STEP: usize = STEP * 3;
-        assert!(target.len() % TGT_STEP == 0);
+        assert_eq!(target.len() % TGT_STEP, 0);
 
         let mut base_y = 0;
         let mut base_uv = 0;
