@@ -465,7 +465,7 @@ impl DecodedYUV<'_> {
             // calculate first RGB row
             let base_tgt = 2 * y * rgb_bytes_per_row;
             let row_target = &mut target[base_tgt..base_tgt + rgb_bytes_per_row];
-            Self::write_rgb8_f32x8_row(&y_row, &u_row, &v_row, width, row_target);
+            Self::write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
 
             // load Y values for second row
             let base_y = (2 * y + 1) * strides.0;
@@ -474,7 +474,7 @@ impl DecodedYUV<'_> {
             // calculate second RGB row
             let base_tgt = (2 * y + 1) * rgb_bytes_per_row;
             let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
-            Self::write_rgb8_f32x8_row(&y_row, &u_row, &v_row, width, row_target);
+            Self::write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
         }
     }
 
@@ -525,7 +525,7 @@ impl DecodedYUV<'_> {
             let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
             for i in 0..STEP {
-                pixels[(3 * i) + 0] = r_pack[i] as u8;
+                pixels[3 * i] = r_pack[i] as u8;
                 pixels[(3 * i) + 1] = g_pack[i] as u8;
                 pixels[(3 * i) + 2] = b_pack[i] as u8;
             }
