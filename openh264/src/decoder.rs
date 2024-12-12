@@ -139,6 +139,40 @@ impl Drop for DecoderRawAPI {
 unsafe impl Send for DecoderRawAPI {}
 unsafe impl Sync for DecoderRawAPI {}
 
+/// How the decoder should handle flushing.
+///
+/// Note, the behavior of flushing is somewhat unclear upstream. If you run into decoder errors,
+/// you should probably disable automatic flushing, and manually call [`Decoder::flush_remaining`]
+/// after all NAL units have been processed.
+///
+/// If you have more info on flushing best practices, we'd greatly appreciate a PR to make our
+/// decoding and  flushing pipeline more robust.
+#[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum FlushBehavior {
+    /// Uses the current currently configured decoder default.
+    #[default]
+    Auto,
+    /// Flushes after each decode operation.
+    Flush,
+    /// Do not flush after decode operations.
+    NoFlush,
+}
+
+impl FlushBehavior {
+    /// Given some existing flush options and some current frame decode options, returns
+    /// whether flushing should happen.
+    fn should_flush(&self, decoder_options: DecodeOptions) -> bool {
+        match (self, decoder_options.flush_after_decode) {
+            (FlushBehavior::Auto, FlushBehavior::Auto) => true,
+            (FlushBehavior::NoFlush, FlushBehavior::Auto) => false,
+            (FlushBehavior::Flush, FlushBehavior::Auto) => true,
+            (_, FlushBehavior::NoFlush) => false,
+            (_, FlushBehavior::Flush) => true,
+        }
+    }
+}
+
+
 /// Configuration for the [`Decoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -149,16 +183,21 @@ pub struct DecoderConfig {
     num_threads: DECODER_OPTION,
     debug: DECODER_OPTION,
     error_concealment: DECODER_OPTION,
+    flush_after_decode: FlushBehavior,
 }
+
+unsafe impl Send for DecoderConfig {}
+unsafe impl Sync for DecoderConfig {}
 
 impl DecoderConfig {
     /// Creates a new default encoder config.
     pub fn new() -> Self {
         Self {
-            params: Default::default(),
+            params: SDecodingParam::default(),
             num_threads: 0,
             debug: WELS_LOG_QUIET,
             error_concealment: 0,
+            flush_after_decode: FlushBehavior::NoFlush,
         }
     }
 
@@ -182,18 +221,38 @@ impl DecoderConfig {
         self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self
     }
+
+    /// Sets the default flush behavior after decode operations..
+    pub fn flush_after_decode(mut self, flush_behavior: FlushBehavior) -> Self {
+        self.flush_after_decode = flush_behavior;
+        self
+    }
 }
 
-#[derive(Default)]
-pub enum DecodeOptions {
-    #[default]
-    Flush,
-    NoFlush,
+
+/// Configuration for the current decode operation.
+#[derive(Default, Clone, Debug, Eq, PartialEq)]
+pub struct DecodeOptions {
+    flush_after_decode: FlushBehavior,
+}
+
+impl DecodeOptions {
+    /// Creates new decoder options.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets flush behavior for the current decode operation.
+    pub fn flush_after_decode(mut self, value: FlushBehavior) -> Self {
+        self.flush_after_decode = value;
+        self
+    }
 }
 
 /// An [OpenH264](https://github.com/cisco/openh264) decoder.
 pub struct Decoder {
     raw_api: DecoderRawAPI,
+    config: DecoderConfig,
 }
 
 impl Decoder {
@@ -208,20 +267,21 @@ impl Decoder {
 
     /// Create a decoder with the provided [API](OpenH264API) and [configuration](DecoderConfig).
     pub fn with_api_config(api: OpenH264API, mut config: DecoderConfig) -> Result<Self, Error> {
-        let raw = DecoderRawAPI::new(api)?;
+        let raw_api = DecoderRawAPI::new(api)?;
 
         // config.params.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
 
         #[rustfmt::skip]
         unsafe {
-            raw.initialize(&config.params).ok()?;
-            raw.set_option(DECODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
-            raw.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast()).ok()?;
-            raw.set_option(DECODER_OPTION_ERROR_CON_IDC, addr_of_mut!(config.error_concealment).cast()).ok()?;
+            raw_api.initialize(&config.params).ok()?;
+            raw_api.set_option(DECODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
+            raw_api.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast()).ok()?;
+            raw_api.set_option(DECODER_OPTION_ERROR_CON_IDC, addr_of_mut!(config.error_concealment).cast()).ok()?;
         };
 
-        Ok(Self { raw_api: raw })
+        Ok(Self { raw_api, config })
     }
+
 
     /// Decodes a series of H.264 NAL packets and returns the latest picture.
     ///
@@ -243,83 +303,62 @@ impl Decoder {
     /// - new frames after previous headers and frames were successfully decoded.
     ///
     /// In each case, it will return `Some(decoded)` image in YUV format if an image was available, or `None`
-    /// if more data needs to be provided. If `options` is set to [`Flush`](DecodeOptions::Flush), it will try
-    /// to flush a frame if the image was unavailable.
+    /// if more data needs to be provided. If `options` contains [`Flush`](FlushBehavior::Flush) (or if this
+    /// is set at the decoder default), it will try to flush a frame no image was available.
+    ///
+    /// In any case, it is a good idea to call [`Decoder::flush_remaining`] after you finished decoding.
     ///
     /// # Errors
     ///
-    /// The function returns an error if the bitstream was corrupted.
+    /// - The function returns an error if the bitstream was corrupted.
+    /// - Also, flushing best practices are somewhat hard to come by in OpenH264. You might get errors
+    ///   if you flushed when you shouldn't have, although we cannot exactly tell you when that is.
+    ///   If you have more information on how to make this more robust, a PR would be greatly welcome.
     pub fn decode_with_options(&mut self, packet: &[u8], options: DecodeOptions) -> Result<Option<DecodedYUV<'_>>, Error> {
         let mut dst = [null_mut::<u8>(); 3];
         let mut buffer_info = SBufferInfo::default();
+        let flush = self.config.flush_after_decode.should_flush(options);
 
         unsafe {
             self.raw_api
                 .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
                 .ok()?;
+        }
 
-            // Buffer status == 0 means frame data is not ready.
-            if buffer_info.iBufferStatus == 0 {
-                match options {
-                    DecodeOptions::Flush => {
-                        let mut num_frames: DECODER_OPTION = 0;
-                        self.raw_api()
-                            .get_option(
-                                DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
-                                addr_of_mut!(num_frames).cast(),
-                            )
-                            .ok()?;
+        match (buffer_info.iBufferStatus, flush) {
+            (0, true) if self.num_frames_in_buffer()? > 0 => {
+                let (dst, buffer_info) = self.flush_single_frame_raw()?;
 
-                        // If we have outstanding frames flush them, if then still no frame data ready we have an error.
-                        if num_frames > 0 {
-                            self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
-
-                            if buffer_info.iBufferStatus == 0 {
-                                return Err(Error::msg(
-                                    "Buffer status invalid, we have outstanding frames but failed to flush them.",
-                                ));
-                            }
-                        }
-                    }
-                    DecodeOptions::NoFlush => {
-                        return Ok(None);
-                    }
+                if buffer_info.iBufferStatus == 0 {
+                    return Err(Error::msg(
+                        "Buffer status invalid, we have outstanding frames but failed to flush them.",
+                    ));
                 }
-            }
 
-            Ok(DecodedYUV::new(&dst, &buffer_info))
+                unsafe { Ok(DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info)) }
+            }
+            (0, true) => Ok(None),
+            (0, false) => Ok(None),
+            _ => unsafe { Ok(DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info)) },
         }
     }
 
-    /// Flush and return every frames in buffer.
+    /// Flush and return all remaining frames in the buffer.
     ///
-    /// This function should be called after decoding every frames of the stream.
+    /// This function should be called after decoding all frames of the NAL stream.
     ///
     /// # Errors
     ///
     /// The function returns an error if the bitstream was corrupted.
-    pub fn flush_all(&mut self) -> Result<Vec<DecodedYUV>, Error> {
+    pub fn flush_remaining(&mut self) -> Result<Vec<DecodedYUV>, Error> {
         let mut frames = Vec::new();
 
-        unsafe {
-            let mut dst = [null_mut::<u8>(); 3];
-            let mut buffer_info = SBufferInfo::default();
+        for _ in 0..self.num_frames_in_buffer()? {
+            let (dst, buffer_info) = self.flush_single_frame_raw()?;
 
-            let mut num_frames: DECODER_OPTION = 0;
-            self.raw_api()
-                .get_option(
-                    DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
-                    addr_of_mut!(num_frames).cast(),
-                )
-                .ok()?;
-
-            for _ in 0..num_frames {
-                self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
-
-                if let Some(image) = DecodedYUV::new(&dst, &buffer_info) {
-                    frames.push(image);
-                };
-            }
+            if let Some(image) = unsafe { DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info) } {
+                frames.push(image);
+            };
         }
 
         Ok(frames)
@@ -354,6 +393,32 @@ impl Decoder {
     pub unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
         &mut self.raw_api
     }
+
+    /// Returns the number of frames currently remaining in the buffer.
+    fn num_frames_in_buffer(&mut self) -> Result<usize, Error> {
+        let mut num_frames: DECODER_OPTION = 0;
+        unsafe {
+            self.raw_api()
+                .get_option(
+                    DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+                    addr_of_mut!(num_frames).cast(),
+                )
+                .ok()?;
+        }
+
+        Ok(num_frames as usize)
+    }
+
+    /// Attempts to flush a single frame (i.e., produce a new YUV from previously passed bitstream data), if available.
+    fn flush_single_frame_raw(&mut self) -> Result<([*mut u8; 3], TagBufferInfo), Error> {
+        let mut dst = [null_mut::<u8>(); 3];
+        let mut buffer_info = SBufferInfo::default();
+
+        unsafe {
+            self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
+            Ok((dst, buffer_info))
+        }
+    }
 }
 
 impl Drop for Decoder {
@@ -377,7 +442,11 @@ pub struct DecodedYUV<'a> {
 }
 
 impl DecodedYUV<'_> {
-    unsafe fn new(dst: &[*mut u8; 3], buffer_info: &TagBufferInfo) -> Option<Self> {
+    /// Attempts to create a decoded YUV wrapper from a set of Open264 pointers.
+    ///
+    /// This can soft-fail (return `None`) because we might still have gotten `null` pointers from
+    /// OpenH264 despite it not having returned an error on decode.
+    unsafe fn from_raw_open264_ptrs(dst: &[*mut u8; 3], buffer_info: &TagBufferInfo) -> Option<Self> {
         let info = buffer_info.UsrData.sSystemBuffer;
         let timestamp = Timestamp::from_millis(buffer_info.uiInBsTimeStamp); // TODO: Is this the right one?
 

@@ -2,7 +2,7 @@ mod mp4_bitstream_converter;
 
 use crate::mp4_bitstream_converter::Mp4BitstreamConverter;
 use anyhow::{anyhow, Error};
-use openh264::decoder::{DecodeOptions, Decoder, DecoderConfig};
+use openh264::decoder::{Decoder, DecoderConfig, FlushBehavior};
 use std::{
     fs::File,
     io::{Cursor, Read, Write},
@@ -30,12 +30,13 @@ fn main() -> Result<(), Error> {
     let track_id = track.track_id();
     let width = track.width() as usize;
     let height = track.height() as usize;
+    let decoder_options = DecoderConfig::new().debug(true).flush_after_decode(FlushBehavior::NoFlush);
 
     // mp4 spits out length-prefixed NAL units, but openh264 expects start codes
     // the mp4 stream also lacks parameter sets, so we need to add them
     // Mp4BitstreamConverter does this for us
     let mut bitstream_converter = Mp4BitstreamConverter::for_mp4_track(track)?;
-    let mut decoder = Decoder::with_api_config(openh264::OpenH264API::from_source(), DecoderConfig::new().debug(true)).unwrap();
+    let mut decoder = Decoder::with_api_config(openh264::OpenH264API::from_source(), decoder_options).unwrap();
 
     let mut buffer = Vec::new();
     let mut rgb = vec![0; width * height * 3];
@@ -48,7 +49,7 @@ fn main() -> Result<(), Error> {
 
         // convert the packet from mp4 representation to one that openh264 can decode
         bitstream_converter.convert_packet(&sample.bytes, &mut buffer);
-        match decoder.decode_with_options(&buffer, DecodeOptions::NoFlush) {
+        match decoder.decode(&buffer) {
             Ok(Some(image)) => {
                 image.write_rgb8(&mut rgb);
                 save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
@@ -64,7 +65,7 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    for image in decoder.flush_all()? {
+    for image in decoder.flush_remaining()? {
         image.write_rgb8(&mut rgb);
         save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
         frame_idx += 1;

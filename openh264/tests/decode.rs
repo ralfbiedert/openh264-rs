@@ -1,7 +1,7 @@
 use std::io::{Cursor, Read};
 
 use image::RgbImage;
-use openh264::decoder::{DecodeOptions, Decoder, DecoderConfig};
+use openh264::decoder::{Decoder, DecoderConfig, FlushBehavior};
 use openh264::formats::{RgbSliceU8, YUVSource};
 use openh264::{nal_units, Error, OpenH264API};
 
@@ -168,19 +168,19 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
     let src = include_bytes!("data/big_buck_bunny_640x360.h264");
 
     let api = OpenH264API::from_source();
-    let config = DecoderConfig::default();
+    let config = DecoderConfig::default().flush_after_decode(FlushBehavior::NoFlush);
     let mut decoder = Decoder::with_api_config(api, config)?;
 
     // Counting frames inside video
     let mut frames = 0;
     for packet in nal_units(src) {
-        if decoder.decode_with_options(packet, DecodeOptions::NoFlush)?.is_some() {
+        if decoder.decode(packet)?.is_some() {
             frames += 1;
         }
     }
 
     // Adding frames in buffer to the count
-    frames += decoder.flush_all()?.len();
+    frames += decoder.flush_remaining()?.len();
 
     // Video should have exactly 300 frames
     assert_eq!(frames, 300);
@@ -192,7 +192,7 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
 // The packets in the file are written frame by frame
 // the first 4 bytes are frame length in little endian
 // followed by actual frame data
-pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>>
+pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item=Vec<u8>>
 where
     T: Read,
 {
