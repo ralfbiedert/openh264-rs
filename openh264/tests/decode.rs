@@ -103,7 +103,7 @@ fn fails_on_truncated() -> Result<(), Error> {
 
 #[test]
 #[cfg(feature = "source")]
-fn what_goes_around_comes_around() -> Result<(), Error> {
+fn can_decode_encoded() -> Result<(), Error> {
     use openh264::encoder::{Encoder, EncoderConfig};
     use openh264::formats::YUVBuffer;
 

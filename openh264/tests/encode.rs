@@ -110,7 +110,7 @@ fn encoder_sps_pps() -> Result<(), Error> {
 
 #[test]
 #[cfg(feature = "source")]
-fn what_goes_around_comes_around() -> Result<(), Error> {
+fn can_encode_decoded() -> Result<(), Error> {
     use openh264::decoder::{Decoder, DecoderConfig};
 
     let src = include_bytes!("data/single_512x512_cavlc.h264");
