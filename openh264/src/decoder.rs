@@ -450,21 +450,21 @@ impl DecodedYUV<'_> {
         // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
         // the user should try to continue decoding.
         if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
-            return None;
+            None
+        } else {
+            // https://github.com/cisco/openh264/issues/2379
+            let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
+            let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
+            let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
+
+            Some(Self {
+                info,
+                timestamp,
+                y,
+                u,
+                v,
+            })
         }
-
-        // https://github.com/cisco/openh264/issues/2379
-        let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
-        let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
-        let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
-
-        Some(Self {
-            info,
-            timestamp,
-            y,
-            u,
-            v,
-        })
     }
 
     /// Returns the unpadded U size.
