@@ -2,7 +2,7 @@
 //!
 //! # Examples
 //!
-//! Basic [Decoder] use looks as follows. In practice, you might get your `h256`
+//! Basic [Decoder] use looks as follows. In practice, you might get your `h264`
 //! bitstream from reading a file or network source.
 //!
 //! ```rust
@@ -141,15 +141,15 @@ unsafe impl Sync for DecoderRawAPI {}
 
 /// How the decoder should handle flushing.
 ///
-/// Note, the behavior of flushing is somewhat unclear upstream. If you run into decoder errors,
+/// The behavior of flushing is somewhat unclear upstream. If you run into decoder errors,
 /// you should probably disable automatic flushing, and manually call [`Decoder::flush_remaining`]
-/// after all NAL units have been processed.
+/// after all NAL units have been processed. It might be a good idea to do the latter regardless.
 ///
 /// If you have more info on flushing best practices, we'd greatly appreciate a PR to make our
-/// decoding and  flushing pipeline more robust.
+/// decoding pipeline more robust.
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum FlushBehavior {
-    /// Uses the current currently configured decoder default.
+pub enum Flush {
+    /// Uses the current currently configured decoder default (which is attempted flushing after each decode).
     #[default]
     Auto,
     /// Flushes after each decode operation.
@@ -158,16 +158,16 @@ pub enum FlushBehavior {
     NoFlush,
 }
 
-impl FlushBehavior {
+impl Flush {
     /// Given some existing flush options and some current frame decode options, returns
     /// whether flushing should happen.
     fn should_flush(&self, decoder_options: DecodeOptions) -> bool {
         match (self, decoder_options.flush_after_decode) {
-            (FlushBehavior::Auto, FlushBehavior::Auto) => true,
-            (FlushBehavior::NoFlush, FlushBehavior::Auto) => false,
-            (FlushBehavior::Flush, FlushBehavior::Auto) => true,
-            (_, FlushBehavior::NoFlush) => false,
-            (_, FlushBehavior::Flush) => true,
+            (Flush::Auto, Flush::Auto) => true,
+            (Flush::NoFlush, Flush::Auto) => false,
+            (Flush::Flush, Flush::Auto) => true,
+            (_, Flush::NoFlush) => false,
+            (_, Flush::Flush) => true,
         }
     }
 }
@@ -182,7 +182,7 @@ pub struct DecoderConfig {
     num_threads: DECODER_OPTION,
     debug: DECODER_OPTION,
     error_concealment: DECODER_OPTION,
-    flush_after_decode: FlushBehavior,
+    flush_after_decode: Flush,
 }
 
 unsafe impl Send for DecoderConfig {}
@@ -196,7 +196,7 @@ impl DecoderConfig {
             num_threads: 0,
             debug: WELS_LOG_QUIET,
             error_concealment: 0,
-            flush_after_decode: FlushBehavior::Flush,
+            flush_after_decode: Flush::Flush,
         }
     }
 
@@ -222,7 +222,7 @@ impl DecoderConfig {
     }
 
     /// Sets the default flush behavior after decode operations..
-    pub fn flush_after_decode(mut self, flush_behavior: FlushBehavior) -> Self {
+    pub fn flush_after_decode(mut self, flush_behavior: Flush) -> Self {
         self.flush_after_decode = flush_behavior;
         self
     }
@@ -231,7 +231,7 @@ impl DecoderConfig {
 /// Configuration for the current decode operation.
 #[derive(Default, Clone, Debug, Eq, PartialEq)]
 pub struct DecodeOptions {
-    flush_after_decode: FlushBehavior,
+    flush_after_decode: Flush,
 }
 
 impl DecodeOptions {
@@ -240,8 +240,8 @@ impl DecodeOptions {
         Self::default()
     }
 
-    /// Sets flush behavior for the current decode operation.
-    pub fn flush_after_decode(mut self, value: FlushBehavior) -> Self {
+    /// Sets the flush behavior for the upcoming decode operation.
+    pub fn flush_after_decode(mut self, value: Flush) -> Self {
         self.flush_after_decode = value;
         self
     }
@@ -295,15 +295,16 @@ impl Decoder {
     ///
     /// This function can be called with:
     ///
-    /// - only a complete SPS / PPS header (usually the first some 30 bytes of a H.264 stream)
-    /// - the headers and series of complete frames
+    /// - only the complete SPS / PPS header (usually the first some 30 bytes of a H.264 stream),
+    /// - the headers and series of complete frames,
     /// - new frames after previous headers and frames were successfully decoded.
     ///
     /// In each case, it will return `Some(decoded)` image in YUV format if an image was available, or `None`
-    /// if more data needs to be provided. If `options` contains [`Flush`](FlushBehavior::Flush) (or if this
-    /// is set at the decoder default), it will try to flush a frame no image was available.
+    /// if more data needs to be provided. If `options` contains [`Flush`](Flush::Flush) (or if this
+    /// is set as the decoder default), it will try to flush a frame no image was available.
     ///
-    /// In any case, it is a good idea to call [`Decoder::flush_remaining`] after you finished decoding.
+    /// In any case, it is probably a good idea to call [`Decoder::flush_remaining`] after you
+    /// finished decoding all available NAL units.
     ///
     /// # Errors
     ///
@@ -344,7 +345,7 @@ impl Decoder {
 
     /// Flush and return all remaining frames in the buffer.
     ///
-    /// This function should be called after decoding all frames of the NAL stream.
+    /// This function should be called after decoding all frames of a NAL stream.
     ///
     /// # Errors
     ///

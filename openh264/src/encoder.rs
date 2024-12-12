@@ -426,7 +426,7 @@ impl Drop for Encoder {
     }
 }
 
-/// Bitstream output resulting from an [encode()](Encoder::encode) operation.
+/// Bitstream output resulting from an [`encode()`](Encoder::encode) operation.
 pub struct EncodedBitStream<'a> {
     /// Holds the bitstream info just encoded.
     bit_stream_info: &'a SFrameBSInfo,

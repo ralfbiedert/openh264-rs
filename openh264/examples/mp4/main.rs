@@ -2,7 +2,7 @@ mod mp4_bitstream_converter;
 
 use crate::mp4_bitstream_converter::Mp4BitstreamConverter;
 use anyhow::{anyhow, Error};
-use openh264::decoder::{Decoder, DecoderConfig, FlushBehavior};
+use openh264::decoder::{Decoder, DecoderConfig, Flush};
 use std::{
     fs::File,
     io::{Cursor, Read, Write},
@@ -30,7 +30,7 @@ fn main() -> Result<(), Error> {
     let track_id = track.track_id();
     let width = track.width() as usize;
     let height = track.height() as usize;
-    let decoder_options = DecoderConfig::new().debug(true).flush_after_decode(FlushBehavior::NoFlush);
+    let decoder_options = DecoderConfig::new().debug(true).flush_after_decode(Flush::NoFlush);
 
     // mp4 spits out length-prefixed NAL units, but openh264 expects start codes
     // the mp4 stream also lacks parameter sets, so we need to add them

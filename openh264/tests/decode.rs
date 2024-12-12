@@ -1,7 +1,7 @@
 use std::io::{Cursor, Read};
 
 use image::RgbImage;
-use openh264::decoder::{Decoder, DecoderConfig, FlushBehavior};
+use openh264::decoder::{Decoder, DecoderConfig, Flush};
 use openh264::formats::{RgbSliceU8, YUVSource};
 use openh264::{nal_units, Error, OpenH264API};
 
@@ -168,8 +168,9 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
     let src = include_bytes!("data/big_buck_bunny_640x360.h264");
 
     let api = OpenH264API::from_source();
-    let config = DecoderConfig::default().flush_after_decode(FlushBehavior::NoFlush);
+    let config = DecoderConfig::default().flush_after_decode(Flush::NoFlush);
     let mut decoder = Decoder::with_api_config(api, config)?;
+    let mut rgb = vec![0_u8; 640 * 360 * 3];
 
     // Counting frames inside video
     let mut frames = 0;
@@ -180,7 +181,13 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
     }
 
     // Adding frames in buffer to the count
-    frames += decoder.flush_remaining()?.len();
+    let remaining = decoder.flush_remaining()?;
+    frames += remaining.len();
+
+    // And make sure we can actually access the remaining flushed frames.
+    for frame in remaining {
+        frame.write_rgb8(&mut rgb);
+    }
 
     // Video should have exactly 300 frames
     assert_eq!(frames, 300);
