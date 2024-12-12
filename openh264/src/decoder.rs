@@ -323,6 +323,7 @@ impl Decoder {
         }
 
         match (buffer_info.iBufferStatus, flush) {
+            // No outstanding images, but asked to flush, and flushable frames available?
             (0, true) if self.num_frames_in_buffer()? > 0 => {
                 let (dst, buffer_info) = self.flush_single_frame_raw()?;
 
@@ -334,8 +335,9 @@ impl Decoder {
 
                 unsafe { Ok(DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info)) }
             }
-            (0, true) => Ok(None),
-            (0, false) => Ok(None),
+            // No outstanding images otherwise? Nothing to do.
+            (0, _) => Ok(None),
+            // Outstanding images otherwise? Return one.
             _ => unsafe { Ok(DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info)) },
         }
     }
