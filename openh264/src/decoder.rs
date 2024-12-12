@@ -172,7 +172,6 @@ impl FlushBehavior {
     }
 }
 
-
 /// Configuration for the [`Decoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -229,7 +228,6 @@ impl DecoderConfig {
     }
 }
 
-
 /// Configuration for the current decode operation.
 #[derive(Default, Clone, Debug, Eq, PartialEq)]
 pub struct DecodeOptions {
@@ -281,7 +279,6 @@ impl Decoder {
 
         Ok(Self { raw_api, config })
     }
-
 
     /// Decodes a series of H.264 NAL packets and returns the latest picture.
     ///

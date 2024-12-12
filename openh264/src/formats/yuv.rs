@@ -365,7 +365,8 @@ mod tests {
         let strides = (8, 4, 4);
 
         // build artificial YUV planes containing the entire YUV spectrum
-        for y in (0..=255u8).choose_multiple(&mut rng, 10) { // we sample probabilistically here, otherwise the test takes too long
+        for y in (0..=255u8).choose_multiple(&mut rng, 10) {
+            // we sample probabilistically here, otherwise the test takes too long
             for u in (0..=255u8).choose_multiple(&mut rng, 10) {
                 for v in (0..=255u8).choose_multiple(&mut rng, 10) {
                     let (y_plane, u_plane, v_plane) = (vec![y; 16], vec![u; 4], vec![v; 4]);
