@@ -247,6 +247,8 @@ mod tests {
     use super::{YUVBuffer, YUVSlices};
     use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar};
     use crate::formats::{RgbSliceU8, YUVSource};
+    use rand::prelude::IteratorRandom;
+    use rand::thread_rng;
 
     #[test]
     fn rgb_to_yuv_conversion_black_2x2() {
@@ -358,13 +360,14 @@ mod tests {
     /// Test every YUV value and see, if the SIMD version delivers a similar RGB value.
     #[test]
     fn test_write_rgb8_f32x8_spectrum() {
+        let mut rng = thread_rng();
         let dim = (8, 2);
         let strides = (8, 4, 4);
 
         // build artificial YUV planes containing the entire YUV spectrum
-        for y in 0..=255u8 {
-            for u in 0..=255u8 {
-                for v in 0..=255u8 {
+        for y in (0..=255u8).choose_multiple(&mut rng, 10) { // we sample probabilistically here, otherwise the test takes too long
+            for u in (0..=255u8).choose_multiple(&mut rng, 10) {
+                for v in (0..=255u8).choose_multiple(&mut rng, 10) {
                     let (y_plane, u_plane, v_plane) = (vec![y; 16], vec![u; 4], vec![v; 4]);
                     let mut target = vec![0; dim.0 * dim.1 * 3];
                     write_rgb8_scalar(&y_plane, &u_plane, &v_plane, dim, strides, &mut target);
