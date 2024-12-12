@@ -196,7 +196,7 @@ impl DecoderConfig {
             num_threads: 0,
             debug: WELS_LOG_QUIET,
             error_concealment: 0,
-            flush_after_decode: FlushBehavior::NoFlush,
+            flush_after_decode: FlushBehavior::Flush,
         }
     }
 
