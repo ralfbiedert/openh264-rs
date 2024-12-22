@@ -165,9 +165,14 @@ impl Default for SpsPpsStrategy {
     }
 }
 
+/// The intended usage scenario for the encoder.
+///
+/// Note, this documen
 #[derive(Copy, Clone, Debug)]
 pub enum UsageType {
+    /// Camera video for real-time communication.
     CameraVideoRealTime,
+    /// Screen content signal.
     ScreenContentRealTime,
     CameraVideoNonRealTime,
     ScreenContentNonRealTime,
