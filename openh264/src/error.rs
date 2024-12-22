@@ -8,7 +8,6 @@ pub struct Error {
     native: i64,
     decoding_state: DECODING_STATE,
     misc: Option<String>,
-    #[cfg(feature = "backtrace")]
     backtrace: Option<std::backtrace::Backtrace>,
 }
 
@@ -19,7 +18,6 @@ impl Error {
             native,
             decoding_state: dsErrorFree,
             misc: None,
-            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
@@ -31,7 +29,6 @@ impl Error {
             native: 0,
             decoding_state,
             misc: None,
-            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
@@ -43,7 +40,6 @@ impl Error {
             native: 0,
             decoding_state: dsErrorFree,
             misc: Some(msg.to_string()),
-            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
@@ -56,13 +52,11 @@ impl Error {
             native: 0,
             decoding_state: dsErrorFree,
             misc: Some(msg),
-            #[cfg(feature = "backtrace")]
             backtrace: Some(std::backtrace::Backtrace::capture()),
         }
     }
 
     /// Returns the backtrace, if available.
-    #[cfg(feature = "backtrace")]
     #[allow(clippy::missing_const_for_fn)]
     pub const fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
         self.backtrace.as_ref()
@@ -84,7 +78,6 @@ impl Display for Error {
         f.write_str(". User Message:")?;
         self.misc.fmt(f)?;
 
-        #[cfg(feature = "backtrace")]
         {
             f.write_str(". Backtraces enabled.")?;
         }
@@ -140,7 +133,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "backtrace")]
     fn backtrace_works() {
         _ = Error::from_native(1).backtrace.expect("Must have backtrace");
     }

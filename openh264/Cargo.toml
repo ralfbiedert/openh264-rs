@@ -20,7 +20,6 @@ workspace = true
 default = ["source"]
 source = ["openh264-sys2/source"]
 libloading = ["openh264-sys2/libloading"]
-backtrace = [] # Remove once backtrace feature is stable.
 
 
 [dependencies]
