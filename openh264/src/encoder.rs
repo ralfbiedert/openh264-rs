@@ -199,6 +199,30 @@ impl Default for UsageType {
     }
 }
 
+/// Bitrate of the encoder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct BitRate(u32);
+
+impl BitRate {
+    /// Creates a new bitrate with the given bits per second.
+    #[must_use]
+    pub const fn from_bps(bps: u32) -> Self {
+        Self(bps)
+    }
+}
+
+/// Frame rate of the encoder.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
+pub struct FrameRate(f32);
+
+impl FrameRate {
+    /// Creates a new framerate with the given Hertz.
+    #[must_use]
+    pub const fn from_hz(hz: f32) -> Self {
+        Self(hz)
+    }
+}
+
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -206,11 +230,11 @@ impl Default for UsageType {
 #[must_use]
 pub struct EncoderConfig {
     enable_skip_frame: bool,
-    target_bitrate: u32,
+    target_bitrate: BitRate,
     enable_denoise: bool,
     debug: i32,
     data_format: EVideoFormatType,
-    max_frame_rate: f32,
+    max_frame_rate: FrameRate,
     rate_control_mode: RateControlMode,
     sps_pps_strategy: SpsPpsStrategy,
     multiple_thread_idc: u16,
@@ -219,23 +243,23 @@ pub struct EncoderConfig {
 
 impl EncoderConfig {
     /// Creates a new default encoder config.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             enable_skip_frame: true,
-            target_bitrate: 120_000,
+            target_bitrate: BitRate::from_bps(120_000),
             enable_denoise: false,
             debug: 0,
             data_format: videoFormatI420,
-            max_frame_rate: 0.0,
-            rate_control_mode: RateControlMode::default(),
-            sps_pps_strategy: SpsPpsStrategy::default(),
+            max_frame_rate: FrameRate::from_hz(0.0),
+            rate_control_mode: RateControlMode::Quality,
+            sps_pps_strategy: SpsPpsStrategy::ConstantId,
             multiple_thread_idc: 0,
-            usage_type: UsageType::default(),
+            usage_type: UsageType::CameraVideoRealTime,
         }
     }
 
     /// Sets the requested bit rate in bits per second.
-    pub const fn set_bitrate_bps(mut self, bps: u32) -> Self {
+    pub const fn bitrate(mut self, bps: BitRate) -> Self {
         self.target_bitrate = bps;
         self
     }
@@ -247,18 +271,18 @@ impl EncoderConfig {
     }
 
     /// Set whether frames can be skipped to meet desired rate control target.
-    pub const fn enable_skip_frame(mut self, value: bool) -> Self {
+    pub const fn skip_frames(mut self, value: bool) -> Self {
         self.enable_skip_frame = value;
         self
     }
 
     /// Sets the requested maximum frame rate in Hz.
-    pub const fn max_frame_rate(mut self, value: f32) -> Self {
+    pub const fn max_frame_rate(mut self, value: FrameRate) -> Self {
         self.max_frame_rate = value;
         self
     }
 
-    /// Sets usage type.
+    /// Sets the usage type (e.g, screen vs. camera recording).
     pub const fn usage_type(mut self, value: UsageType) -> Self {
         self.usage_type = value;
         self
@@ -279,11 +303,11 @@ impl EncoderConfig {
     /// Sets the number of internal encoder threads.
     ///
     /// * 0 - auto mode
-    /// * 1 - multiple threads disabled
+    /// * 1 - single threaded operation
     /// * &gt;1 - fixed number of threads
     ///
     /// Defaults to 0 (auto mode).
-    pub const fn set_multiple_thread_idc(mut self, threads: u16) -> Self {
+    pub const fn num_threads(mut self, threads: u16) -> Self {
         self.multiple_thread_idc = threads;
         self
     }
@@ -432,9 +456,9 @@ impl Encoder {
         params.iPicHeight = height as c_int; // If we do .into() instead, could this fail to compile on some platforms?
         params.iRCMode = self.config.rate_control_mode.to_c();
         params.bEnableFrameSkip = self.config.enable_skip_frame;
-        params.iTargetBitrate = self.config.target_bitrate.try_into()?;
+        params.iTargetBitrate = self.config.target_bitrate.0.try_into()?;
         params.bEnableDenoise = self.config.enable_denoise;
-        params.fMaxFrameRate = self.config.max_frame_rate;
+        params.fMaxFrameRate = self.config.max_frame_rate.0;
         params.eSpsPpsIdStrategy = self.config.sps_pps_strategy.to_c();
         params.iMultipleThreadIdc = self.config.multiple_thread_idc;
         params.iUsageType = self.config.usage_type.to_c();

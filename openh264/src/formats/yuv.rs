@@ -46,7 +46,7 @@ pub trait YUVSource {
     ///
     /// This function should return `w * h * 3`.
     #[must_use]
-    fn estimate_rgb_u8_size(&self) -> usize {
+    fn rgb8_len(&self) -> usize {
         let (w, h) = self.dimensions();
         w * h * 3
     }
@@ -55,7 +55,7 @@ pub trait YUVSource {
     ///
     /// This function should return `w * h * 4`.
     #[must_use]
-    fn estimate_rgba_u8_size(&self) -> usize {
+    fn rgba8_len(&self) -> usize {
         let (w, h) = self.dimensions();
         w * h * 4
     }

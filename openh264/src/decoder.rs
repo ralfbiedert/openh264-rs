@@ -39,7 +39,7 @@
 //! #
 //! # for packet in nal_units(h264_in) {
 //! #    let Ok(Some(yuv)) = decoder.decode(packet) else { continue; };
-//! let rgb_len = yuv.estimate_rgb_u8_size();
+//! let rgb_len = yuv.rgb8_len();
 //! let mut rgb_raw = vec![0; rgb_len];
 //!
 //! yuv.write_rgb8(&mut rgb_raw);
@@ -53,8 +53,8 @@ use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar};
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, TagBufferInfo, API,
-    DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
+    videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, SVideoProperty,
+    TagBufferInfo, API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
     DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
@@ -191,9 +191,19 @@ unsafe impl Sync for DecoderConfig {}
 
 impl DecoderConfig {
     /// Creates a new default encoder config.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            params: SDecodingParam::default(),
+            params: SDecodingParam {
+                pFileNameRestructed: null_mut(),
+                uiCpuLoad: 0,
+                uiTargetDqLayer: 0,
+                eEcActiveIdc: 0,
+                bParseOnly: false,
+                sVideoProperty: SVideoProperty {
+                    size: 0,
+                    eVideoBsType: 0,
+                },
+            },
             num_threads: 0,
             debug: WELS_LOG_QUIET,
             error_concealment: 0,
@@ -201,7 +211,7 @@ impl DecoderConfig {
         }
     }
 
-    /// Sets the number of threads; this will probably segfault, see below.<sup>⚠️</sup>
+    /// Sets the number of threads; will probably segfault the decoder, see below.<sup>⚠️</sup>
     ///
     /// # Safety
     ///

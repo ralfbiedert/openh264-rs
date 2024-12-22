@@ -116,7 +116,7 @@ impl NalParser {
 
     /// Feeds more data to the processor.
     ///
-    /// After calling this method, there may be between 0 to M new NAL units present, which you can query with [`next()`].
+    /// After calling this method, there may be between 0 to M new NAL units present, which you can query with [`Self::next()`].
     pub fn feed(&mut self, buffer: impl AsRef<[u8]>) {
         self.leftover_buffer.extend_from_slice(buffer.as_ref());
     }
