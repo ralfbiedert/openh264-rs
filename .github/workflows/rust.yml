@@ -67,7 +67,7 @@ jobs:
         with:
           lfs: true
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.83
         with:
           components: rustfmt,clippy
           targets: ${{ matrix.target }}

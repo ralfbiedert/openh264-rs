@@ -13,7 +13,7 @@ complexity = { level = "deny", priority = -1 }
 perf = { level = "deny", priority = -1 }
 style = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
-nursery = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 } # We might want to disable this if it causes issues.
 
 # Things we still allow
 doc_markdown = "allow" # trips up on "OpenH264"
