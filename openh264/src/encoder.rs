@@ -4,9 +4,10 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo, SLayerBSInfo,
-    SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT,
-    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo,
+    SLayerBSInfo, SSourcePicture, API, CAMERA_VIDEO_REAL_TIME, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
+    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, SCREEN_CONTENT_REAL_TIME, VIDEO_CODING_LAYER,
+    WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, null, null_mut};
@@ -164,6 +165,33 @@ impl Default for SpsPpsStrategy {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum UsageType {
+    CameraVideoRealTime,
+    ScreenContentRealTime,
+    CameraVideoNonRealTime,
+    ScreenContentNonRealTime,
+    InputContentTypeAll,
+}
+
+impl UsageType {
+    fn to_c(self) -> EUsageType {
+        match self {
+            UsageType::CameraVideoRealTime => CAMERA_VIDEO_REAL_TIME,
+            UsageType::ScreenContentRealTime => SCREEN_CONTENT_REAL_TIME,
+            UsageType::CameraVideoNonRealTime => openh264_sys2::CAMERA_VIDEO_NON_REAL_TIME,
+            UsageType::ScreenContentNonRealTime => openh264_sys2::SCREEN_CONTENT_NON_REAL_TIME,
+            UsageType::InputContentTypeAll => openh264_sys2::INPUT_CONTENT_TYPE_ALL,
+        }
+    }
+}
+
+impl Default for UsageType {
+    fn default() -> Self {
+        Self::CameraVideoRealTime
+    }
+}
+
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -179,6 +207,7 @@ pub struct EncoderConfig {
     rate_control_mode: RateControlMode,
     sps_pps_strategy: SpsPpsStrategy,
     multiple_thread_idc: u16,
+    usage_type: UsageType,
 }
 
 impl EncoderConfig {
@@ -194,6 +223,7 @@ impl EncoderConfig {
             rate_control_mode: Default::default(),
             sps_pps_strategy: Default::default(),
             multiple_thread_idc: 0,
+            usage_type: Default::default(),
         }
     }
 
@@ -218,6 +248,12 @@ impl EncoderConfig {
     /// Sets the requested maximum frame rate in Hz.
     pub fn max_frame_rate(mut self, value: f32) -> Self {
         self.max_frame_rate = value;
+        self
+    }
+
+    /// Sets usage type.
+    pub fn usage_type(mut self, value: UsageType) -> Self {
+        self.usage_type = value;
         self
     }
 
@@ -377,6 +413,7 @@ impl Encoder {
         params.fMaxFrameRate = self.config.max_frame_rate;
         params.eSpsPpsIdStrategy = self.config.sps_pps_strategy.to_c();
         params.iMultipleThreadIdc = self.config.multiple_thread_idc;
+        params.iUsageType = self.config.usage_type.to_c();
 
         unsafe {
             if self.previous_dimensions.is_none() {
