@@ -569,9 +569,9 @@ impl DecodedYUV<'_> {
                 let u: f32 = self.u[base_u].into();
                 let v: f32 = self.v[base_v].into();
 
-                rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
-                rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
-                rgb_pixel[2] = (y + 1.772 * (u - 128.0)) as u8;
+                rgb_pixel[0] = 1.402f32.mul_add(v - 128.0, y) as u8;
+                rgb_pixel[1] = 0.714f32.mul_add(-(v - 128.0), 0.344f32.mul_add(-(u - 128.0), y)) as u8;
+                rgb_pixel[2] = 1.772f32.mul_add(u - 128.0, y) as u8;
                 rgb_pixel[3] = 255;
             }
         }

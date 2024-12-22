@@ -19,15 +19,15 @@ pub fn write_yuv_by_pixel(
 
     // y is full size, u, v is quarter size
     let mut write_y = |x: usize, y: usize, rgb: (f32, f32, f32)| {
-        y_buf[x + y * width] = (0.2578125 * rgb.0 + 0.50390625 * rgb.1 + 0.09765625 * rgb.2 + 16.0) as u8;
+        y_buf[x + y * width] = (0.09765625f32.mul_add(rgb.2, 0.2578125f32.mul_add(rgb.0, 0.50390625 * rgb.1)) + 16.0) as u8;
     };
 
     let mut write_u = |x: usize, y: usize, rgb: (f32, f32, f32)| {
-        u_buf[x + y * half_width] = (-0.1484375 * rgb.0 + -0.2890625 * rgb.1 + 0.4375 * rgb.2 + 128.0) as u8;
+        u_buf[x + y * half_width] = (0.4375f32.mul_add(rgb.2, (-0.1484375f32).mul_add(rgb.0, -0.2890625 * rgb.1)) + 128.0) as u8;
     };
 
     let mut write_v = |x: usize, y: usize, rgb: (f32, f32, f32)| {
-        v_buf[x + y * half_width] = (0.4375 * rgb.0 + -0.3671875 * rgb.1 + -0.0703125 * rgb.2 + 128.0) as u8;
+        v_buf[x + y * half_width] = ((-0.0703125f32).mul_add(rgb.2, 0.4375f32.mul_add(rgb.0, -0.3671875 * rgb.1)) + 128.0) as u8;
     };
 
     for i in 0..width / 2 {
@@ -77,17 +77,17 @@ pub fn write_yuv_scalar(
     // y is full size, u, v is quarter size
     let mut write_y = |x: usize, y: usize, rgb: &[u8]| {
         let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
-        y_buf[x + y * width] = (0.2578125 * r + 0.50390625 * g + 0.09765625 * b + 16.0) as u8;
+        y_buf[x + y * width] = (0.09765625f32.mul_add(b, 0.2578125f32.mul_add(r, 0.50390625 * g)) + 16.0) as u8;
     };
 
     let mut write_u = |x: usize, y: usize, rgb: &[u8]| {
         let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
-        u_buf[x + y * half_width] = (-0.1484375 * r + -0.2890625 * g + 0.4375 * b + 128.0) as u8;
+        u_buf[x + y * half_width] = (0.4375f32.mul_add(b, (-0.1484375f32).mul_add(r, -0.2890625 * g)) + 128.0) as u8;
     };
 
     let mut write_v = |x: usize, y: usize, rgb: &[u8]| {
         let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
-        v_buf[x + y * half_width] = (0.4375 * r + -0.3671875 * g + -0.0703125 * b + 128.0) as u8;
+        v_buf[x + y * half_width] = ((-0.0703125f32).mul_add(b, 0.4375f32.mul_add(r, -0.3671875 * g)) + 128.0) as u8;
     };
 
     for i in 0..width / 2 {
