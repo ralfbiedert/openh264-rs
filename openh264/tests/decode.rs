@@ -200,7 +200,7 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
 // The packets in the file are written frame by frame
 // the first 4 bytes are frame length in little endian
 // followed by actual frame data
-pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item=Vec<u8>>
+pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>>
 where
     T: Read,
 {

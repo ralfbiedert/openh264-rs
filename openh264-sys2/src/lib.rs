@@ -177,18 +177,16 @@ impl DynamicAPI {
     /// not match against a list of well-known versions we can load.
     #[cfg(feature = "libloading")]
     pub fn from_blob_path(path: impl AsRef<std::ffi::OsStr>) -> Result<Self, Error> {
-        use std::fmt::Write;
         use sha2::Digest;
+        use std::fmt::Write;
 
         let bytes = std::fs::read(path.as_ref())?;
 
         // Get SHA of blob at given path.
-        let sha256 = sha2::Sha256::digest(bytes)
-            .iter()
-            .fold(String::new(), |mut acc, byte| {
-                write!(&mut acc, "{:02x}", byte).unwrap(); // Unless we're out of memory this should never panic.
-                acc
-            });
+        let sha256 = sha2::Sha256::digest(bytes).iter().fold(String::new(), |mut acc, byte| {
+            write!(&mut acc, "{:02x}", byte).unwrap(); // Unless we're out of memory this should never panic.
+            acc
+        });
 
         // Check all known hashes if we should load this library.
         // TODO: We might also want to verify this matches our architecture, but then again libloading should catch that.

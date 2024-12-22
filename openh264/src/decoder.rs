@@ -333,7 +333,12 @@ impl Decoder {
 
         unsafe {
             self.raw_api
-                .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, from_mut(&mut dst).cast(), &mut buffer_info)
+                .decode_frame_no_delay(
+                    packet.as_ptr(),
+                    packet.len() as i32,
+                    from_mut(&mut dst).cast(),
+                    &mut buffer_info,
+                )
                 .ok()?;
         }
 

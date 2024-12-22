@@ -8,7 +8,7 @@ use std::time::Duration;
 pub struct Timestamp(u64);
 
 impl Timestamp {
-    /// Timestamp equaling `0`. 
+    /// Timestamp equaling `0`.
     pub const ZERO: Self = Self(0);
 
     /// Creates a new timestamp from the given number of milliseconds.

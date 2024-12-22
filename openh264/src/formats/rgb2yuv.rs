@@ -3,13 +3,7 @@ use crate::formats::RGBSource;
 
 /// Writes an RGB source into 420 Y, U and V buffers.
 #[allow(clippy::needless_pass_by_value)]
-pub fn write_yuv_by_pixel(
-    rgb: impl RGBSource,
-    dimensions: (usize, usize),
-    y_buf: &mut [u8],
-    u_buf: &mut [u8],
-    v_buf: &mut [u8],
-) {
+pub fn write_yuv_by_pixel(rgb: impl RGBSource, dimensions: (usize, usize), y_buf: &mut [u8], u_buf: &mut [u8], v_buf: &mut [u8]) {
     // Make sure we only attempt to read sources that match our own size.
     assert_eq!(rgb.dimensions(), dimensions);
 
@@ -58,13 +52,7 @@ pub fn write_yuv_by_pixel(
 ///
 /// TODO: We want a faster SIMD version of this.
 #[allow(clippy::needless_pass_by_value)]
-pub fn write_yuv_scalar(
-    rgb: impl RGB8Source,
-    dimensions: (usize, usize),
-    y_buf: &mut [u8],
-    u_buf: &mut [u8],
-    v_buf: &mut [u8],
-) {
+pub fn write_yuv_scalar(rgb: impl RGB8Source, dimensions: (usize, usize), y_buf: &mut [u8], u_buf: &mut [u8], v_buf: &mut [u8]) {
     // Make sure we only attempt to read sources that match our own size.
     assert_eq!(rgb.dimensions(), dimensions);
 

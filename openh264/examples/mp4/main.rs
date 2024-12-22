@@ -3,10 +3,8 @@ mod mp4_bitstream_converter;
 use crate::mp4_bitstream_converter::Mp4BitstreamConverter;
 use anyhow::{anyhow, Error};
 use openh264::decoder::{Decoder, DecoderConfig, Flush};
-use std::{
-    fs::File,
-    io::{Cursor, Read, Write},
-};
+use std::fs::File;
+use std::io::{Cursor, Read, Write};
 
 #[cfg(feature = "source")]
 fn main() -> Result<(), Error> {
