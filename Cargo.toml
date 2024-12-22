@@ -22,7 +22,7 @@ cast_possible_wrap = "allow" # we're doing too much math for this
 cast_precision_loss = "allow" # we're doing too much math for this
 cast_sign_loss = "allow" # we're doing too much math for this
 unreadable_literal = "allow" # only really used in tests where it doesn't matter
-module_name_repetitions = "allow" # looks nicer 
+module_name_repetitions = "allow" # looks nicer
 
 
 #[profile.release]
