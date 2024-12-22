@@ -5,5 +5,24 @@ members = [
     "openh264"
 ]
 
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+complexity = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+
+# Things we still allow
+doc_markdown = "allow" # trips up on "OpenH264"
+cast_possible_truncation = "allow" # we're doing too much math for this
+cast_possible_wrap = "allow" # we're doing too much math for this
+cast_precision_loss = "allow" # we're doing too much math for this
+cast_sign_loss = "allow" # we're doing too much math for this
+unreadable_literal = "allow" # only really used in tests where it doesn't matter
+
+
 #[profile.release]
 #debug = true

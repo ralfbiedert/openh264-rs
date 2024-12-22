@@ -1,7 +1,7 @@
-use openh264::{nal_units, Error};
+use openh264::nal_units;
 
 #[test]
-fn split_at_nals() -> Result<(), Error> {
+fn split_at_nals() {
     let src = &include_bytes!("data/multi_512x512.h264")[..];
     let slices = nal_units(src).collect::<Vec<_>>();
 
@@ -12,6 +12,4 @@ fn split_at_nals() -> Result<(), Error> {
     assert_eq!(slices[4].len(), 2672);
     assert_eq!(slices[5].len(), 2912);
     assert_eq!(slices[6].len(), 3214);
-
-    Ok(())
 }

@@ -58,6 +58,7 @@ fn encode() -> Result<(), Error> {
 
 #[test]
 #[ignore]
+#[allow(clippy::similar_names)]
 #[cfg(feature = "source")]
 fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
@@ -87,6 +88,7 @@ fn encode_at_timestamp_roundtrips() -> Result<(), Error> {
 
 #[test]
 #[cfg(feature = "source")]
+#[allow(clippy::similar_names)]
 fn encoder_sps_pps() -> Result<(), Error> {
     let src = include_bytes!("data/lenna_128x128.rgb");
     let rgb_source = RgbSliceU8::new(src, (128, 128));

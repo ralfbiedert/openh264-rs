@@ -5,12 +5,12 @@ use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     videoFormatI420, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo,
-    SLayerBSInfo, SSourcePicture, API, CAMERA_VIDEO_REAL_TIME, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
-    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, SCREEN_CONTENT_REAL_TIME, VIDEO_CODING_LAYER,
+    SLayerBSInfo, SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
+    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER,
     WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
-use std::ptr::{addr_of_mut, null, null_mut};
+use std::ptr::{addr_of_mut, from_mut, null, null_mut};
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
 ///
@@ -34,14 +34,14 @@ pub struct EncoderRawAPI {
 #[rustfmt::skip]
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::missing_safety_doc)]
-#[allow(non_snake_case)]
-#[allow(unused)]
+#[allow(clippy::must_use_candidate)]
+#[allow(non_snake_case, unused, missing_docs)]
 impl EncoderRawAPI {
     fn new(api: OpenH264API) -> Result<Self, Error> {
         unsafe {
             let mut encoder_ptr = null::<ISVCEncoderVtbl>() as *mut *const ISVCEncoderVtbl;
 
-            api.WelsCreateSVCEncoder(&mut encoder_ptr as *mut *mut *const ISVCEncoderVtbl).ok()?;
+            api.WelsCreateSVCEncoder(from_mut(&mut encoder_ptr)).ok()?;
 
             let e = || {
                 Error::msg("VTable missing function.")
@@ -112,14 +112,14 @@ impl Default for RateControlMode {
 }
 
 impl RateControlMode {
-    fn to_c(self) -> RC_MODES {
+    const fn to_c(self) -> RC_MODES {
         match self {
-            RateControlMode::Quality => openh264_sys2::RC_QUALITY_MODE,
-            RateControlMode::Bitrate => openh264_sys2::RC_BITRATE_MODE,
-            RateControlMode::Bufferbased => openh264_sys2::RC_BUFFERBASED_MODE,
-            RateControlMode::Timestamp => openh264_sys2::RC_TIMESTAMP_MODE,
-            RateControlMode::BitrateModePostSkip => openh264_sys2::RC_BITRATE_MODE_POST_SKIP,
-            RateControlMode::Off => openh264_sys2::RC_OFF_MODE,
+            Self::Quality => openh264_sys2::RC_QUALITY_MODE,
+            Self::Bitrate => openh264_sys2::RC_BITRATE_MODE,
+            Self::Bufferbased => openh264_sys2::RC_BUFFERBASED_MODE,
+            Self::Timestamp => openh264_sys2::RC_TIMESTAMP_MODE,
+            Self::BitrateModePostSkip => openh264_sys2::RC_BITRATE_MODE_POST_SKIP,
+            Self::Off => openh264_sys2::RC_OFF_MODE,
         }
     }
 }
@@ -148,13 +148,13 @@ pub enum SpsPpsStrategy {
 }
 
 impl SpsPpsStrategy {
-    fn to_c(self) -> RC_MODES {
+    const fn to_c(self) -> RC_MODES {
         match self {
-            SpsPpsStrategy::ConstantId => openh264_sys2::CONSTANT_ID,
-            SpsPpsStrategy::IncreasingId => openh264_sys2::INCREASING_ID,
-            SpsPpsStrategy::SpsListing => openh264_sys2::SPS_LISTING,
-            SpsPpsStrategy::SpsListingAndPpsIncreasing => openh264_sys2::SPS_LISTING_AND_PPS_INCREASING,
-            SpsPpsStrategy::SpsPpsListing => openh264_sys2::SPS_PPS_LISTING,
+            Self::ConstantId => openh264_sys2::CONSTANT_ID,
+            Self::IncreasingId => openh264_sys2::INCREASING_ID,
+            Self::SpsListing => openh264_sys2::SPS_LISTING,
+            Self::SpsListingAndPpsIncreasing => openh264_sys2::SPS_LISTING_AND_PPS_INCREASING,
+            Self::SpsPpsListing => openh264_sys2::SPS_PPS_LISTING,
         }
     }
 }
@@ -172,21 +172,24 @@ impl Default for SpsPpsStrategy {
 pub enum UsageType {
     /// Camera video for real-time communication.
     CameraVideoRealTime,
-    /// Screen content signal.
+    /// Used for real-time screen sharing.
     ScreenContentRealTime,
+    /// Camera video for non-real-time communication.
     CameraVideoNonRealTime,
+    /// Used for non-real-time screen recordings.
     ScreenContentNonRealTime,
+    /// It's unclear what this does, PRs adding documentation welcome.
     InputContentTypeAll,
 }
 
 impl UsageType {
-    fn to_c(self) -> EUsageType {
+    const fn to_c(self) -> EUsageType {
         match self {
-            UsageType::CameraVideoRealTime => CAMERA_VIDEO_REAL_TIME,
-            UsageType::ScreenContentRealTime => SCREEN_CONTENT_REAL_TIME,
-            UsageType::CameraVideoNonRealTime => openh264_sys2::CAMERA_VIDEO_NON_REAL_TIME,
-            UsageType::ScreenContentNonRealTime => openh264_sys2::SCREEN_CONTENT_NON_REAL_TIME,
-            UsageType::InputContentTypeAll => openh264_sys2::INPUT_CONTENT_TYPE_ALL,
+            Self::CameraVideoRealTime => openh264_sys2::CAMERA_VIDEO_REAL_TIME,
+            Self::ScreenContentRealTime => openh264_sys2::SCREEN_CONTENT_REAL_TIME,
+            Self::CameraVideoNonRealTime => openh264_sys2::CAMERA_VIDEO_NON_REAL_TIME,
+            Self::ScreenContentNonRealTime => openh264_sys2::SCREEN_CONTENT_NON_REAL_TIME,
+            Self::InputContentTypeAll => openh264_sys2::INPUT_CONTENT_TYPE_ALL,
         }
     }
 }
@@ -225,51 +228,51 @@ impl EncoderConfig {
             debug: 0,
             data_format: videoFormatI420,
             max_frame_rate: 0.0,
-            rate_control_mode: Default::default(),
-            sps_pps_strategy: Default::default(),
+            rate_control_mode: RateControlMode::default(),
+            sps_pps_strategy: SpsPpsStrategy::default(),
             multiple_thread_idc: 0,
-            usage_type: Default::default(),
+            usage_type: UsageType::default(),
         }
     }
 
     /// Sets the requested bit rate in bits per second.
-    pub fn set_bitrate_bps(mut self, bps: u32) -> Self {
+    pub const fn set_bitrate_bps(mut self, bps: u32) -> Self {
         self.target_bitrate = bps;
         self
     }
 
     /// Enables detailed console logging inside OpenH264.
-    pub fn debug(mut self, value: bool) -> Self {
+    pub const fn debug(mut self, value: bool) -> Self {
         self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self
     }
 
     /// Set whether frames can be skipped to meet desired rate control target.
-    pub fn enable_skip_frame(mut self, value: bool) -> Self {
+    pub const fn enable_skip_frame(mut self, value: bool) -> Self {
         self.enable_skip_frame = value;
         self
     }
 
     /// Sets the requested maximum frame rate in Hz.
-    pub fn max_frame_rate(mut self, value: f32) -> Self {
+    pub const fn max_frame_rate(mut self, value: f32) -> Self {
         self.max_frame_rate = value;
         self
     }
 
     /// Sets usage type.
-    pub fn usage_type(mut self, value: UsageType) -> Self {
+    pub const fn usage_type(mut self, value: UsageType) -> Self {
         self.usage_type = value;
         self
     }
 
     /// Sets the requested rate control mode.
-    pub fn rate_control_mode(mut self, value: RateControlMode) -> Self {
+    pub const fn rate_control_mode(mut self, value: RateControlMode) -> Self {
         self.rate_control_mode = value;
         self
     }
 
     /// Set the SPS/PPS behavior.
-    pub fn sps_pps_strategy(mut self, value: SpsPpsStrategy) -> Self {
+    pub const fn sps_pps_strategy(mut self, value: SpsPpsStrategy) -> Self {
         self.sps_pps_strategy = value;
         self
     }
@@ -281,7 +284,7 @@ impl EncoderConfig {
     /// * &gt;1 - fixed number of threads
     ///
     /// Defaults to 0 (auto mode).
-    pub fn set_multiple_thread_idc(mut self, threads: u16) -> Self {
+    pub const fn set_multiple_thread_idc(mut self, threads: u16) -> Self {
         self.multiple_thread_idc = threads;
         self
     }
@@ -304,6 +307,11 @@ impl Encoder {
     /// The width and height will be taken from the [`YUVSource`] when calling [`Encoder::encode()`].
     ///
     /// This method is only available when compiling with the `source` feature.
+    ///
+    /// # Errors
+    ///
+    /// This should never error, but the underlying OpenH264 encoder has an error indication and
+    /// since we don't know their code that well we just can't guarantee it.
     #[cfg(feature = "source")]
     pub fn new() -> Result<Self, Error> {
         let api = OpenH264API::from_source();
@@ -313,20 +321,24 @@ impl Encoder {
         Ok(Self {
             config,
             raw_api,
-            bit_stream_info: Default::default(),
+            bit_stream_info: SFrameBSInfo::default(),
             previous_dimensions: None,
         })
     }
     /// Create an encoder with the provided [API](OpenH264API) and [configuration](EncoderConfig).
     ///
     /// The width and height will be taken from the [`YUVSource`] when calling [`Encoder::encode()`].
+    ///
+    /// # Errors
+    ///
+    /// Might fail if the provided encoder parameters had issues.
     pub fn with_api_config(api: OpenH264API, config: EncoderConfig) -> Result<Self, Error> {
         let raw_api = EncoderRawAPI::new(api)?;
 
         Ok(Self {
             config,
             raw_api,
-            bit_stream_info: Default::default(),
+            bit_stream_info: SFrameBSInfo::default(),
             previous_dimensions: None,
         })
     }
@@ -339,6 +351,10 @@ impl Encoder {
     ///
     /// The resolution of the encoded frame is allowed to change. Each time it changes, the
     /// encoder is re-initialized with the new values.
+    ///
+    /// # Errors
+    ///
+    /// This might error for various reasons, many of which aren't clearly documented in OpenH264.
     pub fn encode<T: YUVSource>(&mut self, yuv_source: &T) -> Result<EncodedBitStream<'_>, Error> {
         self.encode_at(yuv_source, Timestamp::ZERO)
     }
@@ -355,6 +371,10 @@ impl Encoder {
     /// # Panics
     ///
     /// Panics if the provided timestamp as milliseconds is out of range of i64.
+    ///
+    /// # Errors
+    ///
+    /// This might error for various reasons, many of which aren't clearly documented in OpenH264.
     pub fn encode_at<T: YUVSource>(&mut self, yuv_source: &T, timestamp: Timestamp) -> Result<EncodedBitStream<'_>, Error> {
         let new_dimensions = yuv_source.dimensions_i32();
 
@@ -476,22 +496,26 @@ pub struct EncodedBitStream<'a> {
 
 impl<'a> EncodedBitStream<'a> {
     /// Raw bitstream info returned by the encoder.
-    pub fn raw_info(&self) -> &'a SFrameBSInfo {
+    #[must_use]
+    pub const fn raw_info(&self) -> &'a SFrameBSInfo {
         self.bit_stream_info
     }
 
     /// Frame type of the encoded packet.
-    pub fn frame_type(&self) -> FrameType {
+    #[must_use]
+    pub const fn frame_type(&self) -> FrameType {
         FrameType::from_c_int(self.bit_stream_info.eFrameType)
     }
 
     /// Number of layers in the encoded packet.
-    pub fn num_layers(&self) -> usize {
+    #[must_use]
+    pub const fn num_layers(&self) -> usize {
         self.bit_stream_info.iLayerNum as usize
     }
 
     /// Returns ith layer of this bitstream.
-    pub fn layer(&self, i: usize) -> Option<Layer<'a>> {
+    #[must_use]
+    pub const fn layer(&self, i: usize) -> Option<Layer<'a>> {
         if i < self.num_layers() {
             Some(Layer {
                 layer_info: &self.bit_stream_info.sLayerInfo[i],
@@ -502,6 +526,7 @@ impl<'a> EncodedBitStream<'a> {
     }
 
     /// Writes the current bitstream into the given Vec.
+    #[allow(clippy::missing_panics_doc)]
     pub fn write_vec(&self, dst: &mut Vec<u8>) {
         for l in 0..self.num_layers() {
             let layer = self.layer(l).unwrap();
@@ -509,12 +534,17 @@ impl<'a> EncodedBitStream<'a> {
             for n in 0..layer.nal_count() {
                 let nal = layer.nal_unit(n).unwrap();
 
-                dst.extend_from_slice(nal)
+                dst.extend_from_slice(nal);
             }
         }
     }
 
     /// Writes the current bitstream into the given Writer.
+    ///
+    /// # Errors
+    ///
+    /// Can error when bytes could not be written.
+    #[allow(clippy::missing_panics_doc)]
     pub fn write<T: std::io::Write>(&self, writer: &mut T) -> Result<(), Error> {
         for l in 0..self.num_layers() {
             let layer = self.layer(l).unwrap();
@@ -527,7 +557,7 @@ impl<'a> EncodedBitStream<'a> {
                         return Err(Error::msg(&format!("only wrote {} out of {} bytes", num, nal.len())));
                     }
                     Err(e) => {
-                        return Err(Error::msg(&format!("failed to write: {}", e)));
+                        return Err(Error::msg(&format!("failed to write: {e}")));
                     }
                     _ => {}
                 };
@@ -537,6 +567,7 @@ impl<'a> EncodedBitStream<'a> {
     }
 
     /// Convenience method returning a Vec containing the encoded bitstream.
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         let mut rval = Vec::new();
         self.write_vec(&mut rval);
@@ -553,16 +584,19 @@ pub struct Layer<'a> {
 
 impl<'a> Layer<'a> {
     /// Raw layer info contained in a bitstream.
-    pub fn raw_info(&self) -> &'a SLayerBSInfo {
+    #[must_use]
+    pub const fn raw_info(&self) -> &'a SLayerBSInfo {
         self.layer_info
     }
 
     /// NAL count of this layer.
-    pub fn nal_count(&self) -> usize {
+    #[must_use]
+    pub const fn nal_count(&self) -> usize {
         self.layer_info.iNalCount as usize
     }
 
     /// Returns NAL unit data for the ith element.
+    #[must_use]
     pub fn nal_unit(&self, i: usize) -> Option<&[u8]> {
         if i < self.nal_count() {
             let mut offset = 0;
@@ -587,7 +621,8 @@ impl<'a> Layer<'a> {
     }
 
     /// If this is a video layer or not.
-    pub fn is_video(&self) -> bool {
+    #[must_use]
+    pub const fn is_video(&self) -> bool {
         self.layer_info.uiLayerType == VIDEO_CODING_LAYER as c_uchar
     }
 }
@@ -612,7 +647,7 @@ pub enum FrameType {
 }
 
 impl FrameType {
-    fn from_c_int(native: std::os::raw::c_int) -> Self {
+    const fn from_c_int(native: std::os::raw::c_int) -> Self {
         use openh264_sys2::{videoFrameTypeI, videoFrameTypeIDR, videoFrameTypeIPMixed, videoFrameTypeP, videoFrameTypeSkip};
 
         #[allow(non_upper_case_globals)]

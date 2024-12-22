@@ -39,7 +39,7 @@ fn can_decode_single() -> Result<(), Error> {
         include_bytes!("data/single_512x512_cavlc.h264").as_slice(),
     ];
 
-    for src in sources.iter() {
+    for src in &sources {
         let api = OpenH264API::from_source();
         let config = DecoderConfig::default().debug(false);
         let mut decoder = Decoder::with_api_config(api, config)?;
@@ -79,7 +79,7 @@ fn can_decode_multi_by_step() -> Result<(), Error> {
     let mut last_was_ok = false;
 
     for packet in nal_units(src) {
-        last_was_ok = decoder.decode(packet).is_ok()
+        last_was_ok = decoder.decode(packet).is_ok();
     }
 
     assert!(last_was_ok);
@@ -128,6 +128,7 @@ fn can_decode_encoded() -> Result<(), Error> {
 
 #[test]
 #[cfg(feature = "source")]
+#[allow(clippy::similar_names)]
 fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
     let src = include_bytes!("data/multi_1024x768.h264");
     let compare_data = include_bytes!("data/multi_1024x768.bmp");
@@ -199,7 +200,7 @@ fn decodes_file_with_bframes() -> Result<(), Error> {
 // The packets in the file are written frame by frame
 // the first 4 bytes are frame length in little endian
 // followed by actual frame data
-pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item = Vec<u8>>
+pub fn read_frame<T>(mut stream: T) -> impl Iterator<Item=Vec<u8>>
 where
     T: Read,
 {

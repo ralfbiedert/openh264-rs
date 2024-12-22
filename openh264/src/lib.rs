@@ -217,6 +217,8 @@
 //! [rust-build-badge]: https://github.com/ralfbiedert/openh264/actions/workflows/rust.yml/badge.svg
 //! [rust-build-url]: https://github.com/ralfbiedert/openh264/actions/workflows/rust.yml
 
+#![deny(missing_docs)]
+
 mod error;
 mod time;
 mod utils;

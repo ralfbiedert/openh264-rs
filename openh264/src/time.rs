@@ -8,19 +8,22 @@ use std::time::Duration;
 pub struct Timestamp(u64);
 
 impl Timestamp {
-    pub const ZERO: Timestamp = Timestamp(0);
+    /// Timestamp equaling `0`. 
+    pub const ZERO: Self = Self(0);
 
     /// Creates a new timestamp from the given number of milliseconds.
-    pub fn from_millis(ts: u64) -> Self {
+    #[must_use]
+    pub const fn from_millis(ts: u64) -> Self {
         Self(ts)
     }
 
     /// The time of this timestamp in milliseconds.
-    pub fn as_millis(&self) -> u64 {
+    #[must_use]
+    pub const fn as_millis(self) -> u64 {
         self.0
     }
 
-    pub(crate) fn as_native(&self) -> c_longlong {
+    pub(crate) fn as_native(self) -> c_longlong {
         self.0
             .try_into()
             .expect("Could not convert u64 timestamp into native timestamp")
@@ -37,7 +40,7 @@ impl Sub for Timestamp {
 }
 
 impl Add<Duration> for Timestamp {
-    type Output = Timestamp;
+    type Output = Self;
 
     fn add(self, rhs: Duration) -> Self::Output {
         let rhs_u64: u64 = rhs
@@ -45,7 +48,7 @@ impl Add<Duration> for Timestamp {
             .try_into()
             .expect("Overflow when adding duration to timestamp");
 
-        Timestamp(self.0 + rhs_u64)
+        Self(self.0 + rhs_u64)
     }
 }
 

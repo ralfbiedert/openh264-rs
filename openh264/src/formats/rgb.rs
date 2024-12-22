@@ -153,9 +153,9 @@ macro_rules! impl_slice_wrapper_u8 {
             fn pixel_f32(&self, x: usize, y: usize) -> (f32, f32, f32) {
                 let base_pos = (x + y * self.dimensions.0) * $stride;
                 (
-                    self.data[base_pos + $offsets[0]] as f32,
-                    self.data[base_pos + $offsets[1]] as f32,
-                    self.data[base_pos + $offsets[2]] as f32,
+                    self.data[base_pos + $offsets[0]].into(),
+                    self.data[base_pos + $offsets[1]].into(),
+                    self.data[base_pos + $offsets[2]].into(),
                 )
             }
         }

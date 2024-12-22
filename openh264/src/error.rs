@@ -13,8 +13,9 @@ pub struct Error {
 }
 
 impl Error {
+    #[allow(clippy::missing_const_for_fn)]
     pub(crate) fn from_native(native: i64) -> Self {
-        Error {
+        Self {
             native,
             decoding_state: dsErrorFree,
             misc: None,
@@ -24,8 +25,9 @@ impl Error {
     }
 
     #[allow(unused)]
+    #[allow(clippy::missing_const_for_fn)]
     pub(crate) fn from_decoding_state(decoding_state: DECODING_STATE) -> Self {
-        Error {
+        Self {
             native: 0,
             decoding_state,
             misc: None,
@@ -35,8 +37,9 @@ impl Error {
     }
 
     /// Creates a new [`Error`] with a custom message.
+    #[must_use]
     pub fn msg(msg: &str) -> Self {
-        Error {
+        Self {
             native: 0,
             decoding_state: dsErrorFree,
             misc: Some(msg.to_string()),
@@ -46,8 +49,10 @@ impl Error {
     }
 
     /// Creates a new [`Error`] with a custom message.
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
     pub fn msg_string(msg: String) -> Self {
-        Error {
+        Self {
             native: 0,
             decoding_state: dsErrorFree,
             misc: Some(msg),
@@ -58,14 +63,15 @@ impl Error {
 
     /// Returns the backtrace, if available.
     #[cfg(feature = "backtrace")]
-    pub fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
+    #[allow(clippy::missing_const_for_fn)]
+    pub const fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
         self.backtrace.as_ref()
     }
 }
 
 impl From<TryFromIntError> for Error {
     fn from(value: TryFromIntError) -> Self {
-        Self::msg_string(format!("Could not covert value: {}", value))
+        Self::msg_string(format!("Could not covert value: {value}"))
     }
 }
 
@@ -87,13 +93,14 @@ impl Display for Error {
 }
 
 /// Helper trait to check the various error values produced by OpenH264.
-pub(crate) trait NativeErrorExt {
+pub trait NativeErrorExt {
     fn ok(self) -> Result<(), Error>;
 }
 
 macro_rules! impl_native_error {
     ($t:ty) => {
         impl NativeErrorExt for $t {
+            #[allow(clippy::cast_lossless)]
             fn ok(self) -> Result<(), Error> {
                 if self == 0 {
                     Ok(())

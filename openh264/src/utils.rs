@@ -13,10 +13,9 @@ fn nth_nal_index(stream: &[u8], nth: usize) -> Option<usize> {
             1 if count_0 >= NAL_MIN_0_COUNT => {
                 if n == nth {
                     return Some(i - NAL_MIN_0_COUNT);
-                } else {
-                    count_0 = 0;
-                    n += 1;
                 }
+                count_0 = 0;
+                n += 1;
             }
             _ => count_0 = 0,
         }
@@ -46,7 +45,7 @@ fn nth_nal_index(stream: &[u8], nth: usize) -> Option<usize> {
 /// NAL units in the middle are split at their boundaries, the last packet is returned
 /// as-is.
 ///
-pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item = &[u8]> {
+pub fn nal_units(mut stream: &[u8]) -> impl Iterator<Item=&[u8]> {
     std::iter::from_fn(move || {
         let first = nth_nal_index(stream, 0);
         let next = nth_nal_index(stream, 1);
@@ -80,6 +79,7 @@ pub struct NalParser {
 
 impl NalParser {
     /// Creates a new NAL parser.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }

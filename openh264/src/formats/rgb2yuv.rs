@@ -2,7 +2,8 @@ use crate::formats::rgb::RGB8Source;
 use crate::formats::RGBSource;
 
 /// Writes an RGB source into 420 Y, U and V buffers.
-pub(crate) fn write_yuv_by_pixel(
+#[allow(clippy::needless_pass_by_value)]
+pub fn write_yuv_by_pixel(
     rgb: impl RGBSource,
     dimensions: (usize, usize),
     y_buf: &mut [u8],
@@ -56,7 +57,8 @@ pub(crate) fn write_yuv_by_pixel(
 /// Writes an RGB8 source into 420 Y, U and V buffers.
 ///
 /// TODO: We want a faster SIMD version of this.
-pub(crate) fn write_yuv_scalar(
+#[allow(clippy::needless_pass_by_value)]
+pub fn write_yuv_scalar(
     rgb: impl RGB8Source,
     dimensions: (usize, usize),
     y_buf: &mut [u8],
@@ -74,17 +76,17 @@ pub(crate) fn write_yuv_scalar(
 
     // y is full size, u, v is quarter size
     let mut write_y = |x: usize, y: usize, rgb: &[u8]| {
-        let (r, g, b) = (rgb[0] as f32, rgb[1] as f32, rgb[2] as f32);
+        let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
         y_buf[x + y * width] = (0.2578125 * r + 0.50390625 * g + 0.09765625 * b + 16.0) as u8;
     };
 
     let mut write_u = |x: usize, y: usize, rgb: &[u8]| {
-        let (r, g, b) = (rgb[0] as f32, rgb[1] as f32, rgb[2] as f32);
+        let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
         u_buf[x + y * half_width] = (-0.1484375 * r + -0.2890625 * g + 0.4375 * b + 128.0) as u8;
     };
 
     let mut write_v = |x: usize, y: usize, rgb: &[u8]| {
-        let (r, g, b) = (rgb[0] as f32, rgb[1] as f32, rgb[2] as f32);
+        let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
         v_buf[x + y * half_width] = (0.4375 * r + -0.3671875 * g + -0.0703125 * b + 128.0) as u8;
     };
 
@@ -97,9 +99,9 @@ pub(crate) fn write_yuv_scalar(
             let pix1x0 = &rgb8_data[(px + 1 + (py) * dimensions_padded.0) * 3..][..3];
             let pix1x1 = &rgb8_data[(px + 1 + (py + 1) * dimensions_padded.0) * 3..][..3];
             let avg_pix = [
-                ((pix0x0[0] as u32 + pix0x1[0] as u32 + pix1x0[0] as u32 + pix1x1[0] as u32) / 4) as u8,
-                ((pix0x0[1] as u32 + pix0x1[1] as u32 + pix1x0[1] as u32 + pix1x1[1] as u32) / 4) as u8,
-                ((pix0x0[2] as u32 + pix0x1[2] as u32 + pix1x0[2] as u32 + pix1x1[2] as u32) / 4) as u8,
+                ((u32::from(pix0x0[0]) + u32::from(pix0x1[0]) + u32::from(pix1x0[0]) + u32::from(pix1x1[0])) / 4) as u8,
+                ((u32::from(pix0x0[1]) + u32::from(pix0x1[1]) + u32::from(pix1x0[1]) + u32::from(pix1x1[1])) / 4) as u8,
+                ((u32::from(pix0x0[2]) + u32::from(pix0x1[2]) + u32::from(pix1x0[2]) + u32::from(pix1x1[2])) / 4) as u8,
             ];
 
             write_y(px, py, pix0x0);

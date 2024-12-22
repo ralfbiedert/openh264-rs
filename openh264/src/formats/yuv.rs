@@ -133,6 +133,7 @@ impl YUVBuffer {
     /// # Panics
     ///
     /// May panic if the given `rgb` does not match the internal format.
+    #[allow(clippy::similar_names)]
     pub fn read_rgb(&mut self, rgb: impl RGBSource) {
         let dimensions = self.dimensions();
         let u_base = self.width * self.height;
@@ -149,6 +150,7 @@ impl YUVBuffer {
     /// # Panics
     ///
     /// May panic if the given `rgb` does not match the internal format.
+    #[allow(clippy::similar_names)]
     pub fn read_rgb8(&mut self, rgb: impl RGB8Source) {
         let dimensions = self.dimensions();
         let u_base = self.width * self.height;
@@ -296,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "strides.0 >= dimensions.0"]
     fn test_new_stride_less_than_width() {
         let y = vec![0u8; 10];
         let u = vec![0u8; 5];
@@ -305,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "strides.1 >= dimensions.0 / 2"]
     fn test_new_u_stride_less_than_half_width() {
         let y = vec![0u8; 20];
         let u = vec![0u8; 5];
@@ -314,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "strides.2 >= dimensions.0 / 2"]
     fn test_new_v_stride_less_than_half_width() {
         let y = vec![0u8; 20];
         let u = vec![0u8; 5];
@@ -323,7 +325,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "assertion `left == right` failed"]
     fn test_new_y_length_not_matching() {
         let y = vec![0u8; 19];
         let u = vec![0u8; 5];
@@ -332,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "assertion `left == right` failed"]
     fn test_new_u_length_not_matching() {
         let y = vec![0u8; 20];
         let u = vec![0u8; 4];
@@ -341,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "assertion `left == right` failed"]
     fn test_new_v_length_not_matching() {
         let y = vec![0u8; 20];
         let u = vec![0u8; 5];
@@ -380,7 +382,7 @@ mod tests {
                     for i in 0..3 {
                         // Due to different CPU architectures the values may slightly change and may not be exactly equal.
                         // allow difference of 1 / 255 (ca. 0.4%)
-                        let diff = (target[i] as i32 - target2[i] as i32).abs();
+                        let diff = (i32::from(target[i]) - i32::from(target2[i])).abs();
                         assert!(diff <= 1, "YUV: {:?} yielded different results", (y, u, v));
                     }
                 }

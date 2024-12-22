@@ -11,11 +11,11 @@ use std::{
 #[cfg(feature = "source")]
 fn main() -> Result<(), Error> {
     let mut args = std::env::args();
-    let bin = args.next().unwrap_or(String::from("mp4"));
-    let path = args.next().ok_or(anyhow!("usage: {bin} <filename> [out]"))?;
-    let out = args.next().unwrap_or(String::from("."));
+    let bin = args.next().unwrap_or_else(|| String::from("mp4"));
+    let path = args.next().ok_or_else(|| anyhow!("usage: {bin} <filename> [out]"))?;
+    let out = args.next().unwrap_or_else(|| String::from("."));
 
-    let mut file = std::fs::File::open(path.clone()).unwrap();
+    let mut file = std::fs::File::open(path)?;
     let mut mp4 = Vec::new();
     file.read_to_end(&mut mp4).unwrap();
 
@@ -42,7 +42,7 @@ fn main() -> Result<(), Error> {
     let mut rgb = vec![0; width * height * 3];
 
     let mut frame_idx = 0;
-    for i in 1..track.sample_count() + 1 {
+    for i in 1..=track.sample_count() {
         let Some(sample) = mp4.read_sample(track_id, i)? else {
             continue;
         };
@@ -52,7 +52,7 @@ fn main() -> Result<(), Error> {
         match decoder.decode(&buffer) {
             Ok(Some(image)) => {
                 image.write_rgb8(&mut rgb);
-                save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
+                save_file(&format!("{out}/frame-0{frame_idx:04}.ppm"), &rgb, width, height)?;
                 frame_idx += 1;
             }
             Ok(None) => {
@@ -67,7 +67,7 @@ fn main() -> Result<(), Error> {
 
     for image in decoder.flush_remaining()? {
         image.write_rgb8(&mut rgb);
-        save_file(&format!("{out}/frame-0{:04}.ppm", frame_idx), &rgb, width, height)?;
+        save_file(&format!("{out}/frame-0{frame_idx:04}.ppm"), &rgb, width, height)?;
         frame_idx += 1;
     }
 
@@ -79,7 +79,7 @@ fn main() {}
 
 fn save_file(filename: &str, frame: &[u8], width: usize, height: usize) -> std::result::Result<(), std::io::Error> {
     let mut file = File::create(filename)?;
-    file.write_all(format!("P6\n{} {}\n255\n", width, height).as_bytes())?;
+    file.write_all(format!("P6\n{width} {height}\n255\n").as_bytes())?;
     file.write_all(frame)?;
     Ok(())
 }

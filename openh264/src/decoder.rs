@@ -58,7 +58,7 @@ use openh264_sys2::{
     DECODER_OPTION_NUM_OF_THREADS, DECODER_OPTION_TRACE_LEVEL, DECODING_STATE, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_long, c_uchar, c_void};
-use std::ptr::{addr_of_mut, null, null_mut};
+use std::ptr::{addr_of_mut, from_mut, null, null_mut};
 
 /// Convenience wrapper with guaranteed function pointers for easy access.
 ///
@@ -83,20 +83,19 @@ pub struct DecoderRawAPI {
 #[rustfmt::skip]
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::missing_safety_doc)]
-#[allow(non_snake_case)]
-#[allow(unused)]
+#[allow(non_snake_case, unused, missing_docs)]
 impl DecoderRawAPI {
     fn new(api: OpenH264API) -> Result<Self, Error> {
         unsafe {
             let mut decoder_ptr = null::<ISVCDecoderVtbl>() as *mut *const ISVCDecoderVtbl;
 
-            api.WelsCreateDecoder(&mut decoder_ptr as *mut *mut *const ISVCDecoderVtbl).ok()?;
+            api.WelsCreateDecoder(from_mut(&mut decoder_ptr)).ok()?;
 
             let e = || {
                 Error::msg("VTable missing function.")
             };
 
-            Ok(DecoderRawAPI {
+            Ok(Self {
                 api,
                 decoder_ptr,
                 initialize: (*(*decoder_ptr)).Initialize.ok_or_else(e)?,
@@ -161,13 +160,15 @@ pub enum Flush {
 impl Flush {
     /// Given some existing flush options and some current frame decode options, returns
     /// whether flushing should happen.
-    fn should_flush(&self, decoder_options: DecodeOptions) -> bool {
+    #[allow(clippy::match_same_arms)]
+    #[allow(clippy::needless_pass_by_value)]
+    const fn should_flush(self, decoder_options: DecodeOptions) -> bool {
         match (self, decoder_options.flush_after_decode) {
-            (Flush::Auto, Flush::Auto) => true,
-            (Flush::NoFlush, Flush::Auto) => false,
-            (Flush::Flush, Flush::Auto) => true,
-            (_, Flush::NoFlush) => false,
-            (_, Flush::Flush) => true,
+            (Self::Auto, Self::Auto) => true,
+            (Self::NoFlush, Self::Auto) => false,
+            (Self::Flush, Self::Auto) => true,
+            (_, Self::NoFlush) => false,
+            (_, Self::Flush) => true,
         }
     }
 }
@@ -210,19 +211,19 @@ impl DecoderConfig {
     /// OpenH264 project where and when it is safe to set this.
     ///
     /// See [this issue](https://github.com/ralfbiedert/openh264-rust/issues/10) for details.
-    pub unsafe fn num_threads(mut self, num_threads: u32) -> Self {
+    pub const unsafe fn num_threads(mut self, num_threads: u32) -> Self {
         self.num_threads = num_threads as i32;
         self
     }
 
     /// Enables detailed console logging inside OpenH264.
-    pub fn debug(mut self, value: bool) -> Self {
+    pub const fn debug(mut self, value: bool) -> Self {
         self.debug = if value { WELS_LOG_DETAIL } else { WELS_LOG_QUIET };
         self
     }
 
     /// Sets the default flush behavior after decode operations..
-    pub fn flush_after_decode(mut self, flush_behavior: Flush) -> Self {
+    pub const fn flush_after_decode(mut self, flush_behavior: Flush) -> Self {
         self.flush_after_decode = flush_behavior;
         self
     }
@@ -236,12 +237,16 @@ pub struct DecodeOptions {
 
 impl DecodeOptions {
     /// Creates new decoder options.
-    pub fn new() -> Self {
-        Self::default()
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            flush_after_decode: Flush::Auto,
+        }
     }
 
     /// Sets the flush behavior for the upcoming decode operation.
-    pub fn flush_after_decode(mut self, value: Flush) -> Self {
+    #[must_use]
+    pub const fn flush_after_decode(mut self, value: Flush) -> Self {
         self.flush_after_decode = value;
         self
     }
@@ -257,6 +262,11 @@ impl Decoder {
     /// Create a decoder with default settings and the built-in decoder.
     ///
     /// This method is only available when compiling with the `source` feature.
+    ///
+    /// # Errors
+    ///
+    /// This should never error, but the underlying OpenH264 decoder has an error indication and
+    /// since we don't know their code that well we just can't guarantee it.
     #[cfg(feature = "source")]
     pub fn new() -> Result<Self, Error> {
         let api = OpenH264API::from_source();
@@ -264,6 +274,10 @@ impl Decoder {
     }
 
     /// Create a decoder with the provided [API](OpenH264API) and [configuration](DecoderConfig).
+    ///
+    /// # Errors
+    ///
+    /// Might fail if the provided encoder parameters had issues.
     pub fn with_api_config(api: OpenH264API, mut config: DecoderConfig) -> Result<Self, Error> {
         let raw_api = DecoderRawAPI::new(api)?;
 
@@ -319,7 +333,7 @@ impl Decoder {
 
         unsafe {
             self.raw_api
-                .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, &mut dst as *mut _, &mut buffer_info)
+                .decode_frame_no_delay(packet.as_ptr(), packet.len() as i32, from_mut(&mut dst).cast(), &mut buffer_info)
                 .ok()?;
         }
 
@@ -415,7 +429,7 @@ impl Decoder {
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
-            self.raw_api().flush_frame(&mut dst as *mut _, &mut buffer_info).ok()?;
+            self.raw_api().flush_frame(from_mut(&mut dst).cast(), &mut buffer_info).ok()?;
             Ok((dst, buffer_info))
         }
     }
@@ -473,12 +487,14 @@ impl DecodedYUV<'_> {
     /// Returns the unpadded U size.
     ///
     /// This is often smaller (by half) than the image size.
-    pub fn dimensions_uv(&self) -> (usize, usize) {
+    #[must_use]
+    pub const fn dimensions_uv(&self) -> (usize, usize) {
         (self.info.iWidth as usize / 2, self.info.iHeight as usize / 2)
     }
 
     /// Timestamp of this frame in milliseconds(?) with respect to the video stream.
-    pub fn timestamp(&self) -> Timestamp {
+    #[must_use]
+    pub const fn timestamp(&self) -> Timestamp {
         self.timestamp
     }
 
@@ -549,9 +565,9 @@ impl DecodedYUV<'_> {
 
                 let rgb_pixel = &mut target[base_tgt..base_tgt + 4];
 
-                let y = self.y[base_y] as f32;
-                let u = self.u[base_u] as f32;
-                let v = self.v[base_v] as f32;
+                let y: f32 = self.y[base_y].into();
+                let u: f32 = self.u[base_u].into();
+                let v: f32 = self.v[base_v].into();
 
                 rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
                 rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;

@@ -8,20 +8,20 @@
 macro_rules! f32x8_from_slice_with_blocksize {
     ($buf:expr, $block_size:expr) => {{
         wide::f32x8::from([
-            ($buf[0] as f32),
-            ($buf[1 / $block_size] as f32),
-            ($buf[2 / $block_size] as f32),
-            ($buf[3 / $block_size] as f32),
-            ($buf[4 / $block_size] as f32),
-            ($buf[5 / $block_size] as f32),
-            ($buf[6 / $block_size] as f32),
-            ($buf[7 / $block_size] as f32),
+            (f32::from($buf[0])),
+            (f32::from($buf[1 / $block_size])),
+            (f32::from($buf[2 / $block_size])),
+            (f32::from($buf[3 / $block_size])),
+            (f32::from($buf[4 / $block_size])),
+            (f32::from($buf[5 / $block_size])),
+            (f32::from($buf[6 / $block_size])),
+            (f32::from($buf[7 / $block_size])),
         ])
     }};
 }
 
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
-pub(crate) fn write_rgb8_scalar(
+pub fn write_rgb8_scalar(
     y_plane: &[u8],
     u_plane: &[u8],
     v_plane: &[u8],
@@ -38,9 +38,9 @@ pub(crate) fn write_rgb8_scalar(
 
             let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
 
-            let y = y_plane[base_y] as f32;
-            let u = u_plane[base_u] as f32;
-            let v = v_plane[base_v] as f32;
+            let y = f32::from(y_plane[base_y]);
+            let u = f32::from(u_plane[base_u]);
+            let v = f32::from(v_plane[base_v]);
 
             rgb_pixel[0] = (y + 1.402 * (v - 128.0)) as u8;
             rgb_pixel[1] = (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0)) as u8;
@@ -51,7 +51,7 @@ pub(crate) fn write_rgb8_scalar(
 
 /// Write RGB8 data from YUV420 using f32x8 SIMD.
 #[allow(clippy::identity_op)]
-pub(crate) fn write_rgb8_f32x8(
+pub fn write_rgb8_f32x8(
     y_plane: &[u8],
     u_plane: &[u8],
     v_plane: &[u8],
@@ -59,15 +59,15 @@ pub(crate) fn write_rgb8_f32x8(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
+    const RGB_PIXEL_LEN: usize = 3;
+
     // this assumes we are decoding YUV420
     assert_eq!(y_plane.len(), u_plane.len() * 4);
     assert_eq!(y_plane.len(), v_plane.len() * 4);
     assert_eq!(dim.0 % 8, 0);
 
     let (width, height) = dim;
-    /// rgb pixel size in bytes
-    const RGB_PIXEL_LEN: usize = 3;
-    let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width;
+    let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width; // rgb pixel size in bytes
 
     for y in 0..(height / 2) {
         // load U and V values for two rows of pixels
@@ -97,8 +97,14 @@ pub(crate) fn write_rgb8_f32x8(
 }
 
 /// Write a single RGB8 row from YUV420 row data using f32x8 SIMD.
+#[allow(clippy::inline_always)]
+#[allow(clippy::similar_names)]
 #[inline(always)]
 fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, target: &mut [u8]) {
+    const STEP: usize = 8;
+    const UV_STEP: usize = STEP / 2;
+    const TGT_STEP: usize = STEP * 3;
+
     assert_eq!(y_row.len(), u_row.len() * 2);
     assert_eq!(y_row.len(), v_row.len() * 2);
 
@@ -110,14 +116,11 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
     let upper_bound = wide::f32x8::splat(255.0);
     let lower_bound = wide::f32x8::splat(0.0);
 
-    const STEP: usize = 8;
     assert_eq!(y_row.len() % STEP, 0);
 
-    const UV_STEP: usize = STEP / 2;
     assert_eq!(u_row.len() % UV_STEP, 0);
     assert_eq!(v_row.len() % UV_STEP, 0);
 
-    const TGT_STEP: usize = STEP * 3;
     assert_eq!(target.len() % TGT_STEP, 0);
 
     let mut base_y = 0;

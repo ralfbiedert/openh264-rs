@@ -20,7 +20,7 @@ pub enum NalType {
     SpsExt = 13,
     Prefix = 14,
     SubSps = 15,
-    DPS = 16,
+    Dps = 16,
     Reserved17 = 17,
     Reserved18 = 18,
     AuxiliarySlice = 19,
@@ -38,13 +38,14 @@ pub enum NalType {
     Unspecified31 = 31,
 }
 
+#[allow(clippy::fallible_impl_from)]
 impl From<u8> for NalType {
     /// Reads NAL from header byte.
     fn from(value: u8) -> Self {
         use NalType::{
-            Aud, AuxiliarySlice, DepthExtenSlice, Dpa, Dpb, Dpc, EndSequence, EndStream, ExtenSlice, FillerData, IdrSlice, Pps,
-            Prefix, Reserved17, Reserved18, Reserved22, Reserved23, Sei, Slice, Sps, SpsExt, SubSps, Unspecified, Unspecified24,
-            Unspecified25, Unspecified26, Unspecified27, Unspecified28, Unspecified29, Unspecified30, Unspecified31, DPS,
+            Aud, AuxiliarySlice, DepthExtenSlice, Dpa, Dpb, Dpc, Dps, EndSequence, EndStream, ExtenSlice, FillerData, IdrSlice,
+            Pps, Prefix, Reserved17, Reserved18, Reserved22, Reserved23, Sei, Slice, Sps, SpsExt, SubSps, Unspecified,
+            Unspecified24, Unspecified25, Unspecified26, Unspecified27, Unspecified28, Unspecified29, Unspecified30, Unspecified31,
         };
 
         match value {
@@ -64,7 +65,7 @@ impl From<u8> for NalType {
             13 => SpsExt,
             14 => Prefix,
             15 => SubSps,
-            16 => DPS,
+            16 => Dps,
             17 => Reserved17,
             18 => Reserved18,
             19 => AuxiliarySlice,
@@ -116,12 +117,12 @@ impl<'a> NalUnit<'a> {
     }
 
     #[allow(unused)]
-    fn nal_type(&self) -> NalType {
+    const fn nal_type(&self) -> NalType {
         self.nal_type
     }
 
     #[allow(unused)]
-    fn bytes(&self) -> &'a [u8] {
+    const fn bytes(&self) -> &'a [u8] {
         self.bytes
     }
 }
@@ -193,18 +194,18 @@ impl Mp4BitstreamConverter {
                     // insert SPS & PPS NAL units if they were not seen
                     if self.new_idr && !self.sps_seen && !self.pps_seen {
                         self.new_idr = false;
-                        for sps in self.sps.iter() {
+                        for sps in &self.sps {
                             out.extend([0, 0, 1]);
                             out.extend(sps);
                         }
-                        for pps in self.pps.iter() {
+                        for pps in &self.pps {
                             out.extend([0, 0, 1]);
                             out.extend(pps);
                         }
                     }
                     // insert only PPS if SPS was seen
                     if self.new_idr && self.sps_seen && !self.pps_seen {
-                        for pps in self.pps.iter() {
+                        for pps in &self.pps {
                             out.extend([0, 0, 1]);
                             out.extend(pps);
                         }
