@@ -257,60 +257,94 @@ impl Profile {
     }
 }
 
-/// The H.264 encoding level
+/// H.264 encoding levels with their corresponding capabilities.
+///
+/// | Level   | Max Resolution (Pixels) | Max Frame Rate (fps) | Max Bitrate (Main Profile) | Max Bitrate (High Profile) |
+/// |---------|--------------------------|-----------------------|-----------------------------|-----------------------------|
+/// | 1.0     | 176x144 (QCIF)          | 15                   | 64 kbps                    | 80 kbps                    |
+/// | 1.1     | 176x144 (QCIF)          | 30                   | 192 kbps                   | 240 kbps                   |
+/// | 1.2     | 320x240 (QVGA)          | 30                   | 384 kbps                   | 480 kbps                   |
+/// | 2.0     | 352x288 (CIF)           | 30                   | 2 Mbps                     | 2.5 Mbps                   |
+/// | 3.0     | 720x576 (SD)            | 30                   | 10 Mbps                    | 12.5 Mbps                  |
+/// | 3.1     | 1280x720 (HD)           | 30                   | 14 Mbps                    | 17.5 Mbps                  |
+/// | 4.0     | 1920x1080 (Full HD)     | 30                   | 20 Mbps                    | 25 Mbps                    |
+/// | 4.1     | 1920x1080 (Full HD)     | 60                   | 50 Mbps                    | 62.5 Mbps                  |
+/// | 5.0     | 3840x2160 (4K)          | 30                   | 135 Mbps                   | 168.75 Mbps                |
+/// | 5.1     | 3840x2160 (4K)          | 60                   | 240 Mbps                   | 300 Mbps                   |
+/// | 5.2     | 4096x2160 (4K Cinema)   | 60                   | 480 Mbps                   | 600 Mbps                   |
 #[derive(Copy, Clone, Debug)]
-#[allow(missing_docs)]
+#[allow(missing_docs, non_camel_case_types)]
 pub enum Level {
-    Level10,
-    Level1B,
-    Level11,
-    Level12,
-    Level13,
-    Level20,
-    Level21,
-    Level22,
-    Level30,
-    Level31,
-    Level32,
-    Level40,
-    Level41,
-    Level42,
-    Level50,
-    Level51,
-    Level52,
+    /// Level 1.0: Max resolution 176x144 (QCIF), 15 fps, 64 kbps (Main), 80 kbps (High)
+    Level_1_0,
+    /// Level 1.B: Specialized low-complexity baseline level.
+    Level_1_B,
+    /// Level 1.1: Max resolution 176x144 (QCIF), 30 fps, 192 kbps (Main), 240 kbps (High)
+    Level_1_1,
+    /// Level 1.2: Max resolution 320x240 (QVGA), 30 fps, 384 kbps (Main), 480 kbps (High)
+    Level_1_2,
+    /// Level 1.3: Reserved in standard, similar to Level 2.0.
+    Level_1_3,
+    /// Level 2.0: Max resolution 352x288 (CIF), 30 fps, 2 Mbps (Main), 2.5 Mbps (High)
+    Level_2_0,
+    /// Level 2.1: Max resolution 352x288 (CIF), 30 fps, 4 Mbps (Main), 5 Mbps (High)
+    Level_2_1,
+    /// Level 2.2: Max resolution 352x288 (CIF), 30 fps, 10 Mbps (Main), 12.5 Mbps (High)
+    Level_2_2,
+    /// Level 3.0: Max resolution 720x576 (SD), 30 fps, 10 Mbps (Main), 12.5 Mbps (High)
+    Level_3_0,
+    /// Level 3.1: Max resolution 1280x720 (HD), 30 fps, 14 Mbps (Main), 17.5 Mbps (High)
+    Level_3_1,
+    /// Level 3.2: Max resolution 1280x720 (HD), 60 fps, 20 Mbps (Main), 25 Mbps (High)
+    Level_3_2,
+    /// Level 4.0: Max resolution 1920x1080 (Full HD), 30 fps, 20 Mbps (Main), 25 Mbps (High)
+    Level_4_0,
+    /// Level 4.1: Max resolution 1920x1080 (Full HD), 60 fps, 50 Mbps (Main), 62.5 Mbps (High)
+    Level_4_1,
+    /// Level 4.2: Max resolution 1920x1080 (Full HD), 120 fps, 100 Mbps (Main), 125 Mbps (High)
+    Level_4_2,
+    /// Level 5.0: Max resolution 3840x2160 (4K), 30 fps, 135 Mbps (Main), 168.75 Mbps (High)
+    Level_5_0,
+    /// Level 5.1: Max resolution 3840x2160 (4K), 60 fps, 240 Mbps (Main), 300 Mbps (High)
+    Level_5_1,
+    /// Level 5.2: Max resolution 4096x2160 (4K Cinema), 60 fps, 480 Mbps (Main), 600 Mbps (High)
+    Level_5_2,
 }
 
 impl Level {
     const fn to_c(self) -> ELevelIdc {
         match self {
-            Self::Level10 => openh264_sys2::LEVEL_1_0,
-            Self::Level1B => openh264_sys2::LEVEL_1_B,
-            Self::Level11 => openh264_sys2::LEVEL_1_1,
-            Self::Level12 => openh264_sys2::LEVEL_1_2,
-            Self::Level13 => openh264_sys2::LEVEL_1_3,
-            Self::Level20 => openh264_sys2::LEVEL_2_0,
-            Self::Level21 => openh264_sys2::LEVEL_2_1,
-            Self::Level22 => openh264_sys2::LEVEL_2_2,
-            Self::Level30 => openh264_sys2::LEVEL_3_0,
-            Self::Level31 => openh264_sys2::LEVEL_3_1,
-            Self::Level32 => openh264_sys2::LEVEL_3_2,
-            Self::Level40 => openh264_sys2::LEVEL_4_0,
-            Self::Level41 => openh264_sys2::LEVEL_4_1,
-            Self::Level42 => openh264_sys2::LEVEL_4_2,
-            Self::Level50 => openh264_sys2::LEVEL_5_0,
-            Self::Level51 => openh264_sys2::LEVEL_5_1,
-            Self::Level52 => openh264_sys2::LEVEL_5_2,
+            Self::Level_1_0 => openh264_sys2::LEVEL_1_0,
+            Self::Level_1_B => openh264_sys2::LEVEL_1_B,
+            Self::Level_1_1 => openh264_sys2::LEVEL_1_1,
+            Self::Level_1_2 => openh264_sys2::LEVEL_1_2,
+            Self::Level_1_3 => openh264_sys2::LEVEL_1_3,
+            Self::Level_2_0 => openh264_sys2::LEVEL_2_0,
+            Self::Level_2_1 => openh264_sys2::LEVEL_2_1,
+            Self::Level_2_2 => openh264_sys2::LEVEL_2_2,
+            Self::Level_3_0 => openh264_sys2::LEVEL_3_0,
+            Self::Level_3_1 => openh264_sys2::LEVEL_3_1,
+            Self::Level_3_2 => openh264_sys2::LEVEL_3_2,
+            Self::Level_4_0 => openh264_sys2::LEVEL_4_0,
+            Self::Level_4_1 => openh264_sys2::LEVEL_4_1,
+            Self::Level_4_2 => openh264_sys2::LEVEL_4_2,
+            Self::Level_5_0 => openh264_sys2::LEVEL_5_0,
+            Self::Level_5_1 => openh264_sys2::LEVEL_5_1,
+            Self::Level_5_2 => openh264_sys2::LEVEL_5_2,
         }
     }
 }
 
-/// Complexity of the Encoder
+/// Complexity of the encoder (speed vs. quality).
 #[derive(Debug, Default, Clone, Copy)]
 #[allow(missing_docs)]
 pub enum Complexity {
+    /// The lowest complexity, the fastest speed.
     Low,
+    /// Medium complexity, medium speed, medium quality.
     #[default]
     Medium,
+    /// High complexity, lowest speed, high quality.
     High,
 }
 
@@ -324,28 +358,26 @@ impl Complexity {
     }
 }
 
-/// Quantization parameter
+/// Quantization parameter range to control the degree of compression.
 ///
-/// This can be used to control the balance between size and video quality
+/// This can be used to control the balance between size and video quality.
 #[derive(Debug, Clone, Copy)]
 pub struct QpRange {
-    min: i32,
-    max: i32,
+    min: u8,
+    max: u8,
 }
 
 impl QpRange {
-    /// Limit the quatization of the encoder in the given range.
+    /// Limit the quantization of the encoder to the given range.
     ///
-    /// Valid values for `min` and `max` are between 0 and 51, where 0 represents lossless encoding and 51 the strongest compression.
+    /// Valid values for `min` and `max` are between 0 and 51, where 0
+    /// represents highest quality and 51 the strongest compression.
     #[must_use]
-    pub const fn new(min: u32, max: u32) -> Self {
+    pub const fn new(min: u8, max: u8) -> Self {
         assert!(max <= 51, "quantization value out of range (0..=51)");
         assert!(min <= max, "quantization min value larger than max");
 
-        Self {
-            min: min as i32,
-            max: max as i32,
-        }
+        Self { min, max }
     }
 }
 
@@ -355,19 +387,26 @@ impl Default for QpRange {
     }
 }
 
-/// Set a period (in frames) after which a new I-Frame is generated.
-///
-/// Using lower values improves error resilience and allows for faster seeking withing the video, but increases the overall required bitrate.
+/// A period in frames after which a new I-Frame is generated.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct IntraFramePeriod(u32);
 
 impl IntraFramePeriod {
-    /// Creates a period in which I-Frames are generated.
+    /// Creates a period in which I-Frames (group of pictures, "GOP size") are generated.
     ///
-    /// Set the value to zero to disable creating I-Frames periodically.
+    /// Using lower values improves error resilience and allows for faster seeking within the video,
+    /// but increases the overall required bitrate.
+    ///
+    /// Setting the value to zero is equal to calling [`IntraFramePeriod::auto()`].
     #[must_use]
-    pub const fn from_frames(frames: u32) -> Self {
+    pub const fn from_num_frames(frames: u32) -> Self {
         Self(frames)
+    }
+
+    /// Lets the encoder create I-frames as desired(?).
+    #[must_use]
+    pub const fn auto() -> Self {
+        Self(0)
     }
 }
 
@@ -423,7 +462,7 @@ impl EncoderConfig {
             adaptive_quantization: true,
             background_detection: true,
             long_term_reference: false,
-            intra_frame_period: IntraFramePeriod::from_frames(0),
+            intra_frame_period: IntraFramePeriod::from_num_frames(0),
         }
     }
 
@@ -699,8 +738,8 @@ impl Encoder {
         params.iComplexityMode = self.config.complexity.to_c();
         params.uiIntraPeriod = self.config.intra_frame_period.0;
         params.iLoopFilterDisableIdc = DEBLOCKING_IDC_0;
-        params.iMinQp = self.config.qp.min;
-        params.iMaxQp = self.config.qp.max;
+        params.iMinQp = self.config.qp.min.into();
+        params.iMaxQp = self.config.qp.max.into();
 
         if let Some(profile) = self.config.profile {
             params.sSpatialLayers[0].uiProfileIdc = profile.to_c();
