@@ -4,9 +4,10 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase, SEncParamExt, SFrameBSInfo,
-    SLayerBSInfo, SSourcePicture, API, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT,
-    ENCODER_OPTION_TRACE_LEVEL, RC_MODES, VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    videoFormatI420, ELevelIdc, EProfileIdc, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase,
+    SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, API, DEBLOCKING_IDC_0, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
+    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, SM_SINGLE_SLICE, SM_SIZELIMITED_SLICE,
+    VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, from_mut, null, null_mut};
@@ -223,11 +224,159 @@ impl FrameRate {
     }
 }
 
+/// The H.264 encoding profile
+#[derive(Copy, Clone, Debug)]
+#[allow(missing_docs)]
+pub enum Profile {
+    Baseline,
+    Main,
+    Extended,
+    High,
+    High10,
+    High422,
+    High444,
+    CAVLC444,
+    ScalableBaseline,
+    ScalableHigh,
+}
+
+impl Profile {
+    const fn to_c(self) -> EProfileIdc {
+        match self {
+            Self::Baseline => openh264_sys2::PRO_BASELINE,
+            Self::Main => openh264_sys2::PRO_MAIN,
+            Self::Extended => openh264_sys2::PRO_EXTENDED,
+            Self::High => openh264_sys2::PRO_HIGH,
+            Self::High10 => openh264_sys2::PRO_HIGH10,
+            Self::High422 => openh264_sys2::PRO_HIGH422,
+            Self::High444 => openh264_sys2::PRO_HIGH444,
+            Self::CAVLC444 => openh264_sys2::PRO_CAVLC444,
+            Self::ScalableBaseline => openh264_sys2::PRO_SCALABLE_BASELINE,
+            Self::ScalableHigh => openh264_sys2::PRO_SCALABLE_HIGH,
+        }
+    }
+}
+
+/// The H.264 encoding level
+#[derive(Copy, Clone, Debug)]
+#[allow(missing_docs)]
+pub enum Level {
+    Level10,
+    Level1B,
+    Level11,
+    Level12,
+    Level13,
+    Level20,
+    Level21,
+    Level22,
+    Level30,
+    Level31,
+    Level32,
+    Level40,
+    Level41,
+    Level42,
+    Level50,
+    Level51,
+    Level52,
+}
+
+impl Level {
+    const fn to_c(self) -> ELevelIdc {
+        match self {
+            Self::Level10 => openh264_sys2::LEVEL_1_0,
+            Self::Level1B => openh264_sys2::LEVEL_1_B,
+            Self::Level11 => openh264_sys2::LEVEL_1_1,
+            Self::Level12 => openh264_sys2::LEVEL_1_2,
+            Self::Level13 => openh264_sys2::LEVEL_1_3,
+            Self::Level20 => openh264_sys2::LEVEL_2_0,
+            Self::Level21 => openh264_sys2::LEVEL_2_1,
+            Self::Level22 => openh264_sys2::LEVEL_2_2,
+            Self::Level30 => openh264_sys2::LEVEL_3_0,
+            Self::Level31 => openh264_sys2::LEVEL_3_1,
+            Self::Level32 => openh264_sys2::LEVEL_3_2,
+            Self::Level40 => openh264_sys2::LEVEL_4_0,
+            Self::Level41 => openh264_sys2::LEVEL_4_1,
+            Self::Level42 => openh264_sys2::LEVEL_4_2,
+            Self::Level50 => openh264_sys2::LEVEL_5_0,
+            Self::Level51 => openh264_sys2::LEVEL_5_1,
+            Self::Level52 => openh264_sys2::LEVEL_5_2,
+        }
+    }
+}
+
+/// Complexity of the Encoder
+#[derive(Debug, Default, Clone, Copy)]
+#[allow(missing_docs)]
+pub enum Complexity {
+    Low,
+    #[default]
+    Medium,
+    High,
+}
+
+impl Complexity {
+    const fn to_c(self) -> ELevelIdc {
+        match self {
+            Self::Low => openh264_sys2::LOW_COMPLEXITY,
+            Self::Medium => openh264_sys2::MEDIUM_COMPLEXITY,
+            Self::High => openh264_sys2::HIGH_COMPLEXITY,
+        }
+    }
+}
+
+/// Quantization parameter
+///
+/// This can be used to control the balance between size and video quality
+#[derive(Debug, Clone, Copy)]
+pub struct QpRange {
+    min: i32,
+    max: i32,
+}
+
+impl QpRange {
+    /// Limit the quatization of the encoder in the given range.
+    ///
+    /// Valid values for `min` and `max` are between 0 and 51, where 0 represents lossless encoding and 51 the strongest compression.
+    #[must_use]
+    pub const fn new(min: u32, max: u32) -> Self {
+        assert!(max <= 51, "quantization value out of range (0..=51)");
+        assert!(min <= max, "quantization min value larger than max");
+
+        Self {
+            min: min as i32,
+            max: max as i32,
+        }
+    }
+}
+
+impl Default for QpRange {
+    fn default() -> Self {
+        Self { min: 0, max: 51 }
+    }
+}
+
+/// Set a period (in frames) after which a new I-Frame is generated.
+///
+/// Using lower values improves error resilience and allows for faster seeking withing the video, but increases the overall required bitrate.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct IntraFramePeriod(u32);
+
+impl IntraFramePeriod {
+    /// Creates a period in which I-Frames are generated.
+    ///
+    /// Set the value to zero to disable creating I-Frames periodically.
+    #[must_use]
+    pub const fn from_frames(frames: u32) -> Self {
+        Self(frames)
+    }
+}
+
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
 #[derive(Default, Copy, Clone, Debug)]
 #[must_use]
+#[allow(clippy::struct_excessive_bools)]
 pub struct EncoderConfig {
     enable_skip_frame: bool,
     target_bitrate: BitRate,
@@ -239,6 +388,16 @@ pub struct EncoderConfig {
     sps_pps_strategy: SpsPpsStrategy,
     multiple_thread_idc: u16,
     usage_type: UsageType,
+    max_slice_len: Option<u32>,
+    profile: Option<Profile>,
+    level: Option<Level>,
+    complexity: Complexity,
+    qp: QpRange,
+    scene_change_detect: bool,
+    adaptive_quantization: bool,
+    background_detection: bool,
+    long_term_reference: bool,
+    intra_frame_period: IntraFramePeriod,
 }
 
 impl EncoderConfig {
@@ -255,6 +414,16 @@ impl EncoderConfig {
             sps_pps_strategy: SpsPpsStrategy::ConstantId,
             multiple_thread_idc: 0,
             usage_type: UsageType::CameraVideoRealTime,
+            max_slice_len: None,
+            profile: None,
+            level: None,
+            complexity: Complexity::Medium,
+            qp: QpRange::new(0, 51),
+            scene_change_detect: true,
+            adaptive_quantization: true,
+            background_detection: true,
+            long_term_reference: false,
+            intra_frame_period: IntraFramePeriod::from_frames(0),
         }
     }
 
@@ -297,6 +466,66 @@ impl EncoderConfig {
     /// Set the SPS/PPS behavior.
     pub const fn sps_pps_strategy(mut self, value: SpsPpsStrategy) -> Self {
         self.sps_pps_strategy = value;
+        self
+    }
+
+    /// Set the maximum slice length
+    pub const fn max_slice_len(mut self, max_slice_len: u32) -> Self {
+        self.max_slice_len = Some(max_slice_len);
+        self
+    }
+
+    /// Set the encoding profile
+    pub const fn profile(mut self, profile: Profile) -> Self {
+        self.profile = Some(profile);
+        self
+    }
+
+    /// Set the encoding profile level
+    pub const fn level(mut self, level: Level) -> Self {
+        self.level = Some(level);
+        self
+    }
+
+    /// Set the complexity
+    pub const fn complexity(mut self, complexity: Complexity) -> Self {
+        self.complexity = complexity;
+        self
+    }
+
+    /// Set the balance between compression and size
+    pub const fn qp(mut self, value: QpRange) -> Self {
+        self.qp = value;
+        self
+    }
+
+    /// Set scene change detect (on by default)
+    pub const fn scene_change_detect(mut self, value: bool) -> Self {
+        self.scene_change_detect = value;
+        self
+    }
+
+    /// Set adaptive quantization control (on by default)
+    pub const fn adaptive_quantization(mut self, value: bool) -> Self {
+        self.adaptive_quantization = value;
+        self
+    }
+
+    /// Set background detection (on by default)
+    pub const fn background_detection(mut self, value: bool) -> Self {
+        self.background_detection = value;
+        self
+    }
+
+    /// Set use of long term reference (off by default)
+    pub const fn long_term_reference(mut self, value: bool) -> Self {
+        self.long_term_reference = value;
+        self
+    }
+
+    /// Set the interval of intra frames (0 by default, disabling periodic intra frames)
+    pub const fn intra_frame_period(mut self, value: IntraFramePeriod) -> Self {
+        self.intra_frame_period = value;
         self
     }
 
@@ -462,6 +691,45 @@ impl Encoder {
         params.eSpsPpsIdStrategy = self.config.sps_pps_strategy.to_c();
         params.iMultipleThreadIdc = self.config.multiple_thread_idc;
         params.iUsageType = self.config.usage_type.to_c();
+
+        params.bEnableSceneChangeDetect = self.config.scene_change_detect;
+        params.bEnableAdaptiveQuant = self.config.adaptive_quantization;
+        params.bEnableBackgroundDetection = self.config.background_detection;
+        params.bEnableLongTermReference = self.config.long_term_reference;
+        params.iComplexityMode = self.config.complexity.to_c();
+        params.uiIntraPeriod = self.config.intra_frame_period.0;
+        params.iLoopFilterDisableIdc = DEBLOCKING_IDC_0;
+        params.iMinQp = self.config.qp.min;
+        params.iMaxQp = self.config.qp.max;
+
+        if let Some(profile) = self.config.profile {
+            params.sSpatialLayers[0].uiProfileIdc = profile.to_c();
+        }
+
+        if let Some(level) = self.config.level {
+            params.sSpatialLayers[0].uiLevelIdc = level.to_c();
+        }
+
+        params.iSpatialLayerNum = 1;
+        params.iTemporalLayerNum = 1;
+        params.iLtrMarkPeriod = 30;
+        params.sSpatialLayers[0].iMaxSpatialBitrate = self.config.target_bitrate.0.try_into()?;
+        params.sSpatialLayers[0].iSpatialBitrate = self.config.target_bitrate.0.try_into()?;
+        params.sSpatialLayers[0].fFrameRate = self.config.max_frame_rate.0;
+        params.sSpatialLayers[0].iVideoWidth = width;
+        params.sSpatialLayers[0].iVideoHeight = height;
+
+        if let Some(max_slice_len) = self.config.max_slice_len {
+            // Limit the slice length by setting both MaxNalSize and uiSliceSizeConstraint
+            params.uiMaxNalSize = max_slice_len;
+
+            params.sSpatialLayers[0].sSliceArgument.uiSliceMode = SM_SIZELIMITED_SLICE;
+            params.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint = max_slice_len;
+        } else {
+            // No size limit, explicitly use defaults
+            params.sSpatialLayers[0].sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
+            params.sSpatialLayers[0].sSliceArgument.uiSliceNum = 1;
+        }
 
         unsafe {
             if self.previous_dimensions.is_none() {
