@@ -770,6 +770,12 @@ pub struct TagEncParamExt {
     pub bFixRCOverShoot: bool,
     #[doc = "< the target bits of IDR is (idr_bitrate_ratio/100) * average target bit per frame."]
     pub iIdrBitrateRatio: ::std::os::raw::c_int,
+    #[doc = "< get Y PSNR stats for the whole video sequence"]
+    pub bPsnrY: bool,
+    #[doc = "< get U PSNR stats for the whole video sequence"]
+    pub bPsnrU: bool,
+    #[doc = "< get V PSNR stats for the whole video sequence"]
+    pub bPsnrV: bool,
 }
 impl Default for TagEncParamExt {
     fn default() -> Self {
@@ -832,7 +838,7 @@ pub type SDecodingParam = TagSVCDecodingParam;
 pub type PDecodingParam = *mut TagSVCDecodingParam;
 #[doc = " @brief Bitstream inforamtion of a layer being encoded"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub struct SLayerBSInfo {
     pub uiTemporalId: ::std::os::raw::c_uchar,
     pub uiSpatialId: ::std::os::raw::c_uchar,
@@ -847,6 +853,8 @@ pub struct SLayerBSInfo {
     pub pNalLengthInByte: *mut ::std::os::raw::c_int,
     #[doc = "< buffer of bitstream contained"]
     pub pBsBuf: *mut ::std::os::raw::c_uchar,
+    #[doc = "< PSNR values for Y/U/V"]
+    pub rPsnr: [f32; 3usize],
 }
 impl Default for SLayerBSInfo {
     fn default() -> Self {
@@ -861,7 +869,7 @@ impl Default for SLayerBSInfo {
 pub type PLayerBSInfo = *mut SLayerBSInfo;
 #[doc = " @brief Frame bit stream info"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub struct SFrameBSInfo {
     pub iLayerNum: ::std::os::raw::c_int,
     pub sLayerInfo: [SLayerBSInfo; 128usize],
@@ -896,6 +904,12 @@ pub struct Source_Picture_s {
     pub iPicHeight: ::std::os::raw::c_int,
     #[doc = "< timestamp of the source picture, unit: millisecond"]
     pub uiTimeStamp: ::std::os::raw::c_longlong,
+    #[doc = "< get Y PSNR for this frame"]
+    pub bPsnrY: bool,
+    #[doc = "< get U PSNR for this frame"]
+    pub bPsnrU: bool,
+    #[doc = "< get V PSNR for this frame"]
+    pub bPsnrV: bool,
 }
 impl Default for Source_Picture_s {
     fn default() -> Self {

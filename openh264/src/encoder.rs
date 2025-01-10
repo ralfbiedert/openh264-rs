@@ -690,6 +690,9 @@ impl Encoder {
             iPicWidth: new_dimensions.0,
             iPicHeight: new_dimensions.1,
             uiTimeStamp: timestamp.as_native(),
+            bPsnrY: false,
+            bPsnrU: false,
+            bPsnrV: false,
         };
 
         unsafe {
