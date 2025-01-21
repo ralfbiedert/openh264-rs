@@ -3,7 +3,6 @@ use openh264_sys2::DynamicAPI;
 
 mod common;
 
-
 #[test]
 #[cfg(feature = "source")]
 fn api_loader() {

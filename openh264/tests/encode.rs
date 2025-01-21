@@ -164,7 +164,6 @@ fn can_encode_decoded_via_dll() -> Result<(), Error> {
     can_encode_decoded(api)
 }
 
-
 #[test]
 #[cfg(feature = "source")]
 fn encode_change_resolution() -> Result<(), Error> {
