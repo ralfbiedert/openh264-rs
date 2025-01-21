@@ -10,6 +10,10 @@ documentation = "https://docs.rs/openh264-sys2/"
 repository = "https://github.com/ralfbiedert/openh264-rust"
 license = "BSD-2-Clause"
 
+exclude = [
+    "**/*.dll"
+]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]

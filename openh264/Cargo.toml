@@ -11,6 +11,13 @@ license = "BSD-2-Clause"
 documentation = "https://docs.rs/openh264/"
 repository = "https://github.com/ralfbiedert/openh264-rust"
 
+exclude = [
+    "**/*.h264",
+    "**/*.rgb",
+    "**/*.mp4",
+    "**/*.bmp"
+]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lints]
