@@ -69,6 +69,12 @@ impl From<TryFromIntError> for Error {
     }
 }
 
+impl From<openh264_sys2::Error> for Error {
+    fn from(value: openh264_sys2::Error) -> Self {
+        Self::msg_string(format!("open264-sys error: {value}"))
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("OpenH264 encountered an error. Native:")?;

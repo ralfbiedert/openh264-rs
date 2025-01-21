@@ -277,14 +277,10 @@ impl API for DynamicAPI {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    #[ignore]
-    #[cfg(feature = "libloading")]
-    fn it_works() -> Result<(), crate::Error> {
-        _ = super::DynamicAPI::from_blob_path(r"C:\Users\rb\Downloads\openh264-2.4.0-win64.dll\openh264-2.4.0-win64.dll")?;
-
-        Ok(())
-    }
+/// Helper function that should always give the name of the latest supported and
+/// included DLL file, used by unit tests.
+#[doc(hidden)]
+#[cfg(all(target_os = "windows", target_arch = "x86_64", feature = "libloading"))]
+pub fn reference_dll_name() -> &'static str {
+    include_str!("../tests/reference/reference.txt")
 }
