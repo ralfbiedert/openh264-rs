@@ -124,7 +124,7 @@ impl YUVBuffer {
     /// May panic if invoked with an RGB source where the dimensions are not multiples of 2.
     pub fn from_rgb8_source(rgb: impl RGB8Source) -> Self {
         let mut rval = Self::new(rgb.dimensions().0, rgb.dimensions().1);
-        rval.read_rgb(rgb);
+        rval.read_rgb8(rgb);
         rval
     }
 
