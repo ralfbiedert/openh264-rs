@@ -63,11 +63,11 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           lfs: true
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.83
+        uses: dtolnay/rust-toolchain@1.84.1
         with:
           components: rustfmt,clippy
           targets: ${{ matrix.target }}
@@ -77,7 +77,7 @@ jobs:
         with:
           version: 2.15.05
       - name: Install Additional packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.4.2
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         if: matrix.packages != ''
         with:
           packages: ${{ matrix.packages }}
