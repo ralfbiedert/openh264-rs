@@ -4,7 +4,7 @@ description = "Idiomatic bindings for OpenH264."
 authors = ["Ralf Biedert <rb@xr.io>"]
 keywords = ["multimedia", "encoding", "video"]
 categories = ["api-bindings", "multimedia::video"]
-version = "0.7.2"
+version = "0.8.0"
 edition = "2021"
 rust-version = "1.83"
 license = "BSD-2-Clause"
@@ -30,7 +30,7 @@ libloading = ["openh264-sys2/libloading"]
 
 
 [dependencies]
-openh264-sys2 = { path = "../openh264-sys2", version = "0.7.1", default-features = false }
+openh264-sys2 = { path = "../openh264-sys2", version = "0.8.0", default-features = false }
 wide = "0.7.30"
 
 [package.metadata.docs.rs]
