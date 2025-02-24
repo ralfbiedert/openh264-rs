@@ -43,10 +43,7 @@ impl From<u8> for NalType {
     /// Reads NAL from header byte.
     fn from(value: u8) -> Self {
         use NalType::{
-            Aud, AuxiliarySlice, DepthExtenSlice, Dpa, Dpb, Dpc, Dps, EndSequence, EndStream, ExtenSlice, FillerData, IdrSlice,
-            Pps, Prefix, Reserved17, Reserved18, Reserved22, Reserved23, Sei, Slice, Sps, SpsExt, SubSps, Unspecified,
-            Unspecified24, Unspecified25, Unspecified26, Unspecified27, Unspecified28, Unspecified29, Unspecified30,
-            Unspecified31,
+            Aud, AuxiliarySlice, DepthExtenSlice, Dpa, Dpb, Dpc, Dps, EndSequence, EndStream, ExtenSlice, FillerData, IdrSlice, Pps, Prefix, Reserved17, Reserved18, Reserved22, Reserved23, Sei, Slice, Sps, SpsExt, SubSps, Unspecified, Unspecified24, Unspecified25, Unspecified26, Unspecified27, Unspecified28, Unspecified29, Unspecified30, Unspecified31
         };
 
         match value {
