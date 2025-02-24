@@ -3,7 +3,7 @@
 #
 PROJECT_ROOT="$( cd "$(dirname "$0")/.." ; pwd -P )"
 
-VERSION=2.5.0 # <-- Update to latest 
+VERSION=2.6.0 # <-- Update to latest
 TARGET_FILE="$PROJECT_ROOT/openh264-sys2/src/blobs/hashes.txt"
 CISCO_ROOT=http://ciscobinary.openh264.org
 REFERENCE_FILE="openh264-$VERSION-win64.dll"
