@@ -13,11 +13,11 @@ pub struct Error {
 
 impl Error {
     /// Return the current native code.
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn native_code(&self) -> i64 {
+    #[must_use]
+    pub const fn native_code(&self) -> i64 {
         self.native
     }
-    
+
     #[allow(clippy::missing_const_for_fn)]
     pub(crate) fn from_native(native: i64) -> Self {
         Self {
