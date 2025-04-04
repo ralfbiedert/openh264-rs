@@ -101,7 +101,7 @@ pub mod source {
     #[rustfmt::skip]
     #[allow(clippy::missing_safety_doc)]
     impl APILoader {
-        pub fn new() -> Self { Self {} }
+        pub const fn new() -> Self { Self {} }
         pub unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int { crate::generated::fns_source::WelsCreateSVCEncoder(ppEncoder) }
         pub unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { crate::generated::fns_source::WelsDestroySVCEncoder(pEncoder) }
         pub unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> ::std::os::raw::c_int { crate::generated::fns_source::WelsGetDecoderCapability(pDecCapability) }
@@ -139,7 +139,7 @@ pub enum DynamicAPI {
 impl DynamicAPI {
     /// Creates an OpenH264 API using the built-in source if available.
     #[cfg(feature = "source")]
-    pub fn from_source() -> Self {
+    pub const fn from_source() -> Self {
         let api = crate::source::APILoader::new();
         Self::Source(api)
     }
