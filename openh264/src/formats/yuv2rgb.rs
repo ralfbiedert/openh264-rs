@@ -175,7 +175,7 @@ pub fn write_rgb8_f32x8_par(
 
     let (width, _height) = dim;
     let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width; // rgb pixel size in bytes
-    
+
     // distribute data across threads
     // the call to `std::thread::available_parallelism()` takes quite long (77 micros for me)
     const NUM_THREADS: usize = 4;
@@ -428,9 +428,7 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize,
 #[cfg(test)]
 mod test {
     use crate::decoder::{Decoder, DecoderConfig};
-    use crate::formats::yuv2rgb::{
-        write_rgb8_f32x8, write_rgb8_scalar, write_rgb8_scalar_par, write_rgb8_f32x8_par
-    };
+    use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
     use crate::formats::YUVSource;
     use crate::OpenH264API;
     use crate::decoder::{Decoder, DecoderConfig};
