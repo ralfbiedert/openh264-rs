@@ -49,6 +49,58 @@ pub fn write_rgb8_scalar(
     }
 }
 
+/// Write RGB8 data from YUV420 using scalar (non SIMD) math.
+pub fn write_rgb8_scalar_par(
+    y_plane: &[u8],
+    u_plane: &[u8],
+    v_plane: &[u8],
+    dim: (usize, usize),
+    strides: (usize, usize, usize),
+    target: &mut [u8],
+) {
+    // distribute data across threads
+    // the call to `std::thread::available_parallelism()` takes quite long (77 micros for me)
+    const NUM_THREADS: usize = 4;
+
+    // split output slices
+    let pixels_per_thread = (dim.0 * dim.1 * 3) / NUM_THREADS;
+    let target_chunks = target.chunks_mut(pixels_per_thread);
+
+    // input planes
+    let rows_per_thread = dim.1 / NUM_THREADS;
+    let mut row_indices: Vec<(usize, usize)> = (0..NUM_THREADS)
+        .map(|i| (i * rows_per_thread, (i + 1) * rows_per_thread))
+        .collect();
+    // add more rows to the last thread, if not able to distribute evenly
+    // --> mirror behavior from chunks_mut
+    row_indices[NUM_THREADS - 1].1 += dim.1 % NUM_THREADS;
+
+    std::thread::scope(|s| {
+        for (target, (row_start, row_end)) in target_chunks.zip(row_indices) {
+            s.spawn(move || {
+                for y in row_start..row_end {
+                    for x in 0..dim.0 {
+                        let base_tgt = ((y - row_start) * dim.0 + x) * 3;
+                        let base_y = y * strides.0 + x;
+                        let base_u = (y / 2 * strides.1) + (x / 2);
+                        let base_v = (y / 2 * strides.2) + (x / 2);
+
+                        let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+
+                        let y = f32::from(y_plane[base_y]);
+                        let u = f32::from(u_plane[base_u]);
+                        let v = f32::from(v_plane[base_v]);
+
+                        rgb_pixel[0] = 1.402f32.mul_add(v - 128.0, y) as u8;
+                        rgb_pixel[1] = 0.714f32.mul_add(-(v - 128.0), 0.344f32.mul_add(-(u - 128.0), y)) as u8;
+                        rgb_pixel[2] = 1.772f32.mul_add(u - 128.0, y) as u8;
+                    }
+                }
+            });
+        }
+    });
+}
+
 /// Write RGB8 data from YUV420 using f32x8 SIMD.
 #[allow(clippy::identity_op)]
 pub fn write_rgb8_f32x8(
@@ -94,6 +146,68 @@ pub fn write_rgb8_f32x8(
         let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
         write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
     }
+}
+
+/// Write RGB8 data from YUV420 using f32x8 SIMD.
+#[allow(clippy::identity_op)]
+pub fn write_rgb8_f32x8_par(
+    y_plane: &[u8],
+    u_plane: &[u8],
+    v_plane: &[u8],
+    dim: (usize, usize),
+    strides: (usize, usize, usize),
+    target: &mut [u8],
+) {
+    const RGB_PIXEL_LEN: usize = 3;
+
+    // this assumes we are decoding YUV420
+    assert_eq!(y_plane.len(), u_plane.len() * 4);
+    assert_eq!(y_plane.len(), v_plane.len() * 4);
+    assert_eq!(dim.0 % 8, 0);
+
+    let (width, _height) = dim;
+    let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width; // rgb pixel size in bytes
+    
+    // distribute data across threads
+    // the call to `std::thread::available_parallelism()` takes quite long (77 micros for me)
+    const NUM_THREADS: usize = 4;
+    let rows_per_thread = dim.1 / NUM_THREADS;
+    let chunk_sz = (dim.0 * dim.1 * RGB_PIXEL_LEN) / NUM_THREADS;
+    let target_chunks = target.chunks_mut(chunk_sz).enumerate();
+
+    std::thread::scope(|s| {
+        for (i, target) in target_chunks {
+            s.spawn(move || {
+                let range = 0..(rows_per_thread / 2);
+                let offset = i * (rows_per_thread / 2);
+                for y in range {
+                    // load U and V values for two rows of pixels
+                    let base_u = (y + offset) * strides.1;
+                    let u_row = &u_plane[base_u..base_u + strides.1];
+                    let base_v = (y + offset) * strides.2;
+                    let v_row = &v_plane[base_v..base_v + strides.2];
+
+                    // load Y values for first row
+                    let base_y = 2 * (y + offset) * strides.0;
+                    let y_row = &y_plane[base_y..base_y + strides.0];
+
+                    // calculate first RGB row
+                    let base_tgt = 2 * y * rgb_bytes_per_row;
+                    let row_target = &mut target[base_tgt..base_tgt + rgb_bytes_per_row];
+                    write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
+
+                    // load Y values for second row
+                    let base_y = (2 * (y + offset) + 1) * strides.0;
+                    let y_row = &y_plane[base_y..base_y + strides.0];
+
+                    // calculate second RGB row
+                    let base_tgt = (2 * y + 1) * rgb_bytes_per_row;
+                    let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
+                    write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
+                }
+            });
+        }
+    });
 }
 
 /// Write a single RGB8 row from YUV420 row data using f32x8 SIMD.
@@ -161,7 +275,9 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
 #[cfg(test)]
 mod test {
     use crate::decoder::{Decoder, DecoderConfig};
-    use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar};
+    use crate::formats::yuv2rgb::{
+        write_rgb8_f32x8, write_rgb8_scalar, write_rgb8_scalar_par, write_rgb8_f32x8_par
+    };
     use crate::formats::YUVSource;
     use crate::OpenH264API;
 
@@ -184,6 +300,52 @@ mod test {
 
         let mut tgt2 = vec![0; tgt.len()];
         write_rgb8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
+
+        assert_eq!(tgt, tgt2);
+    }
+
+    #[test]
+    fn write_rgb8_par_matches_scalar() {
+        let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
+
+        let api = OpenH264API::from_source();
+        let config = DecoderConfig::default();
+        let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+        let mut rgb = vec![0; 2000 * 2000 * 3];
+        let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+        let dim = yuv.dimensions();
+        let rgb_len = dim.0 * dim.1 * 3;
+
+        let tgt = &mut rgb[0..rgb_len];
+
+        write_rgb8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), tgt);
+
+        let mut tgt2 = vec![0; tgt.len()];
+        write_rgb8_scalar_par(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
+
+        assert_eq!(tgt, tgt2);
+    }
+
+    #[test]
+    fn write_rgb8_f32x8_par_matches_scalar() {
+        let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
+
+        let api = OpenH264API::from_source();
+        let config = DecoderConfig::default();
+        let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+        let mut rgb = vec![0; 2000 * 2000 * 3];
+        let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+        let dim = yuv.dimensions();
+        let rgb_len = dim.0 * dim.1 * 3;
+
+        let tgt = &mut rgb[0..rgb_len];
+
+        write_rgb8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), tgt);
+
+        let mut tgt2 = vec![0; tgt.len()];
+        write_rgb8_f32x8_par(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
 
         assert_eq!(tgt, tgt2);
     }
