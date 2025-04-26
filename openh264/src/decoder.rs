@@ -49,7 +49,8 @@
 //! ```
 
 use crate::error::NativeErrorExt;
-use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
+use crate::formats::yuv2rgb::write_rgb8_f32x8_par;
+// use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
 use crate::formats::YUVSource;
 use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar, write_rgba8_f32x8, write_rgba8_scalar};
 use crate::{Error, OpenH264API, Timestamp};
