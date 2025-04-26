@@ -21,6 +21,7 @@ macro_rules! f32x8_from_slice_with_blocksize {
 }
 
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
+#[allow(dead_code)]
 pub fn write_rgb8_scalar(
     y_plane: &[u8],
     u_plane: &[u8],
@@ -50,6 +51,7 @@ pub fn write_rgb8_scalar(
 }
 
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
+#[allow(dead_code)]
 pub fn write_rgb8_scalar_par(
     y_plane: &[u8],
     u_plane: &[u8],
@@ -103,6 +105,7 @@ pub fn write_rgb8_scalar_par(
 
 /// Write RGB8 data from YUV420 using f32x8 SIMD.
 #[allow(clippy::identity_op)]
+#[allow(dead_code)]
 pub fn write_rgb8_f32x8(
     y_plane: &[u8],
     u_plane: &[u8],
@@ -159,6 +162,8 @@ pub fn write_rgb8_f32x8_par(
     target: &mut [u8],
 ) {
     const RGB_PIXEL_LEN: usize = 3;
+    // the call to `std::thread::available_parallelism()` takes quite long (77 micros for me)
+    const NUM_THREADS: usize = 4;
 
     // this assumes we are decoding YUV420
     assert_eq!(y_plane.len(), u_plane.len() * 4);
@@ -169,8 +174,6 @@ pub fn write_rgb8_f32x8_par(
     let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width; // rgb pixel size in bytes
 
     // distribute data across threads
-    // the call to `std::thread::available_parallelism()` takes quite long (77 micros for me)
-    const NUM_THREADS: usize = 4;
     let rows_per_thread = dim.1 / NUM_THREADS;
     let chunk_sz = (dim.0 * dim.1 * RGB_PIXEL_LEN) / NUM_THREADS;
     let target_chunks = target.chunks_mut(chunk_sz).enumerate();
