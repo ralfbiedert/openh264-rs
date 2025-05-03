@@ -669,7 +669,7 @@ mod test {
     use super::DecodedYUV;
 
     /// Create YUV420 plane buffers.
-    /// 
+    ///
     /// Usage: `let (y, u, v) = planes!(strides: (132, 132), dim: (128, 128));`
     macro_rules! planes {
         (strides: ($y_stride:literal, $uv_stride:literal), dim: ($width:literal, $height:literal)) => {{
@@ -683,13 +683,13 @@ mod test {
             let uv_plane_len = ($uv_stride * $height / 4) as usize;
             let u = numbers.clone().take(uv_plane_len).collect::<Vec<_>>();
             let v = numbers.clone().take(uv_plane_len).collect::<Vec<_>>();
-            
+
             (y, u, v)
         }};
     }
 
     /// Create a mock DecodedYUV without iFormat and Timestamp::ZERO
-    /// 
+    ///
     /// Usage: `let buf = decoded_yuv!(strides: (132, 132), dim: (128, 128), &y, &u, &v);`
     macro_rules! decoded_yuv {
         (strides: ($y_stride:literal, $uv_stride:literal), dim: ($width:literal, $height:literal), $y:expr, $u:expr, $v:expr) => {
