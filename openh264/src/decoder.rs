@@ -521,6 +521,7 @@ impl DecodedYUV<'_> {
     }
 
     /// Cut the YUV buffer into vertical sections of equal length.
+    #[must_use]
     pub fn split<const N: usize>(&self) -> [(&[u8], &[u8], &[u8]); N] {
         if N == 1 {
             return [(self.y, self.u, self.v); N];
@@ -690,7 +691,7 @@ mod test {
                 info: SSysMEMBuffer {
                     iWidth: $width,
                     iHeight: $height,
-                    // YUV420 see: github.com/cisco/openh264/+/v1.2/codec/api/svc/codec_def.h#51
+                    // YUV420 see: https://github.com/cisco/openh264/blob/0c9a557a9a6f1d267c4d372221669a8ae69ccda0/codec/api/wels/codec_def.h#L56
                     iFormat: 23,
                     iStride: [$y_stride as i32, $uv_stride as i32],
                 },
