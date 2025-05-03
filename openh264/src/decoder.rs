@@ -514,6 +514,34 @@ impl DecodedYUV<'_> {
         self.timestamp
     }
 
+    /// Cut the YUV buffer into vertical sections of equal length.
+    pub fn split<const N: usize>(&self) -> [(&[u8], &[u8], &[u8]); N] {
+        if N == 1 {
+            return [(self.y, self.u, self.v); N];
+        }
+
+        // Is there a chance to use self.y.len() / N?
+        //   - can len(), stride and width mess it up?
+        let y_stride = self.info.iStride[0] as usize;
+        let y_lines = self.y.len() / y_stride;
+        let lines_per_split = y_lines / N;
+        let y_chunks: Vec<&[u8]> = self.y.chunks(lines_per_split * y_stride).collect();
+
+        let uv_stride = self.info.iStride[1] as usize;
+        let uv_lines = self.u.len() / uv_stride;
+        let lines_per_split = uv_lines / N;
+        dbg!(uv_lines, N, lines_per_split);
+        let u_chunks: Vec<&[u8]> = self.u.chunks(lines_per_split * uv_stride).collect();
+        let v_chunks: Vec<&[u8]> = self.v.chunks(lines_per_split * uv_stride).collect();
+
+        let mut parts = [(self.y, self.u, self.v); N];
+        for i in 0..N {
+            parts[i] = (y_chunks[i], u_chunks[i], v_chunks[i]);
+        }
+
+        parts
+    }
+
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*3`.
     ///
@@ -628,5 +656,88 @@ impl YUVSource for DecodedYUV<'_> {
 
     fn v(&self) -> &[u8] {
         self.v
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use openh264_sys2::SSysMEMBuffer;
+
+    use crate::Timestamp;
+
+    use super::DecodedYUV;
+
+    /// Create YUV420 plane buffers.
+    /// 
+    /// Usage: `let (y, u, v) = planes!(strides: (132, 132), dim: (128, 128));`
+    macro_rules! planes {
+        (strides: ($y_stride:literal, $uv_stride:literal), dim: ($width:literal, $height:literal)) => {{
+            // iterate over numbers from 0..255 and start from 0 after 255
+            let numbers = (0..u32::MAX).map(|i| (i % 256) as u8);
+
+            let y_plane_len = ($y_stride * $height) as usize;
+            let y = numbers.clone().take(y_plane_len).collect::<Vec<_>>();
+
+            // u & v planes are half the height of y plane in YUV420
+            let uv_plane_len = ($uv_stride * $height / 4) as usize;
+            let u = numbers.clone().take(uv_plane_len).collect::<Vec<_>>();
+            let v = numbers.clone().take(uv_plane_len).collect::<Vec<_>>();
+            
+            (y, u, v)
+        }};
+    }
+
+    /// Create a mock DecodedYUV without iFormat and Timestamp::ZERO
+    /// 
+    /// Usage: `let buf = decoded_yuv!(strides: (132, 132), dim: (128, 128), &y, &u, &v);`
+    macro_rules! decoded_yuv {
+        (strides: ($y_stride:literal, $uv_stride:literal), dim: ($width:literal, $height:literal), $y:expr, $u:expr, $v:expr) => {
+            DecodedYUV {
+                info: SSysMEMBuffer {
+                    iWidth: $width,
+                    iHeight: $height,
+                    // YUV420 see: github.com/cisco/openh264/+/v1.2/codec/api/svc/codec_def.h#51
+                    iFormat: 23,
+                    iStride: [$y_stride as i32, $uv_stride as i32],
+                },
+                timestamp: Timestamp::ZERO,
+                y: $y,
+                u: $u,
+                v: $v,
+            }
+        };
+    }
+
+    #[test]
+    fn test_split_01() {
+        // smallest possible buffer in YUV420
+        let (y, u, v) = planes!(strides: (4, 4), dim: (4, 4));
+        let buf = decoded_yuv!(strides: (4, 4), dim: (4, 4), &y, &u, &v);
+
+        let parts: [(&[u8], &[u8], &[u8]); 1] = buf.split();
+        assert_eq!(1, parts.len());
+        assert_eq!(parts[0], (y.as_slice(), u.as_slice(), v.as_slice()));
+    }
+
+    #[test]
+    fn test_split_02() {
+        let (y, u, v) = planes!(strides: (132, 132), dim: (128, 128));
+        let buf = decoded_yuv!(strides: (132, 132), dim: (128, 128), &y, &u, &v);
+
+        let parts: [(&[u8], &[u8], &[u8]); 4] = buf.split();
+
+        let (mut y_plane, mut u_plane, mut v_plane) = (vec![], vec![], vec![]);
+        for (y_p, u_p, v_p) in parts {
+            y_plane.extend_from_slice(y_p);
+            u_plane.extend_from_slice(u_p);
+            v_plane.extend_from_slice(v_p);
+        }
+
+        assert_eq!(buf.y.len(), y_plane.len());
+        assert_eq!(buf.y, y_plane);
+        assert_eq!(buf.u.len(), u_plane.len());
+        assert_eq!(buf.u, u_plane);
+        assert_eq!(buf.v.len(), v_plane.len());
+        assert_eq!(buf.v, v_plane);
     }
 }
