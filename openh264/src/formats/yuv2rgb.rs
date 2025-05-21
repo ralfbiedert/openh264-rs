@@ -20,6 +20,12 @@ macro_rules! f32x8_from_slice_with_blocksize {
     }};
 }
 
+const Y_MUL: f32 = 255.0 / 219.0;
+const RV_MUL: f32 = 255.0 / 224.0 * 1.402;
+const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.687;
+const GU_MUL: f32 = -255.0 / 224.0 * 1.772 * 0.114 / 0.587;
+const BU_MUL: f32 = 255.0 / 224.0 * 1.772;
+
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
 pub fn write_rgb8_scalar(
     y_plane: &[u8],
@@ -38,13 +44,15 @@ pub fn write_rgb8_scalar(
 
             let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
 
-            let y = f32::from(y_plane[base_y]);
-            let u = f32::from(u_plane[base_u]);
-            let v = f32::from(v_plane[base_v]);
+            // Convert limited range YUV to RGB
+            // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
+            let y_mul = Y_MUL * (y_plane[base_y] as f32 - 16.0);
+            let u = u_plane[base_u] as f32 - 128.0;
+            let v = v_plane[base_v] as f32 - 128.0;
 
-            rgb_pixel[0] = 1.402f32.mul_add(v - 128.0, y) as u8;
-            rgb_pixel[1] = 0.714f32.mul_add(-(v - 128.0), 0.344f32.mul_add(-(u - 128.0), y)) as u8;
-            rgb_pixel[2] = 1.772f32.mul_add(u - 128.0, y) as u8;
+            rgb_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
+            rgb_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
+            rgb_pixel[2] = BU_MUL.mul_add(u, y_mul) as u8;
         }
     }
 }
@@ -108,10 +116,11 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
     assert_eq!(y_row.len(), u_row.len() * 2);
     assert_eq!(y_row.len(), v_row.len() * 2);
 
-    let rv_mul = wide::f32x8::splat(1.402);
-    let gu_mul = wide::f32x8::splat(-0.344);
-    let gv_mul = wide::f32x8::splat(-0.714);
-    let bu_mul = wide::f32x8::splat(1.772);
+    let y_mul = wide::f32x8::splat(Y_MUL);
+    let rv_mul = wide::f32x8::splat(RV_MUL);
+    let gu_mul = wide::f32x8::splat(GU_MUL);
+    let gv_mul = wide::f32x8::splat(GV_MUL);
+    let bu_mul = wide::f32x8::splat(BU_MUL);
 
     let upper_bound = wide::f32x8::splat(255.0);
     let lower_bound = wide::f32x8::splat(0.0);
@@ -130,13 +139,14 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
     for _ in (0..width).step_by(STEP) {
         let pixels = &mut target[base_tgt..(base_tgt + TGT_STEP)];
 
-        let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_row[base_y..], 1);
+        let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_row[base_y..], 1) - 16.0;
+        let y_mul: wide::f32x8 = y_pack * y_mul;
         let u_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(u_row[base_uv..], 2) - 128.0;
         let v_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(v_row[base_uv..], 2) - 128.0;
 
-        let r_pack = v_pack.mul_add(rv_mul, y_pack);
-        let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_pack));
-        let b_pack = u_pack.mul_add(bu_mul, y_pack);
+        let r_pack = v_pack.mul_add(rv_mul, y_mul);
+        let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_mul));
+        let b_pack = u_pack.mul_add(bu_mul, y_mul);
 
         let (r_pack, g_pack, b_pack) = (
             r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
@@ -164,6 +174,25 @@ mod test {
     use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar};
     use crate::formats::YUVSource;
     use crate::OpenH264API;
+
+    #[test]
+    fn write_rgb8_scalar_range() {
+        let mut tgt = vec![0; 3];
+        write_rgb8_scalar(&[235], &[128], &[128], (1, 1), (1, 1, 1), &mut tgt);
+        assert_eq!(tgt, [255, 255, 255]);
+
+        write_rgb8_scalar(&[16], &[128], &[128], (1, 1), (1, 1, 1), &mut tgt);
+        assert_eq!(tgt, [0, 0, 0]);
+
+        write_rgb8_scalar(&[235], &[240], &[240], (1, 1), (1, 1, 1), &mut tgt);
+        assert_eq!(tgt, [255, 133, 255]);
+
+        write_rgb8_scalar(&[235], &[0], &[240], (1, 1), (1, 1, 1), &mut tgt);
+        assert_eq!(tgt, [255, 227, 0]);
+
+        write_rgb8_scalar(&[235], &[240], &[0], (1, 1), (1, 1, 1), &mut tgt);
+        assert_eq!(tgt, [50, 255, 255]);
+    }
 
     #[test]
     fn write_rgb8_f32x8_matches_scalar() {
