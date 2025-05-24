@@ -165,6 +165,41 @@ fn decodes_file_requiring_flush_frame() -> Result<(), Error> {
 
 #[test]
 #[cfg(feature = "source")]
+#[allow(clippy::similar_names)]
+fn decodes_white() -> Result<(), Error> {
+    let src = include_bytes!("data/white.h264");
+
+    let api = OpenH264API::from_source();
+    let config = DecoderConfig::default().flush_after_decode(Flush::NoFlush);
+    let mut decoder = Decoder::with_api_config(api, config)?;
+    let mut rgb = vec![0_u8; 20 * 20 * 3];
+
+    for packet in nal_units(src) {
+        if decoder.decode(packet)?.is_some() {
+            break;
+        }
+    }
+
+    // Adding frames in buffer to the count
+    let remaining = decoder.flush_remaining()?;
+
+    // And make sure we can actually access the remaining flushed frames.
+    for frame in remaining {
+        frame.write_rgb8(&mut rgb);
+    }
+    let decoded_frame = RgbImage::from_vec(20, 20, rgb).expect("Failed to convert into image buffer");
+
+    for pix in decoded_frame.pixels() {
+        assert!(pix.0[0] > 251u8, "Decoded red pixel is not 251 or greater: {}", pix.0[0]);
+        assert!(pix.0[1] > 253u8, "Decoded green pixel is not 253 or greater: {}", pix.0[1]);
+        assert!(pix.0[2] > 250u8, "Decoded blue pixel is not 250 or greater: {}", pix.0[2]);
+    }
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "source")]
 fn decodes_file_with_bframes() -> Result<(), Error> {
     let src = include_bytes!("data/big_buck_bunny_640x360.h264");
 

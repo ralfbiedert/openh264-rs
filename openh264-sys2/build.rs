@@ -75,7 +75,7 @@ impl Target {
             "unix" => TargetFamily::Unix,
             "windows" => TargetFamily::Windows,
             "wasm" => TargetFamily::Wasm,
-            _ => panic!("Unknown target family: {}", family),
+            _ => panic!("Unknown target family: {family}"),
         };
         let os = match os.as_str() {
             "windows" => TargetOs::Windows,
@@ -87,7 +87,7 @@ impl Target {
             "dragonfly" => TargetOs::Dragonfly,
             "openbsd" => TargetOs::Openbsd,
             "netbsd" => TargetOs::Netbsd,
-            _ => panic!("Unknown target os: {}", os),
+            _ => panic!("Unknown target os: {os}"),
         };
         let arch = match arch.as_str() {
             "x86" => TargetArch::X86,
@@ -99,7 +99,7 @@ impl Target {
             "powerpc64" => TargetArch::Powerpc64,
             "s390x" => TargetArch::S390x,
             "wasm32" => TargetArch::Wasm32,
-            _ => panic!("Unknown target arch: {}", arch),
+            _ => panic!("Unknown target arch: {arch}"),
         };
         let env = match env.as_str() {
             "" => TargetEnv::NoEnv,
@@ -107,7 +107,7 @@ impl Target {
             "msvc" => TargetEnv::Msvc,
             "musl" => TargetEnv::Musl,
             "sgx" => TargetEnv::Sgx,
-            _ => panic!("Unknown target env: {}", env),
+            _ => panic!("Unknown target env: {env}"),
         };
 
         Self { family, os, arch, env }
@@ -225,8 +225,7 @@ fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
 
     let Some(config) = NasmConfiguration::find(target) else {
         println!(
-            "No NASM configuration found for target, not using any assembly.\nTarget: {:?}",
-            target
+            "No NASM configuration found for target, not using any assembly.\nTarget: {target:?}"
         );
         return;
     };
@@ -295,9 +294,9 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
         cc_build.include(include);
     }
 
-    cc_build.compile(format!("openh264_{}", name).as_str());
+    cc_build.compile(format!("openh264_{name}").as_str());
 
-    println!("cargo:rustc-link-lib=static=openh264_{}", name);
+    println!("cargo:rustc-link-lib=static=openh264_{name}");
 }
 
 fn main() {
