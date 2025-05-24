@@ -33,7 +33,7 @@ impl Display for Error {
             #[cfg(feature = "libloading")]
             Error::LibLoading(x) => x.fmt(f),
             Error::Io(x) => x.fmt(f),
-            Error::InvalidHash(x) => format!("Invalid hash: {}", x).fmt(f),
+            Error::InvalidHash(x) => format!("Invalid hash: {x}").fmt(f),
             _ => "".fmt(f),
         }
     }

@@ -295,7 +295,7 @@ impl Decoder {
 
         #[rustfmt::skip]
         unsafe {
-            raw_api.initialize(&config.params).ok()?;
+            raw_api.initialize(&raw const config.params).ok()?;
             raw_api.set_option(DECODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
             raw_api.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast()).ok()?;
             raw_api.set_option(DECODER_OPTION_ERROR_CON_IDC, addr_of_mut!(config.error_concealment).cast()).ok()?;
@@ -347,7 +347,7 @@ impl Decoder {
                     packet.as_ptr(),
                     packet.len() as i32,
                     from_mut(&mut dst).cast(),
-                    &mut buffer_info,
+                    &raw mut buffer_info,
                 )
                 .ok()?;
         }
@@ -387,7 +387,7 @@ impl Decoder {
 
             if let Some(image) = unsafe { DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info) } {
                 frames.push(image);
-            };
+            }
         }
 
         Ok(frames)
@@ -419,7 +419,7 @@ impl Decoder {
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
+    pub const unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
         &mut self.raw_api
     }
 
@@ -444,7 +444,7 @@ impl Decoder {
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
-            self.raw_api().flush_frame(from_mut(&mut dst).cast(), &mut buffer_info).ok()?;
+            self.raw_api().flush_frame(from_mut(&mut dst).cast(), &raw mut buffer_info).ok()?;
             Ok((dst, buffer_info))
         }
     }

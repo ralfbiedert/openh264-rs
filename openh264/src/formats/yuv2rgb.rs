@@ -20,11 +20,11 @@ macro_rules! f32x8_from_slice_with_blocksize {
     }};
 }
 
-pub(crate) const Y_MUL: f32 = 255.0 / 219.0;
-pub(crate) const RV_MUL: f32 = 255.0 / 224.0 * 1.402;
-pub(crate) const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.687;
-pub(crate) const GU_MUL: f32 = -255.0 / 224.0 * 1.772 * 0.114 / 0.587;
-pub(crate) const BU_MUL: f32 = 255.0 / 224.0 * 1.772;
+const Y_MUL: f32 = 255.0 / 219.0;
+const RV_MUL: f32 = 255.0 / 224.0 * 1.402;
+const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.687;
+const GU_MUL: f32 = -255.0 / 224.0 * 1.772 * 0.114 / 0.587;
+const BU_MUL: f32 = 255.0 / 224.0 * 1.772;
 
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
 pub fn write_rgb8_scalar(
@@ -46,9 +46,9 @@ pub fn write_rgb8_scalar(
 
             // Convert limited range YUV to RGB
             // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
-            let y_mul = Y_MUL * (y_plane[base_y] as f32 - 16.0);
-            let u = u_plane[base_u] as f32 - 128.0;
-            let v = v_plane[base_v] as f32 - 128.0;
+            let y_mul = Y_MUL * (f32::from(y_plane[base_y]) - 16.0);
+            let u = f32::from(u_plane[base_u]) - 128.0;
+            let v = f32::from(v_plane[base_v]) - 128.0;
 
             rgb_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
             rgb_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
@@ -188,9 +188,9 @@ pub fn write_rgba8_scalar(
 
             // Convert limited range YUV to RGB
             // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
-            let y_mul = Y_MUL * (y_plane[base_y] as f32 - 16.0);
-            let u = u_plane[base_u] as f32 - 128.0;
-            let v = v_plane[base_v] as f32 - 128.0;
+            let y_mul = Y_MUL * (f32::from(y_plane[base_y]) - 16.0);
+            let u = f32::from(u_plane[base_u]) - 128.0;
+            let v = f32::from(v_plane[base_v]) - 128.0;
 
             rgb_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
             rgb_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
