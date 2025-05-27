@@ -224,9 +224,7 @@ fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
     let target = Target::from_env();
 
     let Some(config) = NasmConfiguration::find(target) else {
-        println!(
-            "No NASM configuration found for target, not using any assembly.\nTarget: {target:?}"
-        );
+        println!("No NASM configuration found for target, not using any assembly.\nTarget: {target:?}");
         return;
     };
 

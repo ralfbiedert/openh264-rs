@@ -696,7 +696,9 @@ impl Encoder {
         };
 
         unsafe {
-            self.raw_api.encode_frame(&raw const source, &raw mut self.bit_stream_info).ok()?;
+            self.raw_api
+                .encode_frame(&raw const source, &raw mut self.bit_stream_info)
+                .ok()?;
         }
 
         Ok(EncodedBitStream {
