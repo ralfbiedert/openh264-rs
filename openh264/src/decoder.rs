@@ -444,7 +444,9 @@ impl Decoder {
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
-            self.raw_api().flush_frame(from_mut(&mut dst).cast(), &raw mut buffer_info).ok()?;
+            self.raw_api()
+                .flush_frame(from_mut(&mut dst).cast(), &raw mut buffer_info)
+                .ok()?;
             Ok((dst, buffer_info))
         }
     }
