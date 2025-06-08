@@ -531,13 +531,17 @@ impl DecodedYUV<'_> {
         let uv_stride = self.info.iStride[1] as usize;
         let uv_lines = self.u.len() / uv_stride;
         let lines_per_split = uv_lines / N;
-        
+
         let u_chunks: Vec<&[u8]> = self.u.chunks(lines_per_split * uv_stride).collect();
         let v_chunks: Vec<&[u8]> = self.v.chunks(lines_per_split * uv_stride).collect();
 
         let mut parts = [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
         for i in 0..N {
-            parts[i] = YUVSlices::new((y_chunks[i], u_chunks[i], v_chunks[i]), (self.dimensions().0, y_lines), self.strides());
+            parts[i] = YUVSlices::new(
+                (y_chunks[i], u_chunks[i], v_chunks[i]),
+                (self.dimensions().0, y_lines),
+                self.strides(),
+            );
         }
 
         parts
@@ -664,7 +668,10 @@ impl YUVSource for DecodedYUV<'_> {
 mod test {
     use openh264_sys2::SSysMEMBuffer;
 
-    use crate::{formats::{YUVSlices, YUVSource}, Timestamp};
+    use crate::{
+        formats::{YUVSlices, YUVSource},
+        Timestamp,
+    };
 
     use super::DecodedYUV;
 
