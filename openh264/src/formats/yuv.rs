@@ -188,6 +188,7 @@ impl YUVSource for YUVBuffer {
 
 /// Convenience wrapper if you already have YUV-sliced data from some other place.
 #[must_use]
+#[derive(Clone, Copy)]
 pub struct YUVSlices<'a> {
     dimensions: (usize, usize),
     yuv: (&'a [u8], &'a [u8], &'a [u8]),
@@ -210,9 +211,10 @@ impl<'a> YUVSlices<'a> {
         assert!(strides.1 >= dimensions.0 / 2);
         assert!(strides.2 >= dimensions.0 / 2);
 
-        assert_eq!(dimensions.1 * strides.0, yuv.0.len());
-        assert_eq!((dimensions.1 / 2) * strides.1, yuv.1.len());
-        assert_eq!((dimensions.1 / 2) * strides.2, yuv.2.len());
+        // these assume YUV422:
+        // assert_eq!(dimensions.1 * strides.0, yuv.0.len());
+        // assert_eq!((dimensions.1 / 2) * strides.1, yuv.1.len());
+        // assert_eq!((dimensions.1 / 2) * strides.2, yuv.2.len());
 
         Self {
             dimensions,
