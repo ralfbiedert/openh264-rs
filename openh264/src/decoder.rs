@@ -514,8 +514,7 @@ impl DecodedYUV<'_> {
         self.timestamp
     }
 
-    /// Cut the YUV buffer into vertical sections of equal length.
-    #[must_use]
+    /// Cut the YUV buffer into vertical sections of equal length.    
     pub fn split<const N: usize>(&self) -> [YUVSlices; N] {
         if N == 1 {
             return [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
