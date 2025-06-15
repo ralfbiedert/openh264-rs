@@ -515,31 +515,23 @@ impl DecodedYUV<'_> {
         self.timestamp
     }
 
-    /// Cut the YUV buffer into vertical sections of equal length.    
+    /// Cut the YUV buffer into vertical sections.
+    ///
+    /// The slices do not overlap. If N does not divide the buffer, then the last YUVSlice has fewer pixel rows.
     pub fn split<const N: usize>(&self) -> [YUVSlices; N] {
         if N == 1 {
             return [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
         }
 
-        // Is there a chance to use self.y.len() / N?
-        //   - can len(), stride and width mess it up?
-        let y_stride = self.info.iStride[0] as usize;
-        let y_lines = self.y.len() / y_stride;
-        let lines_per_split = y_lines / N;
-        let y_chunks: Vec<&[u8]> = self.y.chunks(lines_per_split * y_stride).collect();
-
-        let uv_stride = self.info.iStride[1] as usize;
-        let uv_lines = self.u.len() / uv_stride;
-        let lines_per_split = uv_lines / N;
-
-        let u_chunks: Vec<&[u8]> = self.u.chunks(lines_per_split * uv_stride).collect();
-        let v_chunks: Vec<&[u8]> = self.v.chunks(lines_per_split * uv_stride).collect();
+        let y_chunks: Vec<&[u8]> = self.y.chunks(self.y.len() / N).collect();
+        let u_chunks: Vec<&[u8]> = self.u.chunks(self.u.len() / N).collect();
+        let v_chunks: Vec<&[u8]> = self.v.chunks(self.v.len() / N).collect();
 
         let mut parts = [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
         for i in 0..N {
             parts[i] = YUVSlices::new(
                 (y_chunks[i], u_chunks[i], v_chunks[i]),
-                (self.dimensions().0, y_lines / N),
+                (self.dimensions().0, self.info.iHeight as usize / N),
                 self.strides(),
             );
         }
