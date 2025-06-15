@@ -576,15 +576,14 @@ impl DecodedYUV<'_> {
             target.len()
         );
 
-        write_rgb8_f32x8_par(self.y, self.u, self.v, dim, strides, target);
-        // // for f32x8 math, image needs to:
-        // //   - have a width divisible by 8
-        // //   - have at least two rows
-        // if dim.0 % 8 == 0 && dim.1 >= 2 {
-        //     write_rgb8_f32x8(self.y, self.u, self.v, dim, strides, target);
-        // } else {
-        //     write_rgb8_scalar(self.y, self.u, self.v, dim, strides, target);
-        // }
+        // for f32x8 math, image needs to:
+        //   - have a width divisible by 8
+        //   - have at least two rows
+        if dim.0 % 8 == 0 && dim.1 >= 2 {
+            write_rgb8_f32x8(self.y, self.u, self.v, dim, strides, target);
+        } else {
+            write_rgb8_scalar(self.y, self.u, self.v, dim, strides, target);
+        }
     }
 
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
