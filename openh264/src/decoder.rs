@@ -50,7 +50,7 @@
 
 use crate::error::NativeErrorExt;
 use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar, write_rgba8_f32x8, write_rgba8_scalar};
-use crate::formats::YUVSource;
+use crate::formats::{YUVSlices, YUVSource};
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     videoFormatI420, ISVCDecoder, ISVCDecoderVtbl, SBufferInfo, SDecodingParam, SParserBsInfo, SSysMEMBuffer, SVideoProperty,
@@ -515,6 +515,30 @@ impl DecodedYUV<'_> {
         self.timestamp
     }
 
+    /// Cut the YUV buffer into vertical sections.
+    ///
+    /// The slices do not overlap. If N does not divide the buffer, then the last YUVSlice has fewer pixel rows.
+    pub fn split<const N: usize>(&self) -> [YUVSlices; N] {
+        if N == 1 {
+            return [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
+        }
+
+        let y_chunks: Vec<&[u8]> = self.y.chunks(self.y.len() / N).collect();
+        let u_chunks: Vec<&[u8]> = self.u.chunks(self.u.len() / N).collect();
+        let v_chunks: Vec<&[u8]> = self.v.chunks(self.v.len() / N).collect();
+
+        let mut parts = [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
+        for i in 0..N {
+            parts[i] = YUVSlices::new(
+                (y_chunks[i], u_chunks[i], v_chunks[i]),
+                (self.dimensions().0, self.info.iHeight as usize / N),
+                self.strides(),
+            );
+        }
+
+        parts
+    }
+
     // TODO: Ideally we'd like to move these out into a converter in `formats`.
     /// Writes the image into a byte buffer of size `w*h*3`.
     ///
@@ -616,5 +640,93 @@ impl YUVSource for DecodedYUV<'_> {
 
     fn v(&self) -> &[u8] {
         self.v
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use openh264_sys2::SSysMEMBuffer;
+
+    use crate::{
+        formats::{YUVSlices, YUVSource},
+        Timestamp,
+    };
+
+    use super::DecodedYUV;
+
+    /// Create YUV420 plane buffers.
+    ///
+    /// Usage: `let (y, u, v) = planes!(strides: (132, 132), dim: (128, 128));`
+    macro_rules! yuv420_planes {
+        (y_stride: $y_stride:literal, height: $height:literal) => {{
+            // iterate over numbers from 0..255 and start from 0 after 255
+            let numbers = (0..u32::MAX).map(|i| (i % 256) as u8);
+
+            let y_plane_len = ($y_stride * $height) as usize;
+            let y = numbers.clone().take(y_plane_len).collect::<Vec<_>>();
+
+            // u & v planes are a quarter of the y plane length in YUV420
+            let uv_plane_len = ($y_stride * $height / 4) as usize;
+            let u = numbers.clone().take(uv_plane_len).collect::<Vec<_>>();
+            let v = numbers.clone().take(uv_plane_len).collect::<Vec<_>>();
+
+            (y, u, v)
+        }};
+    }
+
+    /// Create a mock DecodedYUV without iFormat and Timestamp::ZERO
+    ///
+    /// Usage: `let buf = decoded_yuv!(strides: (132, 132), dim: (128, 128), &y, &u, &v);`
+    macro_rules! decoded_yuv420 {
+        (y_stride: $y_stride:literal, dim: ($width:literal, $height:literal), $y:expr, $u:expr, $v:expr) => {
+            DecodedYUV {
+                info: SSysMEMBuffer {
+                    iWidth: $width,
+                    iHeight: $height,
+                    // YUV420 see: https://github.com/cisco/openh264/blob/0c9a557a9a6f1d267c4d372221669a8ae69ccda0/codec/api/wels/codec_def.h#L56
+                    iFormat: 23,
+                    iStride: [$y_stride as i32, $y_stride / 2 as i32],
+                },
+                timestamp: Timestamp::ZERO,
+                y: $y,
+                u: $u,
+                v: $v,
+            }
+        };
+    }
+
+    #[test]
+    fn test_split_01() {
+        // smallest possible buffer in YUV420
+        let (y, u, v) = yuv420_planes!(y_stride: 4, height: 4);
+        let buf = decoded_yuv420!(y_stride: 4, dim: (4, 4), &y, &u, &v);
+
+        let parts: [YUVSlices; 1] = buf.split();
+        assert_eq!(1, parts.len());
+        assert_eq!(parts[0].y(), y.as_slice());
+        assert_eq!(parts[0].u(), u.as_slice());
+        assert_eq!(parts[0].v(), v.as_slice());
+    }
+
+    #[test]
+    fn test_split_02() {
+        let (y, u, v) = yuv420_planes!(y_stride: 132, height: 128);
+        let buf = decoded_yuv420!(y_stride: 132, dim: (128, 128), &y, &u, &v);
+
+        let parts: [YUVSlices; 4] = buf.split();
+
+        let (mut y_plane, mut u_plane, mut v_plane) = (vec![], vec![], vec![]);
+        for slice in parts {
+            y_plane.extend_from_slice(slice.y());
+            u_plane.extend_from_slice(slice.u());
+            v_plane.extend_from_slice(slice.v());
+        }
+
+        assert_eq!(buf.y.len(), y_plane.len());
+        assert_eq!(buf.y, y_plane);
+        assert_eq!(buf.u.len(), u_plane.len());
+        assert_eq!(buf.u, u_plane);
+        assert_eq!(buf.v.len(), v_plane.len());
+        assert_eq!(buf.v, v_plane);
     }
 }

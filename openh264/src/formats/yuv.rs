@@ -188,6 +188,7 @@ impl YUVSource for YUVBuffer {
 
 /// Convenience wrapper if you already have YUV-sliced data from some other place.
 #[must_use]
+#[derive(Clone, Copy)]
 pub struct YUVSlices<'a> {
     dimensions: (usize, usize),
     yuv: (&'a [u8], &'a [u8], &'a [u8]),
