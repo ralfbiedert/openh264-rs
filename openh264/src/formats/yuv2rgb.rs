@@ -97,13 +97,15 @@ pub fn write_rgb8_scalar_par(
 
                         let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
 
-                        let y = f32::from(y_plane[base_y]);
-                        let u = f32::from(u_plane[base_u]);
-                        let v = f32::from(v_plane[base_v]);
+                        // Convert limited range YUV to RGB
+                        // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
+                        let y_mul = Y_MUL * (f32::from(y_plane[base_y]) - 16.0);
+                        let u = f32::from(u_plane[base_u]) - 128.0;
+                        let v = f32::from(v_plane[base_v]) - 128.0;
 
-                        rgb_pixel[0] = 1.402f32.mul_add(v - 128.0, y) as u8;
-                        rgb_pixel[1] = 0.714f32.mul_add(-(v - 128.0), 0.344f32.mul_add(-(u - 128.0), y)) as u8;
-                        rgb_pixel[2] = 1.772f32.mul_add(u - 128.0, y) as u8;
+                        rgb_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
+                        rgb_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
+                        rgb_pixel[2] = BU_MUL.mul_add(u, y_mul) as u8;
                     }
                 }
             });
@@ -161,6 +163,7 @@ pub fn write_rgb8_f32x8(
 
 /// Write RGB8 data from YUV420 using f32x8 SIMD.
 #[allow(clippy::identity_op)]
+#[allow(dead_code)] // usabe TBD
 pub fn write_rgb8_f32x8_par(
     y_plane: &[u8],
     u_plane: &[u8],
