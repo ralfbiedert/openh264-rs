@@ -544,7 +544,7 @@ impl DecodedYUV<'_> {
         for i in 0..N {
             parts[i] = YUVSlices::new(
                 (y_chunks[i], u_chunks[i], v_chunks[i]),
-                (self.dimensions().0, y_lines),
+                (self.dimensions().0, y_lines / N),
                 self.strides(),
             );
         }
