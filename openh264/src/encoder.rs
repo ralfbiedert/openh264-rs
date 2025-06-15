@@ -696,7 +696,9 @@ impl Encoder {
         };
 
         unsafe {
-            self.raw_api.encode_frame(&source, &mut self.bit_stream_info).ok()?;
+            self.raw_api
+                .encode_frame(&raw const source, &raw mut self.bit_stream_info)
+                .ok()?;
         }
 
         Ok(EncodedBitStream {
@@ -721,7 +723,7 @@ impl Encoder {
 
         let mut params = SEncParamExt::default();
 
-        unsafe { self.raw_api.get_default_params(&mut params).ok()? };
+        unsafe { self.raw_api.get_default_params(&raw mut params).ok()? };
 
         params.iPicWidth = width as c_int; // If we do .into() instead, could this fail to compile on some platforms?
         params.iPicHeight = height as c_int; // If we do .into() instead, could this fail to compile on some platforms?
@@ -776,7 +778,7 @@ impl Encoder {
         unsafe {
             if self.previous_dimensions.is_none() {
                 // First time we call initialize_ext
-                self.raw_api.initialize_ext(&params).ok()?;
+                self.raw_api.initialize_ext(&raw const params).ok()?;
                 self.raw_api.set_option(ENCODER_OPTION_TRACE_LEVEL, addr_of_mut!(self.config.debug).cast()).ok()?;
                 self.raw_api.set_option(ENCODER_OPTION_DATAFORMAT, addr_of_mut!(self.config.data_format).cast()).ok()?;
             } else {
@@ -807,7 +809,7 @@ impl Encoder {
     /// # Safety
     ///
     /// You must not set parameters the encoder relies on, we recommend checking the source.
-    pub unsafe fn raw_api(&mut self) -> &mut EncoderRawAPI {
+    pub const unsafe fn raw_api(&mut self) -> &mut EncoderRawAPI {
         &mut self.raw_api
     }
 }
@@ -893,7 +895,7 @@ impl<'a> EncodedBitStream<'a> {
                         return Err(Error::msg(&format!("failed to write: {e}")));
                     }
                     _ => {}
-                };
+                }
             }
         }
         Ok(())

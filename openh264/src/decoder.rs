@@ -49,8 +49,8 @@
 //! ```
 
 use crate::error::NativeErrorExt;
-use crate::formats::yuv2rgb::write_rgb8_f32x8_par;
-// use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
+use crate::formats::yuv2rgb::{write_rgb8_f32x8_par, write_rgba8_f32x8, write_rgba8_scalar};
+// use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar, write_rgba8_f32x8, write_rgba8_scalar_par};
 use crate::formats::{YUVSlices, YUVSource};
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
@@ -296,7 +296,7 @@ impl Decoder {
 
         #[rustfmt::skip]
         unsafe {
-            raw_api.initialize(&config.params).ok()?;
+            raw_api.initialize(&raw const config.params).ok()?;
             raw_api.set_option(DECODER_OPTION_TRACE_LEVEL, addr_of_mut!(config.debug).cast()).ok()?;
             raw_api.set_option(DECODER_OPTION_NUM_OF_THREADS, addr_of_mut!(config.num_threads).cast()).ok()?;
             raw_api.set_option(DECODER_OPTION_ERROR_CON_IDC, addr_of_mut!(config.error_concealment).cast()).ok()?;
@@ -348,7 +348,7 @@ impl Decoder {
                     packet.as_ptr(),
                     packet.len() as i32,
                     from_mut(&mut dst).cast(),
-                    &mut buffer_info,
+                    &raw mut buffer_info,
                 )
                 .ok()?;
         }
@@ -388,7 +388,7 @@ impl Decoder {
 
             if let Some(image) = unsafe { DecodedYUV::from_raw_open264_ptrs(&dst, &buffer_info) } {
                 frames.push(image);
-            };
+            }
         }
 
         Ok(frames)
@@ -420,7 +420,7 @@ impl Decoder {
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
+    pub const unsafe fn raw_api(&mut self) -> &mut DecoderRawAPI {
         &mut self.raw_api
     }
 
@@ -445,7 +445,9 @@ impl Decoder {
         let mut buffer_info = SBufferInfo::default();
 
         unsafe {
-            self.raw_api().flush_frame(from_mut(&mut dst).cast(), &mut buffer_info).ok()?;
+            self.raw_api()
+                .flush_frame(from_mut(&mut dst).cast(), &raw mut buffer_info)
+                .ok()?;
             Ok((dst, buffer_info))
         }
     }
@@ -604,25 +606,13 @@ impl DecodedYUV<'_> {
             wanted,
             target.len()
         );
-
-        for y in 0..dim.1 {
-            for x in 0..dim.0 {
-                let base_tgt = (y * dim.0 + x) * 4;
-                let base_y = y * strides.0 + x;
-                let base_u = (y / 2 * strides.1) + (x / 2);
-                let base_v = (y / 2 * strides.2) + (x / 2);
-
-                let rgb_pixel = &mut target[base_tgt..base_tgt + 4];
-
-                let y: f32 = self.y[base_y].into();
-                let u: f32 = self.u[base_u].into();
-                let v: f32 = self.v[base_v].into();
-
-                rgb_pixel[0] = 1.402f32.mul_add(v - 128.0, y) as u8;
-                rgb_pixel[1] = 0.714f32.mul_add(-(v - 128.0), 0.344f32.mul_add(-(u - 128.0), y)) as u8;
-                rgb_pixel[2] = 1.772f32.mul_add(u - 128.0, y) as u8;
-                rgb_pixel[3] = 255;
-            }
+        // for f32x8 math, image needs to:
+        //   - have a width divisible by 8
+        //   - have at least two rows
+        if dim.0 % 8 == 0 && dim.1 >= 2 {
+            write_rgba8_f32x8(self.y, self.u, self.v, dim, strides, target);
+        } else {
+            write_rgba8_scalar(self.y, self.u, self.v, dim, strides, target);
         }
     }
 }
