@@ -58,46 +58,27 @@ pub fn write_yuv_scalar(rgb: impl RGB8Source, dimensions: (usize, usize), y_buf:
 
     let dimensions_padded = rgb.dimensions_padded();
     let width = dimensions.0;
-    let height = dimensions.1;
+
     let half_width = width / 2;
     let rgb8_data = rgb.rgb8_data();
 
-    // y is full size, u, v is quarter size
-    let mut write_y = |x: usize, y: usize, rgb: &[u8]| {
-        let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
-        y_buf[x + y * width] = (0.09765625f32.mul_add(b, 0.2578125f32.mul_add(r, 0.50390625 * g)) + 16.0) as u8;
-    };
+    for (pix, y) in rgb8_data.chunks_exact(3).zip(y_buf.iter_mut()) {
+        *y = (((66 * u32::from(pix[0]) + 129 * u32::from(pix[1]) + 25 * u32::from(pix[2])) >> 8) + 16) as u8;
+    }
 
-    let mut write_u = |x: usize, y: usize, rgb: &[u8]| {
-        let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
-        u_buf[x + y * half_width] = (0.4375f32.mul_add(b, (-0.1484375f32).mul_add(r, -0.2890625 * g)) + 128.0) as u8;
-    };
+    let r1 = rgb8_data.chunks_exact(dimensions_padded.0 * 3).step_by(2);
+    let r2 = rgb8_data.chunks_exact(dimensions_padded.0 * 3).skip(1).step_by(2);
 
-    let mut write_v = |x: usize, y: usize, rgb: &[u8]| {
-        let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
-        v_buf[x + y * half_width] = ((-0.0703125f32).mul_add(b, 0.4375f32.mul_add(r, -0.3671875 * g)) + 128.0) as u8;
-    };
+    let u_rows = u_buf.chunks_exact_mut(half_width);
+    let v_rows = v_buf.chunks_exact_mut(half_width);
+    for (((r1, r2), u), v) in r1.zip(r2).zip(u_rows).zip(v_rows) {
+        for (((pix0, pix1), u), v) in r1.chunks_exact(2 * 3).zip(r2.chunks_exact(2 * 3)).zip(u).zip(v) {
+            let r = (i16::from(pix0[0]) + i16::from(pix0[3]) + i16::from(pix1[0]) + i16::from(pix1[3]) + 2) / 4;
+            let g = (i16::from(pix0[1]) + i16::from(pix0[4]) + i16::from(pix1[1]) + i16::from(pix1[4]) + 2) / 4;
+            let b = (i16::from(pix0[2]) + i16::from(pix0[5]) + i16::from(pix1[2]) + i16::from(pix1[5]) + 2) / 4;
 
-    for i in 0..width / 2 {
-        for j in 0..height / 2 {
-            let px = i * 2;
-            let py = j * 2;
-            let pix0x0 = &rgb8_data[(px + py * dimensions_padded.0) * 3..][..3];
-            let pix0x1 = &rgb8_data[(px + (py + 1) * dimensions_padded.0) * 3..][..3];
-            let pix1x0 = &rgb8_data[(px + 1 + (py) * dimensions_padded.0) * 3..][..3];
-            let pix1x1 = &rgb8_data[(px + 1 + (py + 1) * dimensions_padded.0) * 3..][..3];
-            let avg_pix = [
-                ((u32::from(pix0x0[0]) + u32::from(pix0x1[0]) + u32::from(pix1x0[0]) + u32::from(pix1x1[0])) / 4) as u8,
-                ((u32::from(pix0x0[1]) + u32::from(pix0x1[1]) + u32::from(pix1x0[1]) + u32::from(pix1x1[1])) / 4) as u8,
-                ((u32::from(pix0x0[2]) + u32::from(pix0x1[2]) + u32::from(pix1x0[2]) + u32::from(pix1x1[2])) / 4) as u8,
-            ];
-
-            write_y(px, py, pix0x0);
-            write_y(px, py + 1, pix0x1);
-            write_y(px + 1, py, pix1x0);
-            write_y(px + 1, py + 1, pix1x1);
-            write_u(i, j, &avg_pix);
-            write_v(i, j, &avg_pix);
+            *u = (((-38 * r + 112 * b - 74 * g) >> 8) + 128) as u8;
+            *v = (((112 * r - 18 * b - 94 * g) >> 8) + 128) as u8;
         }
     }
 }
