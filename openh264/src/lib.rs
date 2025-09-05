@@ -195,6 +195,8 @@
 //!
 //! ## Changelog
 //!
+//! - **v0.9** - Edition change to 2024.
+//! - **v0.8** - API changes.
 //! - **v0.7** - UX improvements, encoder options, SIMD YUV-to-RGB.
 //! - **v0.6** - Encoder supports dynamic resolution; API cleanup.
 //! - **v0.5** - Can now use built-in source, or Cisco's prebuilt library.
