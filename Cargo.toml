@@ -25,10 +25,10 @@ walkdir = "2.3"
 nasm-rs = "0.3.0"
 wide = "0.7.30"
 image = "0.25.5"
-image-compare = "0.4.1"
+image-compare = "0.5.0"
 mp4 = "0.14.0"
 anyhow = "1.0.71"
-rand = "0.8.5"
+rand = "0.9.2"
 
 [workspace.lints.clippy]
 correctness = { level = "deny", priority = -1 }
