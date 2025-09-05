@@ -1,4 +1,4 @@
-use openh264_sys2::{dsErrorFree, DECODING_STATE};
+use openh264_sys2::{DECODING_STATE, dsErrorFree};
 use std::fmt::{Debug, Display, Formatter};
 use std::num::TryFromIntError;
 

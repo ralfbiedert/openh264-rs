@@ -4,7 +4,7 @@ extern crate test;
 
 use openh264::decoder::Decoder;
 use openh264::encoder::Encoder;
-use test::{black_box, Bencher};
+use test::{Bencher, black_box};
 
 #[bench]
 #[cfg(feature = "source")]

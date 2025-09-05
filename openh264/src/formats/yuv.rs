@@ -1,6 +1,6 @@
+use crate::formats::RGBSource;
 use crate::formats::rgb::RGB8Source;
 use crate::formats::rgb2yuv::{write_yuv_by_pixel, write_yuv_scalar};
-use crate::formats::RGBSource;
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
 pub trait YUVSource {

@@ -53,10 +53,7 @@ fn main() -> Result<(), Error> {
                 save_file(&format!("{out}/frame-0{frame_idx:04}.ppm"), &rgb, width, height)?;
                 frame_idx += 1;
             }
-            Ok(None) => {
-                // decoder is not ready to provide an image
-                continue;
-            }
+            Ok(None) => {} // decoder is not ready to provide an image
             Err(err) => {
                 println!("error frame {i}: {err}");
             }

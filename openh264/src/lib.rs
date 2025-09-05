@@ -230,6 +230,6 @@ pub mod formats;
 
 pub use error::Error;
 pub use time::Timestamp;
-pub use utils::{nal_units, NalParser};
+pub use utils::{NalParser, nal_units};
 
 pub use openh264_sys2::DynamicAPI as OpenH264API;

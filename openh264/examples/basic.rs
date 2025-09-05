@@ -1,5 +1,5 @@
-use openh264::decoder::Decoder;
 use openh264::Error;
+use openh264::decoder::Decoder;
 
 #[cfg(feature = "source")]
 fn main() -> Result<(), Error> {

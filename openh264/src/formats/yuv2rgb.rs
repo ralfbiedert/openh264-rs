@@ -361,6 +361,7 @@ mod test {
     }
 
     #[test]
+    #[expect(clippy::similar_names)]
     fn write_rgba8_matches_rgb() {
         let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
 

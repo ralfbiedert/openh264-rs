@@ -2,9 +2,9 @@
 
 extern crate test;
 
+use openh264::OpenH264API;
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::formats::YUVSource;
-use openh264::OpenH264API;
 use test::Bencher;
 
 #[bench]

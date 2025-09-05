@@ -3,7 +3,7 @@ use std::io::{Cursor, Read};
 use image::RgbImage;
 use openh264::decoder::{Decoder, DecoderConfig, Flush};
 use openh264::formats::{RgbSliceU8, YUVSource};
-use openh264::{nal_units, Error, OpenH264API};
+use openh264::{Error, OpenH264API, nal_units};
 
 #[test]
 #[cfg(feature = "source")]
@@ -250,10 +250,6 @@ where
         let mut data = vec![0u8; len];
 
         let result = stream.read_exact(data.as_mut_slice());
-        if result.is_err() {
-            None
-        } else {
-            Some(data)
-        }
+        if result.is_err() { None } else { Some(data) }
     })
 }

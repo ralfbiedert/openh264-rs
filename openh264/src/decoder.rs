@@ -113,17 +113,17 @@ impl DecoderRawAPI {
     }
 
     // Exposing these will probably do more harm than good.
-    unsafe fn initialize(&self, pParam: *const SDecodingParam) -> c_long { (self.initialize)(self.decoder_ptr, pParam) }
-    unsafe fn uninitialize(&self, ) -> c_long { (self.uninitialize)(self.decoder_ptr) }
+    unsafe fn initialize(&self, pParam: *const SDecodingParam) -> c_long { unsafe { (self.initialize)(self.decoder_ptr, pParam) }}
+    unsafe fn uninitialize(&self, ) -> c_long { unsafe { (self.uninitialize)(self.decoder_ptr) }}
 
-    pub unsafe fn decode_frame(&self, Src: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pStride: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int) -> DECODING_STATE { (self.decode_frame)(self.decoder_ptr, Src, iSrcLen, ppDst, pStride, iWidth, iHeight) }
-    pub unsafe fn decode_frame_no_delay(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { (self.decode_frame_no_delay)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo) }
-    pub unsafe fn decode_frame2(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { (self.decode_frame2)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo) }
-    pub unsafe fn flush_frame(&self, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { (self.flush_frame)(self.decoder_ptr, ppDst, pDstInfo) }
-    pub unsafe fn decode_parser(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDstInfo: *mut SParserBsInfo) -> DECODING_STATE { (self.decode_parser)(self.decoder_ptr, pSrc, iSrcLen, pDstInfo) }
-    pub unsafe fn decode_frame_ex(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDst: *mut c_uchar, iDstStride: c_int, iDstLen: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int, iColorFormat: *mut c_int) -> DECODING_STATE { (self.decode_frame_ex)(self.decoder_ptr, pSrc, iSrcLen, pDst, iDstStride, iDstLen, iWidth, iHeight, iColorFormat) }
-    pub unsafe fn set_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long {  (self.set_option)(self.decoder_ptr, eOptionId, pOption) }
-    pub unsafe fn get_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long { (self.get_option)(self.decoder_ptr, eOptionId, pOption) }
+    pub unsafe fn decode_frame(&self, Src: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pStride: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int) -> DECODING_STATE { unsafe { (self.decode_frame)(self.decoder_ptr, Src, iSrcLen, ppDst, pStride, iWidth, iHeight) }}
+    pub unsafe fn decode_frame_no_delay(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { unsafe { (self.decode_frame_no_delay)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo) }}
+    pub unsafe fn decode_frame2(&self, pSrc: *const c_uchar, iSrcLen: c_int, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { unsafe { (self.decode_frame2)(self.decoder_ptr, pSrc, iSrcLen, ppDst, pDstInfo) }}
+    pub unsafe fn flush_frame(&self, ppDst: *mut *mut c_uchar, pDstInfo: *mut SBufferInfo) -> DECODING_STATE { unsafe { (self.flush_frame)(self.decoder_ptr, ppDst, pDstInfo) }}
+    pub unsafe fn decode_parser(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDstInfo: *mut SParserBsInfo) -> DECODING_STATE { unsafe { (self.decode_parser)(self.decoder_ptr, pSrc, iSrcLen, pDstInfo) }}
+    pub unsafe fn decode_frame_ex(&self, pSrc: *const c_uchar, iSrcLen: c_int, pDst: *mut c_uchar, iDstStride: c_int, iDstLen: *mut c_int, iWidth: *mut c_int, iHeight: *mut c_int, iColorFormat: *mut c_int) -> DECODING_STATE { unsafe { (self.decode_frame_ex)(self.decoder_ptr, pSrc, iSrcLen, pDst, iDstStride, iDstLen, iWidth, iHeight, iColorFormat) }}
+    pub unsafe fn set_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long { unsafe {  (self.set_option)(self.decoder_ptr, eOptionId, pOption) }}
+    pub unsafe fn get_option(&self, eOptionId: DECODER_OPTION, pOption: *mut c_void) -> c_long { unsafe { (self.get_option)(self.decoder_ptr, eOptionId, pOption) }}
 }
 
 impl Drop for DecoderRawAPI {
@@ -379,7 +379,7 @@ impl Decoder {
     /// # Errors
     ///
     /// The function returns an error if the bitstream was corrupted.
-    pub fn flush_remaining(&mut self) -> Result<Vec<DecodedYUV>, Error> {
+    pub fn flush_remaining(&'_ mut self) -> Result<Vec<DecodedYUV<'_>>, Error> {
         let mut frames = Vec::new();
 
         for _ in 0..self.num_frames_in_buffer()? {
@@ -477,27 +477,29 @@ impl DecodedYUV<'_> {
     ///
     /// This can soft-fail (return `None`) because we might still have gotten `null` pointers from
     /// OpenH264 despite it not having returned an error on decode.
-    unsafe fn from_raw_open264_ptrs(dst: &[*mut u8; 3], buffer_info: &TagBufferInfo) -> Option<Self> {
-        let info = buffer_info.UsrData.sSystemBuffer;
-        let timestamp = Timestamp::from_millis(buffer_info.uiInBsTimeStamp); // TODO: Is this the right one?
+    const unsafe fn from_raw_open264_ptrs(dst: &[*mut u8; 3], buffer_info: &TagBufferInfo) -> Option<Self> {
+        unsafe {
+            let info = buffer_info.UsrData.sSystemBuffer;
+            let timestamp = Timestamp::from_millis(buffer_info.uiInBsTimeStamp); // TODO: Is this the right one?
 
-        // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
-        // the user should try to continue decoding.
-        if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
-            None
-        } else {
-            // https://github.com/cisco/openh264/issues/2379
-            let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
-            let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
-            let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
+            // Apparently it is ok for `decode_frame_no_delay` to not return an error _and_ to return null buffers. In this case
+            // the user should try to continue decoding.
+            if dst[0].is_null() || dst[1].is_null() || dst[2].is_null() {
+                None
+            } else {
+                // https://github.com/cisco/openh264/issues/2379
+                let y = std::slice::from_raw_parts(dst[0], (info.iHeight * info.iStride[0]) as usize);
+                let u = std::slice::from_raw_parts(dst[1], (info.iHeight * info.iStride[1] / 2) as usize);
+                let v = std::slice::from_raw_parts(dst[2], (info.iHeight * info.iStride[1] / 2) as usize);
 
-            Some(Self {
-                info,
-                timestamp,
-                y,
-                u,
-                v,
-            })
+                Some(Self {
+                    info,
+                    timestamp,
+                    y,
+                    u,
+                    v,
+                })
+            }
         }
     }
 

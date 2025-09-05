@@ -129,7 +129,7 @@ impl NalParser {
 
 #[cfg(test)]
 mod test {
-    use super::{nal_units, NalParser};
+    use super::{NalParser, nal_units};
 
     #[test]
     fn splits_at_nal() {

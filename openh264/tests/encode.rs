@@ -58,7 +58,7 @@ fn encode() -> Result<(), Error> {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Timestamp logic broken atm"]
 #[allow(clippy::similar_names)]
 #[cfg(feature = "source")]
 fn encode_at_timestamp_roundtrips() -> Result<(), Error> {

@@ -20,6 +20,7 @@
 //! [docs.rs]: https://docs.rs/openh264-sys2/
 
 #![allow(non_snake_case)]
+#![allow(unpredictable_function_pointer_comparisons)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 #![allow(clippy::missing_safety_doc)]
@@ -102,25 +103,25 @@ pub mod source {
     #[allow(clippy::missing_safety_doc)]
     impl APILoader {
         pub const fn new() -> Self { Self }
-        pub unsafe fn WelsCreateSVCEncoder(ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int { crate::generated::fns_source::WelsCreateSVCEncoder(ppEncoder) }
-        pub unsafe fn WelsDestroySVCEncoder(pEncoder: *mut ISVCEncoder) { crate::generated::fns_source::WelsDestroySVCEncoder(pEncoder) }
-        pub unsafe fn WelsGetDecoderCapability(pDecCapability: *mut SDecoderCapability) -> ::std::os::raw::c_int { crate::generated::fns_source::WelsGetDecoderCapability(pDecCapability) }
-        pub unsafe fn WelsCreateDecoder(ppDecoder: *mut *mut ISVCDecoder) -> ::std::os::raw::c_long { crate::generated::fns_source::WelsCreateDecoder(ppDecoder) }
-        pub unsafe fn WelsDestroyDecoder(pDecoder: *mut ISVCDecoder) { crate::generated::fns_source::WelsDestroyDecoder(pDecoder) }
-        pub unsafe fn WelsGetCodecVersion() -> OpenH264Version { crate::generated::fns_source::WelsGetCodecVersion() }
-        pub unsafe fn WelsGetCodecVersionEx(pVersion: *mut OpenH264Version) { crate::generated::fns_source::WelsGetCodecVersionEx(pVersion) }
+        pub unsafe fn WelsCreateSVCEncoder(ppEncoder: *mut *mut ISVCEncoder) -> ::std::os::raw::c_int { unsafe { crate::generated::fns_source::WelsCreateSVCEncoder(ppEncoder) }}
+        pub unsafe fn WelsDestroySVCEncoder(pEncoder: *mut ISVCEncoder) { unsafe { crate::generated::fns_source::WelsDestroySVCEncoder(pEncoder) }}
+        pub unsafe fn WelsGetDecoderCapability(pDecCapability: *mut SDecoderCapability) -> ::std::os::raw::c_int { unsafe { crate::generated::fns_source::WelsGetDecoderCapability(pDecCapability) }}
+        pub unsafe fn WelsCreateDecoder(ppDecoder: *mut *mut ISVCDecoder) -> ::std::os::raw::c_long { unsafe { crate::generated::fns_source::WelsCreateDecoder(ppDecoder) }}
+        pub unsafe fn WelsDestroyDecoder(pDecoder: *mut ISVCDecoder) { unsafe { crate::generated::fns_source::WelsDestroyDecoder(pDecoder) }}
+        pub unsafe fn WelsGetCodecVersion() -> OpenH264Version { unsafe { crate::generated::fns_source::WelsGetCodecVersion() }}
+        pub unsafe fn WelsGetCodecVersionEx(pVersion: *mut OpenH264Version) { unsafe { crate::generated::fns_source::WelsGetCodecVersionEx(pVersion) }}
     }
 
     #[rustfmt::skip]
     #[allow(clippy::missing_safety_doc)]
     impl super::API for APILoader {
-        unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { APILoader::WelsCreateSVCEncoder(ppEncoder) }
-        unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { APILoader::WelsDestroySVCEncoder(pEncoder) }
-        unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int { APILoader::WelsGetDecoderCapability(pDecCapability) }
-        unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long { APILoader::WelsCreateDecoder(ppDecoder) }
-        unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) { APILoader::WelsDestroyDecoder(pDecoder) }
-        unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version { APILoader::WelsGetCodecVersion() }
-        unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) { APILoader::WelsGetCodecVersionEx(pVersion) }
+        unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int { unsafe { APILoader::WelsCreateSVCEncoder(ppEncoder) }}
+        unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) { unsafe { APILoader::WelsDestroySVCEncoder(pEncoder) }}
+        unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int { unsafe { APILoader::WelsGetDecoderCapability(pDecCapability) }}
+        unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long { unsafe { APILoader::WelsCreateDecoder(ppDecoder) }}
+        unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) { unsafe { APILoader::WelsDestroyDecoder(pDecoder) }}
+        unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version { unsafe { APILoader::WelsGetCodecVersion() }}
+        unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) { unsafe { APILoader::WelsGetCodecVersionEx(pVersion) }}
     }
 }
 
@@ -207,72 +208,86 @@ impl DynamicAPI {
 #[allow(unused)]
 impl API for DynamicAPI {
     unsafe fn WelsCreateSVCEncoder(&self, ppEncoder: *mut *mut ISVCEncoder) -> c_int {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsCreateSVCEncoder(ppEncoder),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsCreateSVCEncoder(ppEncoder),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsCreateSVCEncoder(ppEncoder),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsCreateSVCEncoder(ppEncoder),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 
     unsafe fn WelsDestroySVCEncoder(&self, pEncoder: *mut ISVCEncoder) {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsDestroySVCEncoder(pEncoder),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsDestroySVCEncoder(pEncoder),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsDestroySVCEncoder(pEncoder),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsDestroySVCEncoder(pEncoder),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 
     unsafe fn WelsGetDecoderCapability(&self, pDecCapability: *mut SDecoderCapability) -> c_int {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsGetDecoderCapability(pDecCapability),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsGetDecoderCapability(pDecCapability),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsGetDecoderCapability(pDecCapability),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsGetDecoderCapability(pDecCapability),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 
     unsafe fn WelsCreateDecoder(&self, ppDecoder: *mut *mut ISVCDecoder) -> c_long {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsCreateDecoder(ppDecoder),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsCreateDecoder(ppDecoder),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsCreateDecoder(ppDecoder),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsCreateDecoder(ppDecoder),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 
     unsafe fn WelsDestroyDecoder(&self, pDecoder: *mut ISVCDecoder) {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsDestroyDecoder(pDecoder),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsDestroyDecoder(pDecoder),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsDestroyDecoder(pDecoder),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsDestroyDecoder(pDecoder),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 
     unsafe fn WelsGetCodecVersion(&self) -> OpenH264Version {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsGetCodecVersion(),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsGetCodecVersion(),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsGetCodecVersion(),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsGetCodecVersion(),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 
     unsafe fn WelsGetCodecVersionEx(&self, pVersion: *mut OpenH264Version) {
-        match self {
-            #[cfg(feature = "source")]
-            DynamicAPI::Source(api) => api.WelsGetCodecVersionEx(pVersion),
-            #[cfg(feature = "libloading")]
-            DynamicAPI::Libloading(api) => api.WelsGetCodecVersionEx(pVersion),
-            _ => panic!("No API enabled"),
+        unsafe {
+            match self {
+                #[cfg(feature = "source")]
+                DynamicAPI::Source(api) => api.WelsGetCodecVersionEx(pVersion),
+                #[cfg(feature = "libloading")]
+                DynamicAPI::Libloading(api) => api.WelsGetCodecVersionEx(pVersion),
+                _ => panic!("No API enabled"),
+            }
         }
     }
 }

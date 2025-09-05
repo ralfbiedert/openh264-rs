@@ -1,6 +1,6 @@
+use openh264::OpenH264API;
 use openh264::decoder::Decoder;
 use openh264::encoder::{Encoder, EncoderConfig};
-use openh264::OpenH264API;
 
 fn is_send_sync(_: impl Send + Sync + 'static) {}
 

@@ -4,10 +4,10 @@ use crate::error::NativeErrorExt;
 use crate::formats::YUVSource;
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
-    videoFormatI420, ELevelIdc, EProfileIdc, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, SEncParamBase,
-    SEncParamExt, SFrameBSInfo, SLayerBSInfo, SSourcePicture, API, DEBLOCKING_IDC_0, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT,
-    ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, ENCODER_OPTION_TRACE_LEVEL, RC_MODES, SM_SINGLE_SLICE, SM_SIZELIMITED_SLICE,
-    VIDEO_CODING_LAYER, WELS_LOG_DETAIL, WELS_LOG_QUIET,
+    API, DEBLOCKING_IDC_0, ELevelIdc, ENCODER_OPTION, ENCODER_OPTION_DATAFORMAT, ENCODER_OPTION_SVC_ENCODE_PARAM_EXT,
+    ENCODER_OPTION_TRACE_LEVEL, EProfileIdc, EUsageType, EVideoFormatType, ISVCEncoder, ISVCEncoderVtbl, RC_MODES, SEncParamBase,
+    SEncParamExt, SFrameBSInfo, SLayerBSInfo, SM_SINGLE_SLICE, SM_SIZELIMITED_SLICE, SSourcePicture, VIDEO_CODING_LAYER,
+    WELS_LOG_DETAIL, WELS_LOG_QUIET, videoFormatI420,
 };
 use std::os::raw::{c_int, c_uchar, c_void};
 use std::ptr::{addr_of_mut, from_mut, null, null_mut};
@@ -64,16 +64,16 @@ impl EncoderRawAPI {
     }
 
     // Exposing these will probably do more harm than good.
-    unsafe fn uninitialize(&self) -> c_int { (self.uninitialize)(self.encoder_ptr) }
-    unsafe fn initialize(&self, pParam: *const SEncParamBase) -> c_int { (self.initialize)(self.encoder_ptr, pParam) }
-    unsafe fn initialize_ext(&self, pParam: *const SEncParamExt) -> c_int { (self.initialize_ext)(self.encoder_ptr, pParam) }
+    unsafe fn uninitialize(&self) -> c_int { unsafe { (self.uninitialize)(self.encoder_ptr) }}
+    unsafe fn initialize(&self, pParam: *const SEncParamBase) -> c_int { unsafe { (self.initialize)(self.encoder_ptr, pParam) }}
+    unsafe fn initialize_ext(&self, pParam: *const SEncParamExt) -> c_int { unsafe { (self.initialize_ext)(self.encoder_ptr, pParam) }}
 
-    pub unsafe fn get_default_params(&self, pParam: *mut SEncParamExt) -> c_int { (self.get_default_params)(self.encoder_ptr, pParam) }
-    pub unsafe fn encode_frame(&self, kpSrcPic: *const SSourcePicture, pBsInfo: *mut SFrameBSInfo) -> c_int { (self.encode_frame)(self.encoder_ptr, kpSrcPic, pBsInfo) }
-    pub unsafe fn encode_parameter_sets(&self, pBsInfo: *mut SFrameBSInfo) -> c_int { (self.encode_parameter_sets)(self.encoder_ptr, pBsInfo) }
-    pub unsafe fn force_intra_frame(&self, bIDR: bool) -> c_int { (self.force_intra_frame)(self.encoder_ptr, bIDR) }
-    pub unsafe fn set_option(&self, eOptionId: ENCODER_OPTION, pOption: *mut c_void) -> c_int { (self.set_option)(self.encoder_ptr, eOptionId, pOption) }
-    pub unsafe fn get_option(&self, eOptionId: ENCODER_OPTION, pOption: *mut c_void) -> c_int { (self.get_option)(self.encoder_ptr, eOptionId, pOption) }
+    pub unsafe fn get_default_params(&self, pParam: *mut SEncParamExt) -> c_int { unsafe { (self.get_default_params)(self.encoder_ptr, pParam) }}
+    pub unsafe fn encode_frame(&self, kpSrcPic: *const SSourcePicture, pBsInfo: *mut SFrameBSInfo) -> c_int { unsafe { (self.encode_frame)(self.encoder_ptr, kpSrcPic, pBsInfo) }}
+    pub unsafe fn encode_parameter_sets(&self, pBsInfo: *mut SFrameBSInfo) -> c_int { unsafe { (self.encode_parameter_sets)(self.encoder_ptr, pBsInfo) }}
+    pub unsafe fn force_intra_frame(&self, bIDR: bool) -> c_int { unsafe { (self.force_intra_frame)(self.encoder_ptr, bIDR) }}
+    pub unsafe fn set_option(&self, eOptionId: ENCODER_OPTION, pOption: *mut c_void) -> c_int { unsafe { (self.set_option)(self.encoder_ptr, eOptionId, pOption) }}
+    pub unsafe fn get_option(&self, eOptionId: ENCODER_OPTION, pOption: *mut c_void) -> c_int { unsafe { (self.get_option)(self.encoder_ptr, eOptionId, pOption) }}
 }
 
 impl Drop for EncoderRawAPI {

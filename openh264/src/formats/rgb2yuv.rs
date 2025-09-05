@@ -1,5 +1,5 @@
-use crate::formats::rgb::RGB8Source;
 use crate::formats::RGBSource;
+use crate::formats::rgb::RGB8Source;
 
 /// Writes an RGB source into 420 Y, U and V buffers.
 #[allow(clippy::needless_pass_by_value)]
@@ -104,10 +104,10 @@ pub fn write_yuv_scalar(rgb: impl RGB8Source, dimensions: (usize, usize), y_buf:
 
 #[cfg(test)]
 mod test {
+    use crate::OpenH264API;
     use crate::decoder::{Decoder, DecoderConfig};
     use crate::formats::rgb2yuv::{write_yuv_by_pixel, write_yuv_scalar};
     use crate::formats::{RgbSliceU8, YUVSource};
-    use crate::OpenH264API;
     use std::iter::zip;
 
     #[test]
