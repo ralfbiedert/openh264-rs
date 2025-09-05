@@ -1,20 +1,19 @@
 [package]
 name = "openh264-sys2"
 description = "Low-level bindings for OpenH264."
-authors = ["Ralf Biedert <rb@xr.io>"]
 keywords = ["multimedia", "encoding", "video"]
 categories = ["api-bindings", "multimedia::video"]
-version = "0.8.1"
-edition = "2021"
 documentation = "https://docs.rs/openh264-sys2/"
-repository = "https://github.com/ralfbiedert/openh264-rust"
-license = "BSD-2-Clause"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 exclude = [
     "**/*.dll"
 ]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 default = ["source"]
@@ -22,10 +21,10 @@ source = []
 libloading = ["dep:libloading", "dep:sha2"]
 
 [dependencies]
-libloading = { version = "0.8.1", optional = true }
-sha2 = { version = "0.10.8", optional = true }
+libloading = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
 
 [build-dependencies]
-cc = { version = "1.0", features = ["parallel"] }
-walkdir = "2.3"
-nasm-rs = { version = "0.3.0" }
+cc = { workspace = true, features = ["parallel"] }
+walkdir.workspace = true
+nasm-rs.workspace = true

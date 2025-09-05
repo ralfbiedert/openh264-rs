@@ -5,6 +5,30 @@ members = [
     "openh264"
 ]
 
+[workspace.package]
+authors = ["Ralf Biedert <rb@xr.io>"]
+edition = "2024"
+license = "BSD-2-Clause"
+repository = "https://github.com/ralfbiedert/openh264-rs"
+rust-version = "1.88"
+version = "0.8.0"
+
+[workspace.dependencies]
+# Ours
+openh264-sys2 = { path = "openh264-sys2", version = "0.8.0", default-features = false }
+
+# Others
+libloading = "0.8.1"
+sha2 = "0.10.8"
+cc = "1.0"
+walkdir = "2.3"
+nasm-rs = "0.3.0"
+wide = "0.7.30"
+image = "0.25.5"
+image-compare = "0.4.1"
+mp4 = "0.14.0"
+anyhow = "1.0.71"
+rand = "0.8.5"
 
 [workspace.lints.clippy]
 correctness = { level = "deny", priority = -1 }
