@@ -49,10 +49,9 @@
 //! ```
 
 use crate::error::NativeErrorExt;
-use crate::formats::yuv2rgb::write_rgb8_f32x8_par;
-// use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
-use crate::formats::YUVSource;
 use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar, write_rgba8_f32x8, write_rgba8_scalar};
+// use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
+use crate::formats::{YUVSlices, YUVSource};
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
     API, DECODER_OPTION, DECODER_OPTION_ERROR_CON_IDC, DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,
@@ -523,7 +522,7 @@ impl DecodedYUV<'_> {
     /// Cut the YUV buffer into vertical sections.
     ///
     /// The slices do not overlap. If N does not divide the buffer, then the last YUVSlice has fewer pixel rows.
-    pub fn split<const N: usize>(&self) -> [YUVSlices; N] {
+    pub fn split<const N: usize>(&'_ self) -> [YUVSlices<'_>; N] {
         if N == 1 {
             return [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
         }
@@ -653,8 +652,8 @@ mod test {
     use openh264_sys2::SSysMEMBuffer;
 
     use crate::{
-        formats::{YUVSlices, YUVSource},
         Timestamp,
+        formats::{YUVSlices, YUVSource},
     };
 
     use super::DecodedYUV;
@@ -727,11 +726,11 @@ mod test {
             v_plane.extend_from_slice(slice.v());
         }
 
-        assert_eq!(buf.y.len(), y_plane.len());
-        assert_eq!(buf.y, y_plane);
-        assert_eq!(buf.u.len(), u_plane.len());
-        assert_eq!(buf.u, u_plane);
-        assert_eq!(buf.v.len(), v_plane.len());
-        assert_eq!(buf.v, v_plane);
+        assert_eq!(buf.y().len(), y_plane.len());
+        assert_eq!(buf.y(), y_plane);
+        assert_eq!(buf.u().len(), u_plane.len());
+        assert_eq!(buf.u(), u_plane);
+        assert_eq!(buf.v().len(), v_plane.len());
+        assert_eq!(buf.v(), v_plane);
     }
 }
