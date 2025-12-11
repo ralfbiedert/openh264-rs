@@ -1,6 +1,10 @@
+#!/bin/bash
 #
 # Updates OpenH264 hashes
 #
+
+set -euo pipefail
+
 PROJECT_ROOT="$( cd "$(dirname "$0")/.." ; pwd -P )"
 
 VERSION=2.6.0 # <-- Update to latest
@@ -25,7 +29,7 @@ LIBRARIES=(
   $CISCO_ROOT/openh264-$VERSION-win64.dll.bz2
 )
 
-rm "$TARGET_FILE"
+rm -f "$TARGET_FILE"
 
 mkdir -p "$PROJECT_ROOT/target"
 pushd "$PROJECT_ROOT/target"
@@ -39,7 +43,7 @@ do
 
     echo "... ${url}"
     
-    curl -so "$file_bz2" "$url"
+    curl -f -so "$file_bz2" "$url" || (echo "FAILED TO RETRIEVE FILE" && false)
     bunzip2 -qf "$file_bz2"
     sha256sum "$file" >> "$TARGET_FILE"
 
