@@ -8,21 +8,22 @@ set -euo pipefail
 PROJECT_ROOT="$( cd "$(dirname "$0")/.." ; pwd -P )"
 
 VERSION=2.6.0 # <-- Update to latest
+ABIVERSION=8
 TARGET_FILE="$PROJECT_ROOT/openh264-sys2/src/blobs/hashes.txt"
 CISCO_ROOT=http://ciscobinary.openh264.org
 REFERENCE_FILE="openh264-$VERSION-win64.dll"
 REFERENCE_FILE_PATH="$PROJECT_ROOT/openh264-sys2/tests/reference/"
 REFERENCE_FILE_SPEC="$PROJECT_ROOT/openh264-sys2/tests/reference/reference.txt"
 LIBRARIES=(
-  $CISCO_ROOT/libopenh264-$VERSION-android-arm.7.so.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-android-arm64.7.so.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-android-x64.7.so.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-android-x86.7.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-android-arm.$ABIVERSION.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-android-arm64.$ABIVERSION.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-android-x64.$ABIVERSION.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-android-x86.$ABIVERSION.so.bz2
   $CISCO_ROOT/libopenh264-$VERSION-ios.a.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-linux32.7.so.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-linux64.7.so.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-linux-arm.7.so.bz2
-  $CISCO_ROOT/libopenh264-$VERSION-linux-arm64.7.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-linux32.$ABIVERSION.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-linux64.$ABIVERSION.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-linux-arm.$ABIVERSION.so.bz2
+  $CISCO_ROOT/libopenh264-$VERSION-linux-arm64.$ABIVERSION.so.bz2
   $CISCO_ROOT/libopenh264-$VERSION-mac-arm64.dylib.bz2
   $CISCO_ROOT/libopenh264-$VERSION-mac-x64.dylib.bz2
   $CISCO_ROOT/openh264-$VERSION-win32.dll.bz2
