@@ -47,9 +47,9 @@ jobs:
           - target: armv7-unknown-linux-gnueabihf
             runs-on: ubuntu-latest
             packages: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf # provides armv7 headers
-          - target: aarch64-unknown-linux-gnu
-            runs-on: ubuntu-latest
-            packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu # provides aarch64 headers
+#          - target: aarch64-unknown-linux-gnu
+#            runs-on: ubuntu-latest
+#            packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu # provides aarch64 headers
           - target: aarch64-apple-darwin
             runs-on: macos-latest
           - target: i686-pc-windows-msvc
