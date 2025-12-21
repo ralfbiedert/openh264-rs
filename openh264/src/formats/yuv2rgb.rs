@@ -500,9 +500,6 @@ mod test {
         let mut tgt2 = vec![0; tgt.len()];
         write_rgba8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
 
-        let (tgt_chunks, _) = tgt.as_chunks::<4>();
-        let (tgt2_chunks, _) = tgt2.as_chunks::<4>();
-
         assert_eq!(tgt, tgt2);
     }
 
