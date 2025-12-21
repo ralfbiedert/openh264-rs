@@ -210,21 +210,43 @@ pub fn write_rgb8_f32x8_par(
 /// Y: [01234567...]
 /// U: [00112233...]
 /// V: [00112233...]
+#[allow(clippy::inline_always)]
 #[inline(always)]
 fn pack_into_yuv420_f32x8(y_row: &[u8; 8], u_row: &[u8; 4], v_row: &[u8; 4]) -> (wide::f32x8, wide::f32x8, wide::f32x8) {
     let [y0, y1, y2, y3, y4, y5, y6, y7] = *y_row;
     let y_pack = wide::f32x8::from([
-        y0 as f32, y1 as f32, y2 as f32, y3 as f32, y4 as f32, y5 as f32, y6 as f32, y7 as f32,
+        f32::from(y0),
+        f32::from(y1),
+        f32::from(y2),
+        f32::from(y3),
+        f32::from(y4),
+        f32::from(y5),
+        f32::from(y6),
+        f32::from(y7),
     ]) - 16.0;
 
     let [u0, u1, u2, u3] = *u_row;
     let u_pack = wide::f32x8::from([
-        u0 as f32, u0 as f32, u1 as f32, u1 as f32, u2 as f32, u2 as f32, u3 as f32, u3 as f32,
+        f32::from(u0),
+        f32::from(u0),
+        f32::from(u1),
+        f32::from(u1),
+        f32::from(u2),
+        f32::from(u2),
+        f32::from(u3),
+        f32::from(u3),
     ]) - 128.0;
 
     let [v0, v1, v2, v3] = *v_row;
     let v_pack = wide::f32x8::from([
-        v0 as f32, v0 as f32, v1 as f32, v1 as f32, v2 as f32, v2 as f32, v3 as f32, v3 as f32,
+        f32::from(v0),
+        f32::from(v0),
+        f32::from(v1),
+        f32::from(v1),
+        f32::from(v2),
+        f32::from(v2),
+        f32::from(v3),
+        f32::from(v3),
     ]) - 128.0;
 
     (y_pack, u_pack, v_pack)
