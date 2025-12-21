@@ -26,6 +26,9 @@ const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.687;
 const GU_MUL: f32 = -255.0 / 224.0 * 1.772 * 0.114 / 0.587;
 const BU_MUL: f32 = 255.0 / 224.0 * 1.772;
 
+const RGB_PIXEL_LEN: usize = 3;
+const RGBA_PIXEL_LEN: usize = 4;
+
 /// Write RGB8 data from YUV420 using scalar (non SIMD) math.
 #[allow(dead_code)]
 pub fn write_rgb8_scalar(
@@ -38,12 +41,12 @@ pub fn write_rgb8_scalar(
 ) {
     for y in 0..dim.1 {
         for x in 0..dim.0 {
-            let base_tgt = (y * dim.0 + x) * 3;
+            let base_tgt = (y * dim.0 + x) * RGB_PIXEL_LEN;
             let base_y = y * strides.0 + x;
             let base_u = (y / 2 * strides.1) + (x / 2);
             let base_v = (y / 2 * strides.2) + (x / 2);
 
-            let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+            let rgb_pixel = &mut target[base_tgt..base_tgt + RGB_PIXEL_LEN];
 
             // Convert limited range YUV to RGB
             // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
@@ -73,7 +76,7 @@ pub fn write_rgb8_scalar_par(
     const NUM_THREADS: usize = 4;
 
     // split output slices
-    let pixels_per_thread = (dim.0 * dim.1 * 3) / NUM_THREADS;
+    let pixels_per_thread = (dim.0 * dim.1 * RGB_PIXEL_LEN) / NUM_THREADS;
     let target_chunks = target.chunks_mut(pixels_per_thread);
 
     // input planes
@@ -90,12 +93,12 @@ pub fn write_rgb8_scalar_par(
             s.spawn(move || {
                 for y in row_start..row_end {
                     for x in 0..dim.0 {
-                        let base_tgt = ((y - row_start) * dim.0 + x) * 3;
+                        let base_tgt = ((y - row_start) * dim.0 + x) * RGB_PIXEL_LEN;
                         let base_y = y * strides.0 + x;
                         let base_u = (y / 2 * strides.1) + (x / 2);
                         let base_v = (y / 2 * strides.2) + (x / 2);
 
-                        let rgb_pixel = &mut target[base_tgt..base_tgt + 3];
+                        let rgb_pixel = &mut target[base_tgt..base_tgt + RGB_PIXEL_LEN];
 
                         // Convert limited range YUV to RGB
                         // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
@@ -124,8 +127,6 @@ pub fn write_rgb8_f32x8(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
-    const RGB_PIXEL_LEN: usize = 3;
-
     // this assumes we are decoding YUV420
     assert_eq!(y_plane.len(), u_plane.len() * 4);
     assert_eq!(y_plane.len(), v_plane.len() * 4);
@@ -172,7 +173,6 @@ pub fn write_rgb8_f32x8_par(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
-    const RGB_PIXEL_LEN: usize = 3;
     // the call to `std::thread::available_parallelism()` takes quite long (77 micros for me)
     const NUM_THREADS: usize = 4;
 
@@ -231,7 +231,7 @@ pub fn write_rgb8_f32x8_par(
 fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, target: &mut [u8]) {
     const STEP: usize = 8;
     const UV_STEP: usize = STEP / 2;
-    const TGT_STEP: usize = STEP * 3;
+    const TGT_STEP: usize = STEP * RGB_PIXEL_LEN;
 
     assert_eq!(y_row.len(), u_row.len() * 2);
     assert_eq!(y_row.len(), v_row.len() * 2);
@@ -277,9 +277,9 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
         let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
         for i in 0..STEP {
-            pixels[3 * i] = r_pack[i] as u8;
-            pixels[(3 * i) + 1] = g_pack[i] as u8;
-            pixels[(3 * i) + 2] = b_pack[i] as u8;
+            pixels[RGB_PIXEL_LEN * i] = r_pack[i] as u8;
+            pixels[(RGB_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
+            pixels[(RGB_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
         }
 
         base_y += STEP;
@@ -299,12 +299,12 @@ pub fn write_rgba8_scalar(
 ) {
     for y in 0..dim.1 {
         for x in 0..dim.0 {
-            let base_tgt = (y * dim.0 + x) * 4;
+            let base_tgt = (y * dim.0 + x) * RGBA_PIXEL_LEN;
             let base_y = y * strides.0 + x;
             let base_u = (y / 2 * strides.1) + (x / 2);
             let base_v = (y / 2 * strides.2) + (x / 2);
 
-            let rgb_pixel = &mut target[base_tgt..base_tgt + 4];
+            let rgba_pixel = &mut target[base_tgt..base_tgt + RGBA_PIXEL_LEN];
 
             // Convert limited range YUV to RGB
             // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
@@ -312,10 +312,10 @@ pub fn write_rgba8_scalar(
             let u = f32::from(u_plane[base_u]) - 128.0;
             let v = f32::from(v_plane[base_v]) - 128.0;
 
-            rgb_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
-            rgb_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
-            rgb_pixel[2] = BU_MUL.mul_add(u, y_mul) as u8;
-            rgb_pixel[3] = 255;
+            rgba_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
+            rgba_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
+            rgba_pixel[2] = BU_MUL.mul_add(u, y_mul) as u8;
+            rgba_pixel[3] = 255;
         }
     }
 }
@@ -330,11 +330,9 @@ pub fn write_rgba8_f32x8(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
-    const RGBA_PIXEL_LEN: usize = 4;
-
     // this assumes we are decoding YUV420
-    assert_eq!(y_plane.len(), u_plane.len() * 4);
-    assert_eq!(y_plane.len(), v_plane.len() * 4);
+    assert_eq!(y_plane.len(), u_plane.len() * RGBA_PIXEL_LEN);
+    assert_eq!(y_plane.len(), v_plane.len() * RGBA_PIXEL_LEN);
     assert_eq!(dim.0 % 8, 0);
 
     let (width, height) = dim;
@@ -374,7 +372,7 @@ pub fn write_rgba8_f32x8(
 fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, target: &mut [u8]) {
     const STEP: usize = 8;
     const UV_STEP: usize = STEP / 2;
-    const TGT_STEP: usize = STEP * 4;
+    const TGT_STEP: usize = STEP * RGBA_PIXEL_LEN;
 
     assert_eq!(y_row.len(), u_row.len() * 2);
     assert_eq!(y_row.len(), v_row.len() * 2);
@@ -420,10 +418,10 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize,
         let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
         for i in 0..STEP {
-            pixels[3 * i] = r_pack[i] as u8;
-            pixels[(3 * i) + 1] = g_pack[i] as u8;
-            pixels[(3 * i) + 2] = b_pack[i] as u8;
-            pixels[(3 * i) + 3] = 255;
+            pixels[RGBA_PIXEL_LEN * i] = r_pack[i] as u8;
+            pixels[(RGBA_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
+            pixels[(RGBA_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
+            pixels[(RGBA_PIXEL_LEN * i) + 3] = 255;
         }
 
         base_y += STEP;
@@ -436,7 +434,9 @@ mod test {
     use crate::OpenH264API;
     use crate::decoder::{Decoder, DecoderConfig};
     use crate::formats::YUVSource;
-    use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par};
+    use crate::formats::yuv2rgb::{
+        write_rgb8_f32x8, write_rgb8_f32x8_par, write_rgb8_scalar, write_rgb8_scalar_par, write_rgba8_f32x8, write_rgba8_scalar,
+    };
 
     #[test]
     fn write_rgb8_scalar_range() {
@@ -476,6 +476,32 @@ mod test {
 
         let mut tgt2 = vec![0; tgt.len()];
         write_rgb8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
+
+        assert_eq!(tgt, tgt2);
+    }
+
+    #[test]
+    fn write_rgba8_f32x8_matches_scalar() {
+        let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
+
+        let api = OpenH264API::from_source();
+        let config = DecoderConfig::default();
+        let mut decoder = Decoder::with_api_config(api, config).unwrap();
+
+        let mut rgb = vec![0; 2000 * 2000 * 4];
+        let yuv = decoder.decode(&source[..]).unwrap().unwrap();
+        let dim = yuv.dimensions();
+        let rgb_len = dim.0 * dim.1 * 4;
+
+        let tgt = &mut rgb[0..rgb_len];
+
+        write_rgba8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), tgt);
+
+        let mut tgt2 = vec![0; tgt.len()];
+        write_rgba8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
+
+        let (tgt_chunks, _) = tgt.as_chunks::<4>();
+        let (tgt2_chunks, _) = tgt2.as_chunks::<4>();
 
         assert_eq!(tgt, tgt2);
     }
