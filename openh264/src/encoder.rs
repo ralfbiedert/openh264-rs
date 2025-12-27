@@ -443,6 +443,7 @@ pub enum ColorPrimaries {
 
 impl ColorPrimaries {
     /// Get the raw u8 value for the VUI colour_primaries field.
+    #[must_use]
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
@@ -483,6 +484,7 @@ pub enum TransferCharacteristics {
 
 impl TransferCharacteristics {
     /// Get the raw u8 value for the VUI transfer_characteristics field.
+    #[must_use]
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
@@ -519,6 +521,7 @@ pub enum MatrixCoefficients {
 
 impl MatrixCoefficients {
     /// Get the raw u8 value for the VUI matrix_coefficients field.
+    #[must_use]
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
@@ -538,6 +541,7 @@ impl MatrixCoefficients {
 ///     .vui(VuiConfig::bt709().with_full_range(true));  // HD BT.709 with full range
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[must_use]
 pub struct VuiConfig {
     /// Chromaticity coordinates of source primaries
     pub color_primaries: ColorPrimaries,
