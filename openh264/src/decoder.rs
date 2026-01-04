@@ -570,7 +570,7 @@ impl DecodedYUV<'_> {
         // for f32x8 math, image needs to:
         //   - have a width divisible by 8
         //   - have at least two rows
-        if dim.0 % 8 == 0 && dim.1 >= 2 {
+        if dim.0.is_multiple_of(8) && dim.1 >= 2 {
             write_rgb8_f32x8(self.y, self.u, self.v, dim, strides, target);
         } else {
             write_rgb8_scalar(self.y, self.u, self.v, dim, strides, target);
@@ -603,7 +603,7 @@ impl DecodedYUV<'_> {
         // for f32x8 math, image needs to:
         //   - have a width divisible by 8
         //   - have at least two rows
-        if dim.0 % 8 == 0 && dim.1 >= 2 {
+        if dim.0.is_multiple_of(8) && dim.1 >= 2 {
             write_rgba8_f32x8(self.y, self.u, self.v, dim, strides, target);
         } else {
             write_rgba8_scalar(self.y, self.u, self.v, dim, strides, target);

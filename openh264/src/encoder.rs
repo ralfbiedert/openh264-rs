@@ -89,9 +89,10 @@ unsafe impl Send for EncoderRawAPI {}
 unsafe impl Sync for EncoderRawAPI {}
 
 /// Specifies the mode used by the encoder to control the rate.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum RateControlMode {
     /// Quality mode.
+    #[default]
     Quality,
     /// Bitrate mode.
     Bitrate,
@@ -103,12 +104,6 @@ pub enum RateControlMode {
     BitrateModePostSkip,
     /// Rate control off mode.
     Off,
-}
-
-impl Default for RateControlMode {
-    fn default() -> Self {
-        Self::Quality
-    }
 }
 
 impl RateControlMode {
@@ -125,11 +120,12 @@ impl RateControlMode {
 }
 
 /// Sets the behavior for generating SPS/PPS.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum SpsPpsStrategy {
     /// Use a constant SPS/PPS ID. The ID will not change across encoded video frames.
     ///
     /// This is the default value.
+    #[default]
     ConstantId,
 
     /// Increment the SPS/PPS ID with each IDR frame.
@@ -159,18 +155,13 @@ impl SpsPpsStrategy {
     }
 }
 
-impl Default for SpsPpsStrategy {
-    fn default() -> Self {
-        Self::ConstantId
-    }
-}
-
 /// The intended usage scenario for the encoder.
 ///
 /// Note, this documen
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum UsageType {
     /// Camera video for real-time communication.
+    #[default]
     CameraVideoRealTime,
     /// Used for real-time screen sharing.
     ScreenContentRealTime,
@@ -191,12 +182,6 @@ impl UsageType {
             Self::ScreenContentNonRealTime => openh264_sys2::SCREEN_CONTENT_NON_REAL_TIME,
             Self::InputContentTypeAll => openh264_sys2::INPUT_CONTENT_TYPE_ALL,
         }
-    }
-}
-
-impl Default for UsageType {
-    fn default() -> Self {
-        Self::CameraVideoRealTime
     }
 }
 
@@ -372,6 +357,10 @@ impl QpRange {
     ///
     /// Valid values for `min` and `max` are between 0 and 51, where 0
     /// represents highest quality and 51 the strongest compression.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `max > 51` or if `min > max`.
     #[must_use]
     pub const fn new(min: u8, max: u8) -> Self {
         assert!(max <= 51, "quantization value out of range (0..=51)");
