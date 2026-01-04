@@ -302,9 +302,9 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [
         let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
         for i in 0..STEP {
-            rgb[3 * i] = r_pack[i] as u8;
-            rgb[(3 * i) + 1] = g_pack[i] as u8;
-            rgb[(3 * i) + 2] = b_pack[i] as u8;
+            rgb[RGB_PIXEL_LEN * i] = r_pack[i] as u8;
+            rgb[(RGB_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
+            rgb[(RGB_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
         }
     }
 }
@@ -435,10 +435,10 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut 
         let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
         for i in 0..STEP {
-            rgba[3 * i] = r_pack[i] as u8;
-            rgba[(3 * i) + 1] = g_pack[i] as u8;
-            rgba[(3 * i) + 2] = b_pack[i] as u8;
-            rgba[(3 * i) + 3] = 255;
+            rgba[RGBA_PIXEL_LEN * i] = r_pack[i] as u8;
+            rgba[(RGBA_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
+            rgba[(RGBA_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
+            rgba[(RGBA_PIXEL_LEN * i) + 3] = 255;
         }
     }
 }
