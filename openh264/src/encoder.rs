@@ -413,21 +413,21 @@ impl IntraFramePeriod {
 pub enum ColorPrimaries {
     /// ITU-R BT.709-6 / sRGB / IEC 61966-2-1 (HD television, sRGB displays)
     #[default]
-    BT709 = 1,
+    Bt709 = 1,
     /// Unspecified - decoder determines based on context
     Unspecified = 2,
     /// ITU-R BT.470-6 System M (historical NTSC)
-    BT470M = 4,
+    Bt470M = 4,
     /// ITU-R BT.470-6 System B, G / ITU-R BT.601-7 625 (PAL)
-    BT470BG = 5,
+    Bt470BG = 5,
     /// SMPTE 170M / ITU-R BT.601-7 525 (NTSC)
-    SMPTE170M = 6,
+    Smpte170M = 6,
     /// SMPTE 240M (historical)
-    SMPTE240M = 7,
+    Smpte240M = 7,
     /// Generic film (C illuminant)
     Film = 8,
     /// ITU-R BT.2020-2 / ITU-R BT.2100-2 (UHD/HDR)
-    BT2020 = 9,
+    Bt2020 = 9,
 }
 
 impl ColorPrimaries {
@@ -446,29 +446,29 @@ impl ColorPrimaries {
 pub enum TransferCharacteristics {
     /// ITU-R BT.709-6 / ITU-R BT.1361 (HD television)
     #[default]
-    BT709 = 1,
+    Bt709 = 1,
     /// Unspecified
     Unspecified = 2,
     /// ITU-R BT.470-6 System M (2.2 gamma)
-    BT470M = 4,
+    Bt470M = 4,
     /// ITU-R BT.470-6 System B, G (2.8 gamma)
-    BT470BG = 5,
+    Bt470Bg = 5,
     /// SMPTE 170M / BT.601 (same curve as BT.709)
-    SMPTE170M = 6,
+    Smpte170M = 6,
     /// SMPTE 240M
-    SMPTE240M = 7,
+    Smpte240M = 7,
     /// Linear transfer (gamma 1.0)
     Linear = 8,
     /// IEC 61966-2-1 (sRGB) - recommended for computer graphics
-    SRGB = 13,
+    Srgb = 13,
     /// ITU-R BT.2020 10-bit (same curve as BT.709)
-    BT2020_10 = 14,
+    Bt2020_10 = 14,
     /// ITU-R BT.2020 12-bit (same curve as BT.709)
-    BT2020_12 = 15,
+    Bt2020_12 = 15,
     /// SMPTE ST 2084 (PQ / HDR10)
-    SMPTE2084 = 16,
+    Smpte2084 = 16,
     /// ARIB STD-B67 (HLG)
-    HLG = 18,
+    Hlg = 18,
 }
 
 impl TransferCharacteristics {
@@ -489,19 +489,19 @@ pub enum MatrixCoefficients {
     Identity = 0,
     /// ITU-R BT.709-6 (Kr=0.2126, Kb=0.0722) - HD television
     #[default]
-    BT709 = 1,
+    Bt709 = 1,
     /// Unspecified
     Unspecified = 2,
     /// FCC 73.682 (historical)
-    FCC = 4,
+    Fcc = 4,
     /// ITU-R BT.470-6 System B, G (same as BT.601-7 625)
-    BT470BG = 5,
+    Bt470Bg = 5,
     /// SMPTE 170M / ITU-R BT.601-7 525 (Kr=0.299, Kb=0.114) - SD television
-    SMPTE170M = 6,
+    Smpte170M = 6,
     /// SMPTE 240M
-    SMPTE240M = 7,
+    Smpte240M = 7,
     /// YCgCo (lossless)
-    YCgCo = 8,
+    Ycgco = 8,
     /// ITU-R BT.2020 non-constant luminance
     Bt2020Ncl = 9,
     /// ITU-R BT.2020 constant luminance
@@ -553,9 +553,9 @@ impl VuiConfig {
     /// This is the standard for HD television and most video content.
     pub const fn bt709() -> Self {
         Self {
-            color_primaries: ColorPrimaries::BT709,
-            transfer_characteristics: TransferCharacteristics::BT709,
-            matrix_coefficients: MatrixCoefficients::BT709,
+            color_primaries: ColorPrimaries::Bt709,
+            transfer_characteristics: TransferCharacteristics::Bt709,
+            matrix_coefficients: MatrixCoefficients::Bt709,
             full_range: false,
         }
     }
@@ -563,9 +563,9 @@ impl VuiConfig {
     /// BT.709 with full range (for PC/computer graphics content).
     pub const fn bt709_full() -> Self {
         Self {
-            color_primaries: ColorPrimaries::BT709,
-            transfer_characteristics: TransferCharacteristics::BT709,
-            matrix_coefficients: MatrixCoefficients::BT709,
+            color_primaries: ColorPrimaries::Bt709,
+            transfer_characteristics: TransferCharacteristics::Bt709,
+            matrix_coefficients: MatrixCoefficients::Bt709,
             full_range: true,
         }
     }
@@ -573,9 +573,9 @@ impl VuiConfig {
     /// BT.601 (SMPTE 170M) with limited range (for SD content).
     pub const fn bt601() -> Self {
         Self {
-            color_primaries: ColorPrimaries::SMPTE170M,
-            transfer_characteristics: TransferCharacteristics::SMPTE170M,
-            matrix_coefficients: MatrixCoefficients::SMPTE170M,
+            color_primaries: ColorPrimaries::Smpte170M,
+            transfer_characteristics: TransferCharacteristics::Smpte170M,
+            matrix_coefficients: MatrixCoefficients::Smpte170M,
             full_range: false,
         }
     }
@@ -585,9 +585,9 @@ impl VuiConfig {
     /// Uses BT.709 primaries but with sRGB transfer function.
     pub const fn srgb() -> Self {
         Self {
-            color_primaries: ColorPrimaries::BT709,
-            transfer_characteristics: TransferCharacteristics::SRGB,
-            matrix_coefficients: MatrixCoefficients::BT709,
+            color_primaries: ColorPrimaries::Bt709,
+            transfer_characteristics: TransferCharacteristics::Srgb,
+            matrix_coefficients: MatrixCoefficients::Bt709,
             full_range: true,
         }
     }
@@ -595,8 +595,8 @@ impl VuiConfig {
     /// BT.2020 with limited range (for UHD/HDR content).
     pub const fn bt2020() -> Self {
         Self {
-            color_primaries: ColorPrimaries::BT2020,
-            transfer_characteristics: TransferCharacteristics::BT2020_10,
+            color_primaries: ColorPrimaries::Bt2020,
+            transfer_characteristics: TransferCharacteristics::Bt2020_10,
             matrix_coefficients: MatrixCoefficients::Bt2020Ncl,
             full_range: false,
         }
