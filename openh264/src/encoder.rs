@@ -527,19 +527,19 @@ impl MatrixCoefficients {
 /// use openh264::encoder::{EncoderConfig, VuiConfig};
 ///
 /// let config = EncoderConfig::new()
-///     .vui(VuiConfig::bt709().with_full_range(true));  // HD BT.709 with full range
+///     .vui(VuiConfig::bt709().full_range(true));  // HD BT.709 with full range
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[must_use]
 pub struct VuiConfig {
     /// Chromaticity coordinates of source primaries
-    pub color_primaries: ColorPrimaries,
+    color_primaries: ColorPrimaries,
     /// Transfer characteristics (gamma)
-    pub transfer_characteristics: TransferCharacteristics,
+    transfer_characteristics: TransferCharacteristics,
     /// Matrix coefficients for RGB↔YCbCr conversion
-    pub matrix_coefficients: MatrixCoefficients,
+    matrix_coefficients: MatrixCoefficients,
     /// True for full range (0-255), false for limited range (16-235)
-    pub full_range: bool,
+    full_range: bool,
 }
 
 impl VuiConfig {
@@ -603,25 +603,25 @@ impl VuiConfig {
     }
 
     /// Set the color primaries.
-    pub const fn with_color_primaries(mut self, value: ColorPrimaries) -> Self {
+    pub const fn color_primaries(mut self, value: ColorPrimaries) -> Self {
         self.color_primaries = value;
         self
     }
 
     /// Set the transfer characteristics.
-    pub const fn with_transfer_characteristics(mut self, value: TransferCharacteristics) -> Self {
+    pub const fn transfer_characteristics(mut self, value: TransferCharacteristics) -> Self {
         self.transfer_characteristics = value;
         self
     }
 
     /// Set the matrix coefficients.
-    pub const fn with_matrix_coefficients(mut self, value: MatrixCoefficients) -> Self {
+    pub const fn matrix_coefficients(mut self, value: MatrixCoefficients) -> Self {
         self.matrix_coefficients = value;
         self
     }
 
     /// Set full range mode.
-    pub const fn with_full_range(mut self, value: bool) -> Self {
+    pub const fn full_range(mut self, value: bool) -> Self {
         self.full_range = value;
         self
     }
