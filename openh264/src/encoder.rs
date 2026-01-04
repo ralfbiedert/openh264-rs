@@ -410,6 +410,234 @@ impl IntraFramePeriod {
     }
 }
 
+// =============================================================================
+// VUI (Video Usability Information) Parameters
+// =============================================================================
+// These parameters are embedded in the H.264 SPS to signal color space
+// information to decoders. See ITU-T H.264 Annex E for details.
+
+/// H.264 colour_primaries values (ITU-T H.264 Table E-3).
+///
+/// Specifies the chromaticity coordinates of the source primaries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[repr(u8)]
+pub enum ColorPrimaries {
+    /// ITU-R BT.709-6 / sRGB / IEC 61966-2-1 (HD television, sRGB displays)
+    #[default]
+    BT709 = 1,
+    /// Unspecified - decoder determines based on context
+    Unspecified = 2,
+    /// ITU-R BT.470-6 System M (historical NTSC)
+    BT470M = 4,
+    /// ITU-R BT.470-6 System B, G / ITU-R BT.601-7 625 (PAL)
+    BT470BG = 5,
+    /// SMPTE 170M / ITU-R BT.601-7 525 (NTSC)
+    SMPTE170M = 6,
+    /// SMPTE 240M (historical)
+    SMPTE240M = 7,
+    /// Generic film (C illuminant)
+    Film = 8,
+    /// ITU-R BT.2020-2 / ITU-R BT.2100-2 (UHD/HDR)
+    BT2020 = 9,
+}
+
+impl ColorPrimaries {
+    /// Get the raw u8 value for the VUI colour_primaries field.
+    #[must_use]
+    pub const fn as_u8(self) -> u8 {
+        self as u8
+    }
+}
+
+/// H.264 transfer_characteristics values (ITU-T H.264 Table E-4).
+///
+/// Specifies the opto-electronic transfer characteristic (gamma).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[repr(u8)]
+pub enum TransferCharacteristics {
+    /// ITU-R BT.709-6 / ITU-R BT.1361 (HD television)
+    #[default]
+    BT709 = 1,
+    /// Unspecified
+    Unspecified = 2,
+    /// ITU-R BT.470-6 System M (2.2 gamma)
+    BT470M = 4,
+    /// ITU-R BT.470-6 System B, G (2.8 gamma)
+    BT470BG = 5,
+    /// SMPTE 170M / BT.601 (same curve as BT.709)
+    SMPTE170M = 6,
+    /// SMPTE 240M
+    SMPTE240M = 7,
+    /// Linear transfer (gamma 1.0)
+    Linear = 8,
+    /// IEC 61966-2-1 (sRGB) - recommended for computer graphics
+    SRGB = 13,
+    /// ITU-R BT.2020 10-bit (same curve as BT.709)
+    BT2020_10 = 14,
+    /// ITU-R BT.2020 12-bit (same curve as BT.709)
+    BT2020_12 = 15,
+    /// SMPTE ST 2084 (PQ / HDR10)
+    SMPTE2084 = 16,
+    /// ARIB STD-B67 (HLG)
+    HLG = 18,
+}
+
+impl TransferCharacteristics {
+    /// Get the raw u8 value for the VUI transfer_characteristics field.
+    #[must_use]
+    pub const fn as_u8(self) -> u8 {
+        self as u8
+    }
+}
+
+/// H.264 matrix_coefficients values (ITU-T H.264 Table E-5).
+///
+/// Specifies the matrix coefficients for deriving luma and chroma from RGB.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[repr(u8)]
+pub enum MatrixCoefficients {
+    /// Identity (RGB, no matrix transformation)
+    Identity = 0,
+    /// ITU-R BT.709-6 (Kr=0.2126, Kb=0.0722) - HD television
+    #[default]
+    BT709 = 1,
+    /// Unspecified
+    Unspecified = 2,
+    /// FCC 73.682 (historical)
+    FCC = 4,
+    /// ITU-R BT.470-6 System B, G (same as BT.601-7 625)
+    BT470BG = 5,
+    /// SMPTE 170M / ITU-R BT.601-7 525 (Kr=0.299, Kb=0.114) - SD television
+    SMPTE170M = 6,
+    /// SMPTE 240M
+    SMPTE240M = 7,
+    /// YCgCo (lossless)
+    YCgCo = 8,
+    /// ITU-R BT.2020 non-constant luminance
+    Bt2020Ncl = 9,
+    /// ITU-R BT.2020 constant luminance
+    Bt2020Cl = 10,
+}
+
+impl MatrixCoefficients {
+    /// Get the raw u8 value for the VUI matrix_coefficients field.
+    #[must_use]
+    pub const fn as_u8(self) -> u8 {
+        self as u8
+    }
+}
+
+/// H.264 VUI configuration for signaling color space to decoders.
+///
+/// This struct groups all VUI color-related fields together for convenience.
+/// Use [`VuiConfig::bt709()`] or similar constructors for common presets.
+///
+/// # Example
+///
+/// ```
+/// use openh264::encoder::{EncoderConfig, VuiConfig};
+///
+/// let config = EncoderConfig::new()
+///     .vui(VuiConfig::bt709().with_full_range(true));  // HD BT.709 with full range
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[must_use]
+pub struct VuiConfig {
+    /// Chromaticity coordinates of source primaries
+    pub color_primaries: ColorPrimaries,
+    /// Transfer characteristics (gamma)
+    pub transfer_characteristics: TransferCharacteristics,
+    /// Matrix coefficients for RGB↔YCbCr conversion
+    pub matrix_coefficients: MatrixCoefficients,
+    /// True for full range (0-255), false for limited range (16-235)
+    pub full_range: bool,
+}
+
+impl VuiConfig {
+    /// Create a new VuiConfig with default values (BT.709 limited range).
+    pub const fn new() -> Self {
+        Self::bt709()
+    }
+
+    /// BT.709 with limited range (default for HD content).
+    ///
+    /// This is the standard for HD television and most video content.
+    pub const fn bt709() -> Self {
+        Self {
+            color_primaries: ColorPrimaries::BT709,
+            transfer_characteristics: TransferCharacteristics::BT709,
+            matrix_coefficients: MatrixCoefficients::BT709,
+            full_range: false,
+        }
+    }
+
+    /// BT.709 with full range (for PC/computer graphics content).
+    pub const fn bt709_full() -> Self {
+        Self {
+            color_primaries: ColorPrimaries::BT709,
+            transfer_characteristics: TransferCharacteristics::BT709,
+            matrix_coefficients: MatrixCoefficients::BT709,
+            full_range: true,
+        }
+    }
+
+    /// BT.601 (SMPTE 170M) with limited range (for SD content).
+    pub const fn bt601() -> Self {
+        Self {
+            color_primaries: ColorPrimaries::SMPTE170M,
+            transfer_characteristics: TransferCharacteristics::SMPTE170M,
+            matrix_coefficients: MatrixCoefficients::SMPTE170M,
+            full_range: false,
+        }
+    }
+
+    /// sRGB with full range (ideal for desktop/web content).
+    ///
+    /// Uses BT.709 primaries but with sRGB transfer function.
+    pub const fn srgb() -> Self {
+        Self {
+            color_primaries: ColorPrimaries::BT709,
+            transfer_characteristics: TransferCharacteristics::SRGB,
+            matrix_coefficients: MatrixCoefficients::BT709,
+            full_range: true,
+        }
+    }
+
+    /// BT.2020 with limited range (for UHD/HDR content).
+    pub const fn bt2020() -> Self {
+        Self {
+            color_primaries: ColorPrimaries::BT2020,
+            transfer_characteristics: TransferCharacteristics::BT2020_10,
+            matrix_coefficients: MatrixCoefficients::Bt2020Ncl,
+            full_range: false,
+        }
+    }
+
+    /// Set the color primaries.
+    pub const fn with_color_primaries(mut self, value: ColorPrimaries) -> Self {
+        self.color_primaries = value;
+        self
+    }
+
+    /// Set the transfer characteristics.
+    pub const fn with_transfer_characteristics(mut self, value: TransferCharacteristics) -> Self {
+        self.transfer_characteristics = value;
+        self
+    }
+
+    /// Set the matrix coefficients.
+    pub const fn with_matrix_coefficients(mut self, value: MatrixCoefficients) -> Self {
+        self.matrix_coefficients = value;
+        self
+    }
+
+    /// Set full range mode.
+    pub const fn with_full_range(mut self, value: bool) -> Self {
+        self.full_range = value;
+        self
+    }
+}
+
 /// Configuration for the [`Encoder`].
 ///
 /// Setting missing? Please file a PR!
@@ -437,6 +665,7 @@ pub struct EncoderConfig {
     background_detection: bool,
     long_term_reference: bool,
     intra_frame_period: IntraFramePeriod,
+    vui: Option<VuiConfig>,
 }
 
 impl EncoderConfig {
@@ -463,6 +692,7 @@ impl EncoderConfig {
             background_detection: true,
             long_term_reference: false,
             intra_frame_period: IntraFramePeriod::from_num_frames(0),
+            vui: None,
         }
     }
 
@@ -577,6 +807,27 @@ impl EncoderConfig {
     /// Defaults to 0 (auto mode).
     pub const fn num_threads(mut self, threads: u16) -> Self {
         self.multiple_thread_idc = threads;
+        self
+    }
+
+    /// Sets the VUI (Video Usability Information) parameters.
+    ///
+    /// VUI parameters are written into the H.264 SPS NAL unit and tell decoders
+    /// how to interpret the color space of the video data. This is essential for
+    /// correct color reproduction.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use openh264::encoder::{EncoderConfig, VuiConfig};
+    ///
+    /// let config = EncoderConfig::new()
+    ///     .vui(VuiConfig::bt709());  // HD content with BT.709 color space
+    /// ```
+    ///
+    /// See [`VuiConfig`] for common presets like `bt709()`, `srgb()`, and `bt601()`.
+    pub const fn vui(mut self, config: VuiConfig) -> Self {
+        self.vui = Some(config);
         self
     }
 }
@@ -752,6 +1003,16 @@ impl Encoder {
 
         if let Some(level) = self.config.level {
             params.sSpatialLayers[0].uiLevelIdc = level.to_c();
+        }
+
+        // Apply VUI (Video Usability Information) parameters for color space signaling
+        if let Some(ref vui) = self.config.vui {
+            params.sSpatialLayers[0].bVideoSignalTypePresent = true;
+            params.sSpatialLayers[0].bColorDescriptionPresent = true;
+            params.sSpatialLayers[0].bFullRange = vui.full_range;
+            params.sSpatialLayers[0].uiColorPrimaries = vui.color_primaries.as_u8();
+            params.sSpatialLayers[0].uiTransferCharacteristics = vui.transfer_characteristics.as_u8();
+            params.sSpatialLayers[0].uiColorMatrix = vui.matrix_coefficients.as_u8();
         }
 
         params.iSpatialLayerNum = 1;

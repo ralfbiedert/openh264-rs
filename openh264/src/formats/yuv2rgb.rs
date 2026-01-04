@@ -1,25 +1,3 @@
-/// Converts 8 float values into a f32x8 SIMD lane, taking into account block size.
-///
-/// If you have a (pixel buffer) slice of at least 8 f32 values like so `[012345678...]`, this function
-/// will convert the first N <= 8 elements into a packed f32x8 SIMD struct. For example
-///
-/// - if block size `1` (like for Y values), you will get  `f32x8(012345678)`.
-/// - if block size is `2` (for U and V), you will get `f32x8(00112233)`
-macro_rules! f32x8_from_slice_with_blocksize {
-    ($buf:expr, $block_size:expr) => {{
-        wide::f32x8::from([
-            (f32::from($buf[0])),
-            (f32::from($buf[1 / $block_size])),
-            (f32::from($buf[2 / $block_size])),
-            (f32::from($buf[3 / $block_size])),
-            (f32::from($buf[4 / $block_size])),
-            (f32::from($buf[5 / $block_size])),
-            (f32::from($buf[6 / $block_size])),
-            (f32::from($buf[7 / $block_size])),
-        ])
-    }};
-}
-
 const Y_MUL: f32 = 255.0 / 219.0;
 const RV_MUL: f32 = 255.0 / 224.0 * 1.402;
 const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.687;
@@ -149,7 +127,7 @@ pub fn write_rgb8_f32x8(
         // calculate first RGB row
         let base_tgt = 2 * y * rgb_bytes_per_row;
         let row_target = &mut target[base_tgt..base_tgt + rgb_bytes_per_row];
-        write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
+        write_rgb8_f32x8_row(y_row, u_row, v_row, row_target);
 
         // load Y values for second row
         let base_y = (2 * y + 1) * strides.0;
@@ -158,7 +136,7 @@ pub fn write_rgb8_f32x8(
         // calculate second RGB row
         let base_tgt = (2 * y + 1) * rgb_bytes_per_row;
         let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
-        write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
+        write_rgb8_f32x8_row(y_row, u_row, v_row, row_target);
     }
 }
 
@@ -208,7 +186,7 @@ pub fn write_rgb8_f32x8_par(
                     // calculate first RGB row
                     let base_tgt = 2 * y * rgb_bytes_per_row;
                     let row_target = &mut target[base_tgt..base_tgt + rgb_bytes_per_row];
-                    write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
+                    write_rgb8_f32x8_row(y_row, u_row, v_row, row_target);
 
                     // load Y values for second row
                     let base_y = (2 * (y + offset) + 1) * strides.0;
@@ -217,22 +195,73 @@ pub fn write_rgb8_f32x8_par(
                     // calculate second RGB row
                     let base_tgt = (2 * y + 1) * rgb_bytes_per_row;
                     let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
-                    write_rgb8_f32x8_row(y_row, u_row, v_row, width, row_target);
+                    write_rgb8_f32x8_row(y_row, u_row, v_row, row_target);
                 }
             });
         }
     });
 }
 
+/// Converts float values into f32x8 SIMD lanes.
+///
+/// If you have a (pixel buffer) slice of at least 8 f32 values like so `[012345678...]`, this function
+/// will convert the first N <= 8 elements into packed f32x8 SIMD struct for YUV420 buffers:
+///
+/// Y: [01234567...]
+/// U: [00112233...]
+/// V: [00112233...]
+#[allow(clippy::inline_always)]
+#[inline(always)]
+fn pack_into_yuv420_f32x8(y_row: &[u8; 8], u_row: &[u8; 4], v_row: &[u8; 4]) -> (wide::f32x8, wide::f32x8, wide::f32x8) {
+    let [y0, y1, y2, y3, y4, y5, y6, y7] = *y_row;
+    let y_pack = wide::f32x8::from([
+        f32::from(y0),
+        f32::from(y1),
+        f32::from(y2),
+        f32::from(y3),
+        f32::from(y4),
+        f32::from(y5),
+        f32::from(y6),
+        f32::from(y7),
+    ]) - 16.0;
+
+    let [u0, u1, u2, u3] = *u_row;
+    let u_pack = wide::f32x8::from([
+        f32::from(u0),
+        f32::from(u0),
+        f32::from(u1),
+        f32::from(u1),
+        f32::from(u2),
+        f32::from(u2),
+        f32::from(u3),
+        f32::from(u3),
+    ]) - 128.0;
+
+    let [v0, v1, v2, v3] = *v_row;
+    let v_pack = wide::f32x8::from([
+        f32::from(v0),
+        f32::from(v0),
+        f32::from(v1),
+        f32::from(v1),
+        f32::from(v2),
+        f32::from(v2),
+        f32::from(v3),
+        f32::from(v3),
+    ]) - 128.0;
+
+    (y_pack, u_pack, v_pack)
+}
+
 /// Write a single RGB8 row from YUV420 row data using f32x8 SIMD.
 #[allow(clippy::inline_always)]
 #[allow(clippy::similar_names)]
 #[inline(always)]
-fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, target: &mut [u8]) {
+fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [u8]) {
     const STEP: usize = 8;
     const UV_STEP: usize = STEP / 2;
     const TGT_STEP: usize = STEP * RGB_PIXEL_LEN;
 
+    // chroma rows are twice as long as luminance row
     assert_eq!(y_row.len(), u_row.len() * 2);
     assert_eq!(y_row.len(), v_row.len() * 2);
 
@@ -246,23 +275,19 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
     let lower_bound = wide::f32x8::splat(0.0);
 
     assert_eq!(y_row.len() % STEP, 0);
-
+    let (y_chunks, _) = y_row.as_chunks::<STEP>();
     assert_eq!(u_row.len() % UV_STEP, 0);
+    let (u_chunks, _) = u_row.as_chunks::<UV_STEP>();
     assert_eq!(v_row.len() % UV_STEP, 0);
+    let (v_chunks, _) = v_row.as_chunks::<UV_STEP>();
 
     assert_eq!(target.len() % TGT_STEP, 0);
+    let (rgb_chunks, _) = target.as_chunks_mut::<TGT_STEP>();
+    let chunks = y_chunks.iter().zip(u_chunks).zip(v_chunks).zip(rgb_chunks);
 
-    let mut base_y = 0;
-    let mut base_uv = 0;
-    let mut base_tgt = 0;
-
-    for _ in (0..width).step_by(STEP) {
-        let pixels = &mut target[base_tgt..(base_tgt + TGT_STEP)];
-
-        let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_row[base_y..], 1) - 16.0;
+    for (((y, u), v), rgb) in chunks {
+        let (y_pack, u_pack, v_pack) = pack_into_yuv420_f32x8(y, u, v);
         let y_mul: wide::f32x8 = y_pack * y_mul;
-        let u_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(u_row[base_uv..], 2) - 128.0;
-        let v_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(v_row[base_uv..], 2) - 128.0;
 
         let r_pack = v_pack.mul_add(rv_mul, y_mul);
         let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_mul));
@@ -277,14 +302,10 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, 
         let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
         for i in 0..STEP {
-            pixels[RGB_PIXEL_LEN * i] = r_pack[i] as u8;
-            pixels[(RGB_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
-            pixels[(RGB_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
+            rgb[3 * i] = r_pack[i] as u8;
+            rgb[(3 * i) + 1] = g_pack[i] as u8;
+            rgb[(3 * i) + 2] = b_pack[i] as u8;
         }
-
-        base_y += STEP;
-        base_uv += UV_STEP;
-        base_tgt += TGT_STEP;
     }
 }
 
@@ -352,7 +373,7 @@ pub fn write_rgba8_f32x8(
         // calculate first RGB row
         let base_tgt = 2 * y * rgba_bytes_per_row;
         let row_target = &mut target[base_tgt..base_tgt + rgba_bytes_per_row];
-        write_rgba8_f32x8_row(y_row, u_row, v_row, width, row_target);
+        write_rgba8_f32x8_row(y_row, u_row, v_row, row_target);
 
         // load Y values for second row
         let base_y = (2 * y + 1) * strides.0;
@@ -361,7 +382,7 @@ pub fn write_rgba8_f32x8(
         // calculate second RGB row
         let base_tgt = (2 * y + 1) * rgba_bytes_per_row;
         let row_target = &mut target[base_tgt..(base_tgt + rgba_bytes_per_row)];
-        write_rgba8_f32x8_row(y_row, u_row, v_row, width, row_target);
+        write_rgba8_f32x8_row(y_row, u_row, v_row, row_target);
     }
 }
 
@@ -369,7 +390,7 @@ pub fn write_rgba8_f32x8(
 #[allow(clippy::inline_always)]
 #[allow(clippy::similar_names)]
 #[inline(always)]
-fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize, target: &mut [u8]) {
+fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [u8]) {
     const STEP: usize = 8;
     const UV_STEP: usize = STEP / 2;
     const TGT_STEP: usize = STEP * RGBA_PIXEL_LEN;
@@ -387,23 +408,19 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize,
     let lower_bound = wide::f32x8::splat(0.0);
 
     assert_eq!(y_row.len() % STEP, 0);
-
+    let (y_chunks, _) = y_row.as_chunks::<STEP>();
     assert_eq!(u_row.len() % UV_STEP, 0);
+    let (u_chunks, _) = u_row.as_chunks::<UV_STEP>();
     assert_eq!(v_row.len() % UV_STEP, 0);
+    let (v_chunks, _) = v_row.as_chunks::<UV_STEP>();
 
     assert_eq!(target.len() % TGT_STEP, 0);
+    let (rgba_chunks, _) = target.as_chunks_mut::<TGT_STEP>();
+    let chunks = y_chunks.iter().zip(u_chunks).zip(v_chunks).zip(rgba_chunks);
 
-    let mut base_y = 0;
-    let mut base_uv = 0;
-    let mut base_tgt = 0;
-
-    for _ in (0..width).step_by(STEP) {
-        let pixels = &mut target[base_tgt..(base_tgt + TGT_STEP)];
-
-        let y_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(y_row[base_y..], 1) - 16.0;
+    for (((y, u), v), rgba) in chunks {
+        let (y_pack, u_pack, v_pack) = pack_into_yuv420_f32x8(y, u, v);
         let y_mul: wide::f32x8 = y_pack * y_mul;
-        let u_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(u_row[base_uv..], 2) - 128.0;
-        let v_pack: wide::f32x8 = f32x8_from_slice_with_blocksize!(v_row[base_uv..], 2) - 128.0;
 
         let r_pack = v_pack.mul_add(rv_mul, y_mul);
         let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_mul));
@@ -418,15 +435,11 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], width: usize,
         let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
 
         for i in 0..STEP {
-            pixels[RGBA_PIXEL_LEN * i] = r_pack[i] as u8;
-            pixels[(RGBA_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
-            pixels[(RGBA_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
-            pixels[(RGBA_PIXEL_LEN * i) + 3] = 255;
+            rgba[3 * i] = r_pack[i] as u8;
+            rgba[(3 * i) + 1] = g_pack[i] as u8;
+            rgba[(3 * i) + 2] = b_pack[i] as u8;
+            rgba[(3 * i) + 3] = 255;
         }
-
-        base_y += STEP;
-        base_uv += UV_STEP;
-        base_tgt += TGT_STEP;
     }
 }
 #[cfg(test)]
