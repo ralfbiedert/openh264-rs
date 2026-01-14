@@ -135,13 +135,9 @@ impl NasmConfiguration {
     fn find(target: Target) -> Option<Self> {
         use TargetArch::*;
         use TargetFamily::*;
-        // use TargetEnv::*;
         use TargetOs::*;
 
         match target.arch {
-            // for now, we only support building asm with nasm
-            // and nasm only supports x86 and x86_64
-            // sooo, even though we have some logic for other arches coded, we don't actually support them
             X86_64 | X86 => {}
             _ => return None,
         }
@@ -150,29 +146,22 @@ impl NasmConfiguration {
 
         let asm_extension = match target.arch {
             X86_64 | X86 => ".asm",
-            Aarch64 | Arm => ".S",
             _ => return None,
         };
 
         let asm_dir = match target.arch {
             X86_64 | X86 => "x86",
-            Aarch64 => "arm64",
-            Arm => "arm",
             _ => return None,
         };
 
         let asm_exclude = match target.arch {
             X86_64 | X86 => "asm_inc.asm",
-            Aarch64 => "arm_arch64_common_macro.S",
-            Arm => "arm_arch_common_macro.S",
             _ => return None,
         };
 
         // CPP defines to inform which assembly symbols to use.
         let cpp_define = match target.arch {
             X86_64 | X86 => "X86_ASM",
-            Aarch64 => "HAVE_NEON_AARCH64",
-            Arm => "HAVE_NEON",
             _ => return None,
         };
 
@@ -184,8 +173,6 @@ impl NasmConfiguration {
                 _ => return None,
             },
             X86 => "X86_32",
-            Aarch64 => "HAVE_NEON_AARCH64",
-            Arm => "HAVE_NEON",
             _ => return None,
         };
 
@@ -215,15 +202,13 @@ impl NasmConfiguration {
 }
 
 #[allow(unused)]
-fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
+fn try_compile_nasm(target: &Target, cc_build_command: &mut Build, root: &str) {
     if std::env::var("OPENH264_NO_ASM").is_ok() {
         println!("NASM compilation disabled by environment variable.");
         return;
     }
 
-    let target = Target::from_env();
-
-    let Some(config) = NasmConfiguration::find(target) else {
+    let Some(config) = NasmConfiguration::find(*target) else {
         println!("No NASM configuration found for target, not using any assembly.\nTarget: {target:?}");
         return;
     };
@@ -257,10 +242,10 @@ fn try_compile_nasm(cc_build_command: &mut Build, root: &str) {
 }
 
 /// Builds an OpenH264 sub-library and adds it to the project.
-fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]) {
+fn compile_and_add_openh264_static_lib(target: &Target, name: &str, root: &str, suffix: &str, includes: &[&str]) {
     let mut cc_build = cc::Build::new();
 
-    try_compile_nasm(&mut cc_build, root);
+    try_compile_nasm(target, &mut cc_build, root);
 
     cc_build
         .include("upstream/codec/api/wels/")
@@ -278,14 +263,34 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
     // disable stack protectors on mingw:
     // (seems to be the way to go https://github.com/rdp/ffmpeg-windows-build-helpers/issues/380)
 
-    if let Target {
-        os: TargetOs::Windows,
-        env: TargetEnv::Gnu,
-        ..
-    } = Target::from_env()
-    {
-    } else {
+    if !matches!(target.os, TargetOs::Windows) || !matches!(target.env, TargetEnv::Gnu) {
         cc_build.flag_if_supported("-fstack-protector-all");
+    }
+
+    // cl.exe cannot assemble .S files.
+    // TODO: generalize try_compile_nasm and invoke armasm64.exe.
+    if !matches!(target.os, TargetOs::Windows) {
+        match target.arch {
+            TargetArch::Arm => {
+                cc_build.define("HAVE_NEON", None);
+                cc_build.include("upstream/codec/common/arm");
+                cc_build.files(glob_import(
+                    Path::new(root).join(suffix).join("arm"),
+                    ".S",
+                    "arm_arch_common_macro.S",
+                ));
+            }
+            TargetArch::Aarch64 => {
+                cc_build.define("HAVE_NEON_AARCH64", None);
+                cc_build.include("upstream/codec/common/arm64");
+                cc_build.files(glob_import(
+                    Path::new(root).join(suffix).join("arm64"),
+                    ".S",
+                    "arm_arch64_common_macro.S",
+                ));
+            }
+            _ => {}
+        }
     }
 
     for include in includes {
@@ -298,11 +303,15 @@ fn compile_and_add_openh264_static_lib(name: &str, root: &str, includes: &[&str]
 }
 
 fn main() {
-    compile_and_add_openh264_static_lib("common", "upstream/codec/common", &[]);
+    let target = Target::from_env();
+
+    compile_and_add_openh264_static_lib(&target, "common", "upstream/codec/common", ".", &[]);
 
     compile_and_add_openh264_static_lib(
+        &target,
         "processing",
         "upstream/codec/processing",
+        "src",
         &[
             "upstream/codec/processing/src/common/",
             "upstream/codec/processing/interface/",
@@ -311,15 +320,19 @@ fn main() {
 
     // #[cfg(feature = "decoder")]
     compile_and_add_openh264_static_lib(
+        &target,
         "decoder",
         "upstream/codec/decoder",
+        "core",
         &["upstream/codec/decoder/core/inc/", "upstream/codec/decoder/plus/inc/"],
     );
 
     // #[cfg(feature = "encoder")]
     compile_and_add_openh264_static_lib(
+        &target,
         "encoder",
         "upstream/codec/encoder",
+        "core",
         &[
             "upstream/codec/encoder/core/inc/",
             "upstream/codec/encoder/plus/inc/",
