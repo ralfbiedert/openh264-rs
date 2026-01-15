@@ -10,7 +10,7 @@ authors = ["Ralf Biedert <rb@xr.io>"]
 edition = "2024"
 license = "BSD-2-Clause"
 repository = "https://github.com/ralfbiedert/openh264-rs"
-rust-version = "1.88"
+rust-version = "1.85"
 version = "0.9.1"
 
 [workspace.dependencies]
