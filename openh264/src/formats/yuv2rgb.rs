@@ -275,17 +275,21 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [
     let lower_bound = wide::f32x8::splat(0.0);
 
     assert_eq!(y_row.len() % STEP, 0);
-    let (y_chunks, _) = y_row.as_chunks::<STEP>();
+    let y_chunks = y_row.chunks_exact(STEP);
     assert_eq!(u_row.len() % UV_STEP, 0);
-    let (u_chunks, _) = u_row.as_chunks::<UV_STEP>();
+    let u_chunks = u_row.chunks_exact(UV_STEP);
     assert_eq!(v_row.len() % UV_STEP, 0);
-    let (v_chunks, _) = v_row.as_chunks::<UV_STEP>();
+    let v_chunks = v_row.chunks_exact(UV_STEP);
 
     assert_eq!(target.len() % TGT_STEP, 0);
-    let (rgb_chunks, _) = target.as_chunks_mut::<TGT_STEP>();
-    let chunks = y_chunks.iter().zip(u_chunks).zip(v_chunks).zip(rgb_chunks);
+    let rgb_chunks = target.chunks_exact_mut(TGT_STEP);
+    let chunks = y_chunks.zip(u_chunks).zip(v_chunks).zip(rgb_chunks);
 
     for (((y, u), v), rgb) in chunks {
+        // Convert slices to arrays (MSRV 1.85 compatible)
+        let y: &[u8; STEP] = y.try_into().unwrap();
+        let u: &[u8; UV_STEP] = u.try_into().unwrap();
+        let v: &[u8; UV_STEP] = v.try_into().unwrap();
         let (y_pack, u_pack, v_pack) = pack_into_yuv420_f32x8(y, u, v);
         let y_mul: wide::f32x8 = y_pack * y_mul;
 
@@ -408,17 +412,21 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut 
     let lower_bound = wide::f32x8::splat(0.0);
 
     assert_eq!(y_row.len() % STEP, 0);
-    let (y_chunks, _) = y_row.as_chunks::<STEP>();
+    let y_chunks = y_row.chunks_exact(STEP);
     assert_eq!(u_row.len() % UV_STEP, 0);
-    let (u_chunks, _) = u_row.as_chunks::<UV_STEP>();
+    let u_chunks = u_row.chunks_exact(UV_STEP);
     assert_eq!(v_row.len() % UV_STEP, 0);
-    let (v_chunks, _) = v_row.as_chunks::<UV_STEP>();
+    let v_chunks = v_row.chunks_exact(UV_STEP);
 
     assert_eq!(target.len() % TGT_STEP, 0);
-    let (rgba_chunks, _) = target.as_chunks_mut::<TGT_STEP>();
-    let chunks = y_chunks.iter().zip(u_chunks).zip(v_chunks).zip(rgba_chunks);
+    let rgba_chunks = target.chunks_exact_mut(TGT_STEP);
+    let chunks = y_chunks.zip(u_chunks).zip(v_chunks).zip(rgba_chunks);
 
     for (((y, u), v), rgba) in chunks {
+        // Convert slices to arrays (MSRV 1.85 compatible)
+        let y: &[u8; STEP] = y.try_into().unwrap();
+        let u: &[u8; UV_STEP] = u.try_into().unwrap();
+        let v: &[u8; UV_STEP] = v.try_into().unwrap();
         let (y_pack, u_pack, v_pack) = pack_into_yuv420_f32x8(y, u, v);
         let y_mul: wide::f32x8 = y_pack * y_mul;
 
