@@ -217,6 +217,7 @@ fn try_compile_nasm(target: &Target, cc_build_command: &mut Build, root: &str) {
     let mut nasm_build = nasm_rs::Build::new();
     let mut nasm_build = nasm_build.include(format!("upstream/codec/common/{}/", config.include_dir));
     nasm_build = nasm_build.define(&config.asm_platform_define, None);
+    nasm_build = nasm_build.define("HAVE_AVX2", None);
     if config.prefix_symbols {
         nasm_build = nasm_build.define("PREFIX", None);
     }
@@ -235,6 +236,7 @@ fn try_compile_nasm(target: &Target, cc_build_command: &mut Build, root: &str) {
     // _RUN_ any build command on its own (we still invoked `nasm` above
     // though).
     cc_build_command.define(&config.cpp_define, None);
+    cc_build_command.define("HAVE_AVX2", None);
 
     for object in &object_files {
         cc_build_command.object(object);
