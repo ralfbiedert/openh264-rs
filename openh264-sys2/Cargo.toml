@@ -17,7 +17,7 @@ exclude = [
 
 [features]
 default = ["source"]
-source = []
+source = ["dep:cc", "dep:walkdir", "dep:nasm-rs"]
 libloading = ["dep:libloading", "dep:sha2"]
 
 [dependencies]
@@ -25,6 +25,6 @@ libloading = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
 
 [build-dependencies]
-cc = { workspace = true, features = ["parallel"] }
-walkdir.workspace = true
-nasm-rs.workspace = true
+cc = { workspace = true, features = ["parallel"], optional = true }
+walkdir = { workspace = true, optional = true }
+nasm-rs = { workspace = true, optional = true }
