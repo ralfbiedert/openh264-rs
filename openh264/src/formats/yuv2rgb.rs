@@ -303,7 +303,7 @@ fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [
             b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
         );
 
-        let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
+        let (r_pack, g_pack, b_pack) = (r_pack.as_array(), g_pack.as_array(), b_pack.as_array());
 
         for i in 0..STEP {
             rgb[RGB_PIXEL_LEN * i] = r_pack[i] as u8;
@@ -440,7 +440,7 @@ fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut 
             b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
         );
 
-        let (r_pack, g_pack, b_pack) = (r_pack.as_array_ref(), g_pack.as_array_ref(), b_pack.as_array_ref());
+        let (r_pack, g_pack, b_pack) = (r_pack.as_array(), g_pack.as_array(), b_pack.as_array());
 
         for i in 0..STEP {
             rgba[RGBA_PIXEL_LEN * i] = r_pack[i] as u8;
