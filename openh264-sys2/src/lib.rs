@@ -52,7 +52,7 @@ pub trait API {
 #[cfg(feature = "libloading")]
 pub mod libloading {
     pub use crate::generated::fns_libloading::*;
-    use crate::{API, ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
+    use crate::{ISVCDecoder, ISVCEncoder, OpenH264Version, SDecoderCapability};
     use std::os::raw::{c_int, c_long};
 
     #[rustfmt::skip]
