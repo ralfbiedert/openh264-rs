@@ -109,6 +109,7 @@ pub mod source {
 ///
 /// This type mainly exists to prevent infecting the rest of the OpenH264 crate with generics. The dispatch overhead
 /// in contrast to H.264 computation is absolutely negligible.
+#[allow(clippy::large_enum_variant)]
 pub enum DynamicAPI {
     #[cfg(feature = "source")]
     Source(source::APILoader),
