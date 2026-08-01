@@ -28,6 +28,7 @@ LIBRARIES=(
   $CISCO_ROOT/libopenh264-$VERSION-mac-x64.dylib.bz2
   $CISCO_ROOT/openh264-$VERSION-win32.dll.bz2
   $CISCO_ROOT/openh264-$VERSION-win64.dll.bz2
+  $CISCO_ROOT/openh264-$VERSION-win-arm64.dll.bz2
 )
 
 rm -f "$TARGET_FILE"
