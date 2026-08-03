@@ -49,7 +49,7 @@
 //! ```
 
 use crate::error::NativeErrorExt;
-use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar, write_rgba8_f32x8, write_rgba8_scalar};
+use crate::formats::yuv2rgb::{write_rgb8_scalar, write_rgb8_simd, write_rgba8_scalar, write_rgba8_simd};
 use crate::formats::{YUVSlices, YUVSource};
 use crate::{Error, OpenH264API, Timestamp};
 use openh264_sys2::{
@@ -566,11 +566,10 @@ impl DecodedYUV<'_> {
             target.len()
         );
 
-        // for f32x8 math, image needs to:
-        //   - have a width divisible by 8
-        //   - have at least two rows
+        // RGB uses portable wide SIMD, which processes eight pixels at a time.
+        // The image therefore needs a width divisible by 8 and at least two rows.
         if dim.0 % 8 == 0 && dim.1 >= 2 {
-            write_rgb8_f32x8(self.y, self.u, self.v, dim, strides, target);
+            write_rgb8_simd(self.y, self.u, self.v, dim, strides, target);
         } else {
             write_rgb8_scalar(self.y, self.u, self.v, dim, strides, target);
         }
@@ -599,11 +598,11 @@ impl DecodedYUV<'_> {
             wanted,
             target.len()
         );
-        // for f32x8 math, image needs to:
-        //   - have a width divisible by 8
-        //   - have at least two rows
+        // RGBA uses AVX2 integer SIMD when available, otherwise portable wide SIMD.
+        // Both paths process eight pixels at a time, so the image needs a width divisible by 8
+        // and at least two rows.
         if dim.0 % 8 == 0 && dim.1 >= 2 {
-            write_rgba8_f32x8(self.y, self.u, self.v, dim, strides, target);
+            write_rgba8_simd(self.y, self.u, self.v, dim, strides, target);
         } else {
             write_rgba8_scalar(self.y, self.u, self.v, dim, strides, target);
         }

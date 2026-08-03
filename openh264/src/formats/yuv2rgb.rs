@@ -1,14 +1,14 @@
-const Y_MUL: f32 = 255.0 / 219.0;
-const RV_MUL: f32 = 255.0 / 224.0 * 1.402;
-const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.687;
-const GU_MUL: f32 = -255.0 / 224.0 * 1.772 * 0.114 / 0.587;
-const BU_MUL: f32 = 255.0 / 224.0 * 1.772;
+use super::arch;
 
 const RGB_PIXEL_LEN: usize = 3;
 const RGBA_PIXEL_LEN: usize = 4;
+const Y_MUL: f32 = 255.0 / 219.0;
+const RV_MUL: f32 = 255.0 / 224.0 * 1.402;
+const GV_MUL: f32 = -255.0 / 224.0 * 1.402 * 0.299 / 0.587;
+const GU_MUL: f32 = -255.0 / 224.0 * 1.772 * 0.114 / 0.587;
+const BU_MUL: f32 = 255.0 / 224.0 * 1.772;
 
-/// Write RGB8 data from YUV420 using scalar (non SIMD) math.
-#[allow(dead_code)]
+/// Write RGB8 data from YUV420 using scalar (non-SIMD) math.
 pub fn write_rgb8_scalar(
     y_plane: &[u8],
     u_plane: &[u8],
@@ -17,186 +17,10 @@ pub fn write_rgb8_scalar(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
-    for y in 0..dim.1 {
-        for x in 0..dim.0 {
-            let base_tgt = (y * dim.0 + x) * RGB_PIXEL_LEN;
-            let base_y = y * strides.0 + x;
-            let base_u = (y / 2 * strides.1) + (x / 2);
-            let base_v = (y / 2 * strides.2) + (x / 2);
-
-            let rgb_pixel = &mut target[base_tgt..base_tgt + RGB_PIXEL_LEN];
-
-            // Convert limited range YUV to RGB
-            // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
-            let y_mul = Y_MUL * (f32::from(y_plane[base_y]) - 16.0);
-            let u = f32::from(u_plane[base_u]) - 128.0;
-            let v = f32::from(v_plane[base_v]) - 128.0;
-
-            rgb_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
-            rgb_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
-            rgb_pixel[2] = BU_MUL.mul_add(u, y_mul) as u8;
-        }
-    }
+    write_yuv420_float(y_plane, u_plane, v_plane, dim, strides, target, RGB_PIXEL_LEN);
 }
 
-/// Write RGB8 data from YUV420 using f32x8 SIMD.
-#[allow(clippy::identity_op)]
-#[allow(dead_code)]
-pub fn write_rgb8_f32x8(
-    y_plane: &[u8],
-    u_plane: &[u8],
-    v_plane: &[u8],
-    dim: (usize, usize),
-    strides: (usize, usize, usize),
-    target: &mut [u8],
-) {
-    // this assumes we are decoding YUV420
-    assert_eq!(y_plane.len(), u_plane.len() * 4);
-    assert_eq!(y_plane.len(), v_plane.len() * 4);
-    assert_eq!(dim.0 % 8, 0);
-
-    let (width, height) = dim;
-    let rgb_bytes_per_row: usize = RGB_PIXEL_LEN * width; // rgb pixel size in bytes
-
-    for y in 0..(height / 2) {
-        // load U and V values for two rows of pixels
-        let base_u = y * strides.1;
-        let u_row = &u_plane[base_u..base_u + strides.1];
-        let base_v = y * strides.2;
-        let v_row = &v_plane[base_v..base_v + strides.2];
-
-        // load Y values for first row
-        let base_y = 2 * y * strides.0;
-        let y_row = &y_plane[base_y..base_y + strides.0];
-
-        // calculate first RGB row
-        let base_tgt = 2 * y * rgb_bytes_per_row;
-        let row_target = &mut target[base_tgt..base_tgt + rgb_bytes_per_row];
-        write_rgb8_f32x8_row(y_row, u_row, v_row, row_target);
-
-        // load Y values for second row
-        let base_y = (2 * y + 1) * strides.0;
-        let y_row = &y_plane[base_y..base_y + strides.0];
-
-        // calculate second RGB row
-        let base_tgt = (2 * y + 1) * rgb_bytes_per_row;
-        let row_target = &mut target[base_tgt..(base_tgt + rgb_bytes_per_row)];
-        write_rgb8_f32x8_row(y_row, u_row, v_row, row_target);
-    }
-}
-
-/// Converts float values into f32x8 SIMD lanes.
-///
-/// If you have a (pixel buffer) slice of at least 8 f32 values like so `[012345678...]`, this function
-/// will convert the first N <= 8 elements into packed f32x8 SIMD struct for YUV420 buffers:
-///
-/// Y: [01234567...]
-/// U: [00112233...]
-/// V: [00112233...]
-#[allow(clippy::inline_always)]
-#[inline(always)]
-fn pack_into_yuv420_f32x8(y_row: &[u8; 8], u_row: &[u8; 4], v_row: &[u8; 4]) -> (wide::f32x8, wide::f32x8, wide::f32x8) {
-    let [y0, y1, y2, y3, y4, y5, y6, y7] = *y_row;
-    let y_pack = wide::f32x8::from([
-        f32::from(y0),
-        f32::from(y1),
-        f32::from(y2),
-        f32::from(y3),
-        f32::from(y4),
-        f32::from(y5),
-        f32::from(y6),
-        f32::from(y7),
-    ]) - 16.0;
-
-    let [u0, u1, u2, u3] = *u_row;
-    let u_pack = wide::f32x8::from([
-        f32::from(u0),
-        f32::from(u0),
-        f32::from(u1),
-        f32::from(u1),
-        f32::from(u2),
-        f32::from(u2),
-        f32::from(u3),
-        f32::from(u3),
-    ]) - 128.0;
-
-    let [v0, v1, v2, v3] = *v_row;
-    let v_pack = wide::f32x8::from([
-        f32::from(v0),
-        f32::from(v0),
-        f32::from(v1),
-        f32::from(v1),
-        f32::from(v2),
-        f32::from(v2),
-        f32::from(v3),
-        f32::from(v3),
-    ]) - 128.0;
-
-    (y_pack, u_pack, v_pack)
-}
-
-/// Write a single RGB8 row from YUV420 row data using f32x8 SIMD.
-#[allow(clippy::inline_always)]
-#[allow(clippy::similar_names)]
-#[inline(always)]
-fn write_rgb8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [u8]) {
-    const STEP: usize = 8;
-    const UV_STEP: usize = STEP / 2;
-    const TGT_STEP: usize = STEP * RGB_PIXEL_LEN;
-
-    // chroma rows are twice as long as luminance row
-    assert_eq!(y_row.len(), u_row.len() * 2);
-    assert_eq!(y_row.len(), v_row.len() * 2);
-
-    let y_mul = wide::f32x8::splat(Y_MUL);
-    let rv_mul = wide::f32x8::splat(RV_MUL);
-    let gu_mul = wide::f32x8::splat(GU_MUL);
-    let gv_mul = wide::f32x8::splat(GV_MUL);
-    let bu_mul = wide::f32x8::splat(BU_MUL);
-
-    let upper_bound = wide::f32x8::splat(255.0);
-    let lower_bound = wide::f32x8::splat(0.0);
-
-    assert_eq!(y_row.len() % STEP, 0);
-    let y_chunks = y_row.chunks_exact(STEP);
-    assert_eq!(u_row.len() % UV_STEP, 0);
-    let u_chunks = u_row.chunks_exact(UV_STEP);
-    assert_eq!(v_row.len() % UV_STEP, 0);
-    let v_chunks = v_row.chunks_exact(UV_STEP);
-
-    assert_eq!(target.len() % TGT_STEP, 0);
-    let rgb_chunks = target.chunks_exact_mut(TGT_STEP);
-    let chunks = y_chunks.zip(u_chunks).zip(v_chunks).zip(rgb_chunks);
-
-    for (((y, u), v), rgb) in chunks {
-        // Convert slices to arrays (MSRV 1.85 compatible)
-        let y: &[u8; STEP] = y.try_into().unwrap();
-        let u: &[u8; UV_STEP] = u.try_into().unwrap();
-        let v: &[u8; UV_STEP] = v.try_into().unwrap();
-        let (y_pack, u_pack, v_pack) = pack_into_yuv420_f32x8(y, u, v);
-        let y_mul: wide::f32x8 = y_pack * y_mul;
-
-        let r_pack = v_pack.mul_add(rv_mul, y_mul);
-        let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_mul));
-        let b_pack = u_pack.mul_add(bu_mul, y_mul);
-
-        let (r_pack, g_pack, b_pack) = (
-            r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-            g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-            b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-        );
-
-        let (r_pack, g_pack, b_pack) = (r_pack.as_array(), g_pack.as_array(), b_pack.as_array());
-
-        for i in 0..STEP {
-            rgb[RGB_PIXEL_LEN * i] = r_pack[i] as u8;
-            rgb[(RGB_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
-            rgb[(RGB_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
-        }
-    }
-}
-
-/// Write RGBA8 data from YUV420 using scalar (non SIMD) math.
+/// Write RGBA8 data from YUV420 using scalar (non-SIMD) math.
 pub fn write_rgba8_scalar(
     y_plane: &[u8],
     u_plane: &[u8],
@@ -205,32 +29,11 @@ pub fn write_rgba8_scalar(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
-    for y in 0..dim.1 {
-        for x in 0..dim.0 {
-            let base_tgt = (y * dim.0 + x) * RGBA_PIXEL_LEN;
-            let base_y = y * strides.0 + x;
-            let base_u = (y / 2 * strides.1) + (x / 2);
-            let base_v = (y / 2 * strides.2) + (x / 2);
-
-            let rgba_pixel = &mut target[base_tgt..base_tgt + RGBA_PIXEL_LEN];
-
-            // Convert limited range YUV to RGB
-            // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
-            let y_mul = Y_MUL * (f32::from(y_plane[base_y]) - 16.0);
-            let u = f32::from(u_plane[base_u]) - 128.0;
-            let v = f32::from(v_plane[base_v]) - 128.0;
-
-            rgba_pixel[0] = RV_MUL.mul_add(v, y_mul) as u8;
-            rgba_pixel[1] = GV_MUL.mul_add(v, GU_MUL.mul_add(u, y_mul)) as u8;
-            rgba_pixel[2] = BU_MUL.mul_add(u, y_mul) as u8;
-            rgba_pixel[3] = 255;
-        }
-    }
+    write_yuv420_float(y_plane, u_plane, v_plane, dim, strides, target, RGBA_PIXEL_LEN);
 }
 
-/// Write RGB8 data from YUV420 using f32x8 SIMD.
-#[allow(clippy::identity_op)]
-pub fn write_rgba8_f32x8(
+/// Write RGB8 data from YUV420 using AVX2 integer SIMD when available, otherwise portable wide SIMD.
+pub fn write_rgb8_simd(
     y_plane: &[u8],
     u_plane: &[u8],
     v_plane: &[u8],
@@ -238,107 +41,100 @@ pub fn write_rgba8_f32x8(
     strides: (usize, usize, usize),
     target: &mut [u8],
 ) {
-    // this assumes we are decoding YUV420
-    assert_eq!(y_plane.len(), u_plane.len() * RGBA_PIXEL_LEN);
-    assert_eq!(y_plane.len(), v_plane.len() * RGBA_PIXEL_LEN);
-    assert_eq!(dim.0 % 8, 0);
-
-    let (width, height) = dim;
-    let rgba_bytes_per_row: usize = RGBA_PIXEL_LEN * width; // rgba pixel size in bytes
-
-    for y in 0..(height / 2) {
-        // load U and V values for two rows of pixels
-        let base_u = y * strides.1;
-        let u_row = &u_plane[base_u..base_u + strides.1];
-        let base_v = y * strides.2;
-        let v_row = &v_plane[base_v..base_v + strides.2];
-
-        // load Y values for first row
-        let base_y = 2 * y * strides.0;
-        let y_row = &y_plane[base_y..base_y + strides.0];
-
-        // calculate first RGB row
-        let base_tgt = 2 * y * rgba_bytes_per_row;
-        let row_target = &mut target[base_tgt..base_tgt + rgba_bytes_per_row];
-        write_rgba8_f32x8_row(y_row, u_row, v_row, row_target);
-
-        // load Y values for second row
-        let base_y = (2 * y + 1) * strides.0;
-        let y_row = &y_plane[base_y..base_y + strides.0];
-
-        // calculate second RGB row
-        let base_tgt = (2 * y + 1) * rgba_bytes_per_row;
-        let row_target = &mut target[base_tgt..(base_tgt + rgba_bytes_per_row)];
-        write_rgba8_f32x8_row(y_row, u_row, v_row, row_target);
-    }
+    write_yuv420_simd(y_plane, u_plane, v_plane, dim, strides, target, RGB_PIXEL_LEN);
 }
 
-/// Write a single RGB8 row from YUV420 row data using f32x8 SIMD.
-#[allow(clippy::inline_always)]
-#[allow(clippy::similar_names)]
-#[inline(always)]
-fn write_rgba8_f32x8_row(y_row: &[u8], u_row: &[u8], v_row: &[u8], target: &mut [u8]) {
-    const STEP: usize = 8;
-    const UV_STEP: usize = STEP / 2;
-    const TGT_STEP: usize = STEP * RGBA_PIXEL_LEN;
+/// Write RGBA8 data from YUV420 using AVX2 integer SIMD when available, otherwise portable wide SIMD.
+pub fn write_rgba8_simd(
+    y_plane: &[u8],
+    u_plane: &[u8],
+    v_plane: &[u8],
+    dim: (usize, usize),
+    strides: (usize, usize, usize),
+    target: &mut [u8],
+) {
+    write_yuv420_simd(y_plane, u_plane, v_plane, dim, strides, target, RGBA_PIXEL_LEN);
+}
 
-    assert_eq!(y_row.len(), u_row.len() * 2);
-    assert_eq!(y_row.len(), v_row.len() * 2);
+#[allow(clippy::cast_possible_truncation)]
+const fn clamp_to_u8(value: f32) -> u8 {
+    value.clamp(0.0, 255.0) as u8
+}
 
-    let y_mul = wide::f32x8::splat(Y_MUL);
-    let rv_mul = wide::f32x8::splat(RV_MUL);
-    let gu_mul = wide::f32x8::splat(GU_MUL);
-    let gv_mul = wide::f32x8::splat(GV_MUL);
-    let bu_mul = wide::f32x8::splat(BU_MUL);
+fn write_yuv420_float(
+    y_plane: &[u8],
+    u_plane: &[u8],
+    v_plane: &[u8],
+    dim: (usize, usize),
+    strides: (usize, usize, usize),
+    target: &mut [u8],
+    pixel_len: usize,
+) {
+    validate_yuv420_target(dim, target, pixel_len);
+    let (width, height) = dim;
 
-    let upper_bound = wide::f32x8::splat(255.0);
-    let lower_bound = wide::f32x8::splat(0.0);
+    for y in 0..height {
+        for x in 0..width {
+            let y_value = f32::from(y_plane[y * strides.0 + x]) - 16.0;
+            let u_value = f32::from(u_plane[(y / 2) * strides.1 + (x / 2)]) - 128.0;
+            let v_value = f32::from(v_plane[(y / 2) * strides.2 + (x / 2)]) - 128.0;
 
-    assert_eq!(y_row.len() % STEP, 0);
-    let y_chunks = y_row.chunks_exact(STEP);
-    assert_eq!(u_row.len() % UV_STEP, 0);
-    let u_chunks = u_row.chunks_exact(UV_STEP);
-    assert_eq!(v_row.len() % UV_STEP, 0);
-    let v_chunks = v_row.chunks_exact(UV_STEP);
-
-    assert_eq!(target.len() % TGT_STEP, 0);
-    let rgba_chunks = target.chunks_exact_mut(TGT_STEP);
-    let chunks = y_chunks.zip(u_chunks).zip(v_chunks).zip(rgba_chunks);
-
-    for (((y, u), v), rgba) in chunks {
-        // Convert slices to arrays (MSRV 1.85 compatible)
-        let y: &[u8; STEP] = y.try_into().unwrap();
-        let u: &[u8; UV_STEP] = u.try_into().unwrap();
-        let v: &[u8; UV_STEP] = v.try_into().unwrap();
-        let (y_pack, u_pack, v_pack) = pack_into_yuv420_f32x8(y, u, v);
-        let y_mul: wide::f32x8 = y_pack * y_mul;
-
-        let r_pack = v_pack.mul_add(rv_mul, y_mul);
-        let g_pack = v_pack.mul_add(gv_mul, u_pack.mul_add(gu_mul, y_mul));
-        let b_pack = u_pack.mul_add(bu_mul, y_mul);
-
-        let (r_pack, g_pack, b_pack) = (
-            r_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-            g_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-            b_pack.fast_min(upper_bound).fast_max(lower_bound).fast_trunc_int(),
-        );
-
-        let (r_pack, g_pack, b_pack) = (r_pack.as_array(), g_pack.as_array(), b_pack.as_array());
-
-        for i in 0..STEP {
-            rgba[RGBA_PIXEL_LEN * i] = r_pack[i] as u8;
-            rgba[(RGBA_PIXEL_LEN * i) + 1] = g_pack[i] as u8;
-            rgba[(RGBA_PIXEL_LEN * i) + 2] = b_pack[i] as u8;
-            rgba[(RGBA_PIXEL_LEN * i) + 3] = 255;
+            // Limited-range BT.601.
+            let y_value = Y_MUL * y_value;
+            let r = RV_MUL.mul_add(v_value, y_value);
+            let g = GV_MUL.mul_add(v_value, GU_MUL.mul_add(u_value, y_value));
+            let b = BU_MUL.mul_add(u_value, y_value);
+            let target = &mut target[(y * width + x) * pixel_len..][..pixel_len];
+            target[0] = clamp_to_u8(r);
+            target[1] = clamp_to_u8(g);
+            target[2] = clamp_to_u8(b);
+            if pixel_len == RGBA_PIXEL_LEN {
+                target[3] = 255;
+            }
         }
     }
 }
+
+fn validate_yuv420_target(dim: (usize, usize), target: &[u8], pixel_len: usize) {
+    let (width, height) = dim;
+    assert_eq!(target.len(), width * height * pixel_len);
+}
+
+fn write_yuv420_simd(
+    y_plane: &[u8],
+    u_plane: &[u8],
+    v_plane: &[u8],
+    dim: (usize, usize),
+    strides: (usize, usize, usize),
+    target: &mut [u8],
+    pixel_len: usize,
+) {
+    validate_yuv420_target(dim, target, pixel_len);
+    assert_eq!(dim.0 % 8, 0);
+
+    arch::write_yuv420_to_rgb(y_plane, u_plane, v_plane, dim, strides, target, pixel_len);
+}
+
 #[cfg(test)]
 mod test {
+    use super::{RGB_PIXEL_LEN, RGBA_PIXEL_LEN, write_rgb8_scalar, write_rgb8_simd, write_rgba8_scalar, write_rgba8_simd};
     use crate::OpenH264API;
     use crate::decoder::{Decoder, DecoderConfig};
     use crate::formats::YUVSource;
-    use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar, write_rgba8_f32x8, write_rgba8_scalar};
+
+    fn assert_rgb_within_one(reference: &[u8], actual: &[u8], pixel_len: usize) {
+        assert_eq!(reference.len(), actual.len());
+        for (index, (&reference, &actual)) in reference.iter().zip(actual).enumerate() {
+            if index % pixel_len == 3 {
+                assert_eq!(reference, actual);
+            } else {
+                assert!(
+                    (i16::from(reference) - i16::from(actual)).abs() <= 1,
+                    "channel at byte {index} differed: {reference} vs {actual}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn write_rgb8_scalar_range() {
@@ -350,58 +146,77 @@ mod test {
         assert_eq!(tgt, [0, 0, 0]);
 
         write_rgb8_scalar(&[235], &[240], &[240], (1, 1), (1, 1, 1), &mut tgt);
-        assert_eq!(tgt, [255, 133, 255]);
+        assert_eq!(tgt, [255, 120, 255]);
 
         write_rgb8_scalar(&[235], &[0], &[240], (1, 1), (1, 1, 1), &mut tgt);
-        assert_eq!(tgt, [255, 227, 0]);
+        assert_eq!(tgt, [255, 214, 0]);
 
         write_rgb8_scalar(&[235], &[240], &[0], (1, 1), (1, 1, 1), &mut tgt);
         assert_eq!(tgt, [50, 255, 255]);
     }
 
     #[test]
-    fn write_rgb8_f32x8_matches_scalar() {
+    fn write_rgb8_simd_matches_scalar() {
         let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
+        let mut decoder = Decoder::with_api_config(OpenH264API::from_source(), DecoderConfig::default()).unwrap();
+        let yuv = decoder.decode(source).unwrap().unwrap();
+        let mut reference = vec![0; yuv.rgb8_len()];
+        let mut actual = vec![0; reference.len()];
 
-        let api = OpenH264API::from_source();
-        let config = DecoderConfig::default();
-        let mut decoder = Decoder::with_api_config(api, config).unwrap();
+        write_rgb8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut reference);
+        write_rgb8_simd(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut actual);
 
-        let mut rgb = vec![0; 2000 * 2000 * 3];
-        let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions();
-        let rgb_len = dim.0 * dim.1 * 3;
-
-        let tgt = &mut rgb[0..rgb_len];
-
-        write_rgb8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), tgt);
-
-        let mut tgt2 = vec![0; tgt.len()];
-        write_rgb8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
-
-        assert_eq!(tgt, tgt2);
+        assert_rgb_within_one(&reference, &actual, RGB_PIXEL_LEN);
     }
 
     #[test]
-    fn write_rgba8_f32x8_matches_scalar() {
+    fn write_rgba8_simd_matches_scalar() {
         let source = include_bytes!("../../tests/data/single_512x512_cavlc.h264");
+        let mut decoder = Decoder::with_api_config(OpenH264API::from_source(), DecoderConfig::default()).unwrap();
+        let yuv = decoder.decode(source).unwrap().unwrap();
+        let mut reference = vec![0; yuv.rgba8_len()];
+        let mut actual = vec![0; reference.len()];
 
-        let api = OpenH264API::from_source();
-        let config = DecoderConfig::default();
-        let mut decoder = Decoder::with_api_config(api, config).unwrap();
+        write_rgba8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut reference);
+        write_rgba8_simd(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut actual);
 
-        let mut rgb = vec![0; 2000 * 2000 * 4];
-        let yuv = decoder.decode(&source[..]).unwrap().unwrap();
-        let dim = yuv.dimensions();
-        let rgb_len = dim.0 * dim.1 * 4;
+        assert_rgb_within_one(&reference, &actual, RGBA_PIXEL_LEN);
+    }
 
-        let tgt = &mut rgb[0..rgb_len];
+    #[test]
+    #[allow(clippy::similar_names)]
+    fn simd_handles_padded_yuv420_strides() {
+        let dim = (24, 4);
+        let strides = (27, 14, 15);
+        let y = (0..strides.0 * dim.1).map(|i| (i * 29) as u8).collect::<Vec<_>>();
+        let u = (0..strides.1 * (dim.1 / 2)).map(|i| (i * 47) as u8).collect::<Vec<_>>();
+        let v = (0..strides.2 * (dim.1 / 2)).map(|i| (i * 73) as u8).collect::<Vec<_>>();
+        let mut rgb_reference = vec![0; dim.0 * dim.1 * RGB_PIXEL_LEN];
+        let mut rgb_actual = vec![0; rgb_reference.len()];
+        let mut rgba_reference = vec![0; dim.0 * dim.1 * RGBA_PIXEL_LEN];
+        let mut rgba_actual = vec![0; rgba_reference.len()];
 
-        write_rgba8_scalar(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), tgt);
+        write_rgb8_scalar(&y, &u, &v, dim, strides, &mut rgb_reference);
+        write_rgb8_simd(&y, &u, &v, dim, strides, &mut rgb_actual);
+        write_rgba8_scalar(&y, &u, &v, dim, strides, &mut rgba_reference);
+        write_rgba8_simd(&y, &u, &v, dim, strides, &mut rgba_actual);
 
-        let mut tgt2 = vec![0; tgt.len()];
-        write_rgba8_f32x8(yuv.y(), yuv.u(), yuv.v(), yuv.dimensions(), yuv.strides(), &mut tgt2);
+        assert_rgb_within_one(&rgb_reference, &rgb_actual, RGB_PIXEL_LEN);
+        assert_rgb_within_one(&rgba_reference, &rgba_actual, RGBA_PIXEL_LEN);
+    }
 
-        assert_eq!(tgt, tgt2);
+    #[test]
+    fn simd_handles_neutral_extremes() {
+        let y = [16, 16, 16, 16, 235, 235, 235, 235];
+        let u = [128; 4];
+        let v = [128; 4];
+        let mut target = [0; 24];
+        write_rgb8_simd(&y, &u, &v, (8, 1), (8, 4, 4), &mut target);
+        assert_eq!(
+            target,
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+            ]
+        );
     }
 }
