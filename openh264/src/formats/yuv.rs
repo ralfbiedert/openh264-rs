@@ -248,7 +248,7 @@ impl YUVSource for YUVSlices<'_> {
 #[cfg(test)]
 mod tests {
     use super::{YUVBuffer, YUVSlices};
-    use crate::formats::yuv2rgb::{write_rgb8_f32x8, write_rgb8_scalar};
+    use crate::formats::yuv2rgb::{write_rgb8_scalar, write_rgb8_simd};
     use crate::formats::{RgbSliceU8, YUVSource};
     use rand::prelude::IteratorRandom;
     use rand::rngs::ThreadRng;
@@ -362,7 +362,7 @@ mod tests {
 
     /// Test every YUV value and see, if the SIMD version delivers a similar RGB value.
     #[test]
-    fn test_write_rgb8_f32x8_spectrum() {
+    fn test_write_rgb8_simd_spectrum() {
         let mut rng = ThreadRng::default();
         let dim = (8, 2);
         let strides = (8, 4, 4);
@@ -377,7 +377,7 @@ mod tests {
                     write_rgb8_scalar(&y_plane, &u_plane, &v_plane, dim, strides, &mut target);
 
                     let mut target2 = vec![0; dim.0 * dim.1 * 3];
-                    write_rgb8_f32x8(&y_plane, &u_plane, &v_plane, dim, strides, &mut target2);
+                    write_rgb8_simd(&y_plane, &u_plane, &v_plane, dim, strides, &mut target2);
 
                     // compare first pixel
                     for i in 0..3 {

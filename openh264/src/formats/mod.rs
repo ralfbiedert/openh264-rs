@@ -19,6 +19,7 @@
 //! ```
 //!
 
+mod arch;
 mod rgb;
 pub(crate) mod rgb2yuv;
 mod yuv;
