@@ -62,8 +62,12 @@ pub fn write_yuv_scalar(rgb: impl RGB8Source, dimensions: (usize, usize), y_buf:
     let half_width = width / 2;
     let rgb8_data = rgb.rgb8_data();
 
-    for (pix, y) in rgb8_data.chunks_exact(3).zip(y_buf.iter_mut()) {
-        *y = (((66 * u32::from(pix[0]) + 129 * u32::from(pix[1]) + 25 * u32::from(pix[2])) >> 8) + 16) as u8;
+    let rgb_rows = rgb8_data.chunks_exact(dimensions_padded.0 * 3);
+    let y_rows = y_buf.chunks_exact_mut(width);
+    for (rgb_row, y_row) in rgb_rows.zip(y_rows) {
+        for (pix, y) in rgb_row.chunks_exact(3).take(width).zip(y_row) {
+            *y = (((66 * u32::from(pix[0]) + 129 * u32::from(pix[1]) + 25 * u32::from(pix[2])) >> 8) + 16) as u8;
+        }
     }
 
     let r1 = rgb8_data.chunks_exact(dimensions_padded.0 * 3).step_by(2);
