@@ -5,7 +5,7 @@ extern crate test;
 use openh264::OpenH264API;
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::formats::YUVSource;
-use test::Bencher;
+use test::{Bencher, black_box};
 
 #[bench]
 #[cfg(feature = "source")]
@@ -24,7 +24,7 @@ fn convert_yuv_to_rgb_1920x1080(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgb8(tgt);
+        black_box(&yuv).write_rgb8(black_box(&mut *tgt));
     });
 }
 
@@ -45,7 +45,7 @@ fn convert_yuv_to_rgba_1920x1080(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgba8(tgt);
+        black_box(&yuv).write_rgba8(black_box(&mut *tgt));
     });
 }
 
@@ -66,6 +66,6 @@ fn convert_yuv_to_rgb_512x512(b: &mut Bencher) {
     let tgt = &mut rgb[0..rgb_len];
 
     b.iter(|| {
-        yuv.write_rgb8(tgt);
+        black_box(&yuv).write_rgb8(black_box(&mut *tgt));
     });
 }
