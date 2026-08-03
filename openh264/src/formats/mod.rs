@@ -26,7 +26,7 @@ mod yuv;
 pub(crate) mod yuv2rgb;
 
 pub use rgb::{
-    AbgrSliceU8, AbgrSliceU32, ArgbSliceU8, ArgbSliceU32, BgrSliceU8, BgraSliceU8, BgraSliceU32, RGB8Source, RGBSource,
-    RgbSliceU8, RgbaSliceU8, RgbaSliceU32,
+    AbgrSliceU8, AbgrSliceU32, ArgbSliceU8, ArgbSliceU32, BGRA8Source, BgrSliceU8, BgraSliceU8, BgraSliceU32, RGB8Source,
+    RGBA8Source, RGBSource, RgbSliceU8, RgbaSliceU8, RgbaSliceU32,
 };
 pub use yuv::{YUVBuffer, YUVSlices, YUVSource};

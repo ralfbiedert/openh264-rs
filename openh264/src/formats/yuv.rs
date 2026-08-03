@@ -1,6 +1,6 @@
 use crate::formats::RGBSource;
-use crate::formats::rgb::RGB8Source;
-use crate::formats::rgb2yuv::{write_yuv_by_pixel, write_yuv_scalar};
+use crate::formats::rgb::{BGRA8Source, RGB8Source, RGBA8Source};
+use crate::formats::rgb2yuv::{write_yuv, write_yuv_by_pixel};
 
 /// Allows the [Encoder](crate::encoder::Encoder) to be generic over a YUV source.
 pub trait YUVSource {
@@ -128,6 +128,32 @@ impl YUVBuffer {
         rval
     }
 
+    /// Allocates a new YUV buffer from a contiguous RGBA8 source.
+    ///
+    /// This avoids per-pixel virtual access and may use SIMD acceleration.
+    ///
+    /// # Panics
+    ///
+    /// May panic if invoked with an RGBA source where the dimensions are not multiples of 2.
+    pub fn from_rgba8_source(rgba: impl RGBA8Source) -> Self {
+        let mut rval = Self::new(rgba.dimensions().0, rgba.dimensions().1);
+        rval.read_rgba8(rgba);
+        rval
+    }
+
+    /// Allocates a new YUV buffer from a contiguous BGRA8 source.
+    ///
+    /// This avoids per-pixel virtual access and may use SIMD acceleration.
+    ///
+    /// # Panics
+    ///
+    /// May panic if invoked with a BGRA source where the dimensions are not multiples of 2.
+    pub fn from_bgra8_source(bgra: impl BGRA8Source) -> Self {
+        let mut rval = Self::new(bgra.dimensions().0, bgra.dimensions().1);
+        rval.read_bgra8(bgra);
+        rval
+    }
+
     /// Reads an RGB buffer, converts it to YUV and stores it.
     ///
     /// # Panics
@@ -157,7 +183,25 @@ impl YUVBuffer {
         let v_base = u_base / 4;
         let (y_buf, uv_buf) = self.yuv.split_at_mut(u_base);
         let (u_buf, v_buf) = uv_buf.split_at_mut(v_base);
-        write_yuv_scalar(rgb, dimensions, y_buf, u_buf, v_buf);
+        write_yuv(rgb, dimensions, y_buf, u_buf, v_buf);
+    }
+
+    /// Reads a contiguous RGBA8 buffer, converts it to YUV, and stores it.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the given `rgba` does not match the internal format.
+    pub fn read_rgba8(&mut self, rgba: impl RGBA8Source) {
+        self.read_rgb8(rgba);
+    }
+
+    /// Reads a contiguous BGRA8 buffer, converts it to YUV, and stores it.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the given `bgra` does not match the internal format.
+    pub fn read_bgra8(&mut self, bgra: impl BGRA8Source) {
+        self.read_rgb8(bgra);
     }
 }
 

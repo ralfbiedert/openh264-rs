@@ -22,8 +22,11 @@ pub trait RGBSource {
 
 /// Source of RGB8 data for fast pixel access.
 ///
-/// This is the "fast" trait for RGB sources. If you can expose continuous pixels
-/// slices with RGB8 data you might (eventually) be rewarded with SIMD conversion.
+/// This is the "fast" trait for RGB sources. If you can expose a contiguous
+/// byte slice of pixels, you might be rewarded with SIMD conversion. The
+/// default layout is packed RGB8, but formats with a different pixel stride or
+/// RGB channel order can override [`Self::pixel_stride`] and
+/// [`Self::rgb_channel_offsets`].
 pub trait RGB8Source: RGBSource {
     /// Returns padded dimensions of the underlying slice.
     ///
@@ -32,10 +35,38 @@ pub trait RGB8Source: RGBSource {
     #[must_use]
     fn dimensions_padded(&self) -> (usize, usize);
 
-    /// Slice of RGB8 data, with given padding.
+    /// Slice of pixel data, with the given padding.
     #[must_use]
     fn rgb8_data(&self) -> &[u8];
+
+    /// Number of bytes occupied by one pixel.
+    ///
+    /// The default describes packed RGB8 pixels.
+    #[must_use]
+    fn pixel_stride(&self) -> usize {
+        3
+    }
+
+    /// Byte offsets of the red, green, and blue channels within a pixel.
+    ///
+    /// The default describes packed RGB8 pixels.
+    #[must_use]
+    fn rgb_channel_offsets(&self) -> (usize, usize, usize) {
+        (0, 1, 2)
+    }
 }
+
+/// Source of contiguous RGBA8 data for fast conversion.
+///
+/// Implement this trait together with [`RGB8Source`] for custom RGBA8 source
+/// types. [`RgbaSliceU8`] implements it out of the box.
+pub trait RGBA8Source: RGB8Source {}
+
+/// Source of contiguous BGRA8 data for fast conversion.
+///
+/// Implement this trait together with [`RGB8Source`] for custom BGRA8 source
+/// types. [`BgraSliceU8`] implements it out of the box.
+pub trait BGRA8Source: RGB8Source {}
 
 /// Container for a slice of contiguous `[R G B R G B ...]` data.<sup>⭐</sup>
 ///
@@ -218,6 +249,34 @@ impl RGB8Source for RgbSliceU8<'_> {
         self.data
     }
 }
+
+macro_rules! impl_rgb8_source {
+    ($t:ty, $stride:expr, $offsets:expr) => {
+        impl RGB8Source for $t {
+            fn dimensions_padded(&self) -> (usize, usize) {
+                self.dimensions()
+            }
+
+            fn rgb8_data(&self) -> &[u8] {
+                self.data
+            }
+
+            fn pixel_stride(&self) -> usize {
+                $stride
+            }
+
+            fn rgb_channel_offsets(&self) -> (usize, usize, usize) {
+                $offsets
+            }
+        }
+    };
+}
+
+impl_rgb8_source!(RgbaSliceU8<'_>, 4, (0, 1, 2));
+impl_rgb8_source!(BgraSliceU8<'_>, 4, (2, 1, 0));
+
+impl RGBA8Source for RgbaSliceU8<'_> {}
+impl BGRA8Source for BgraSliceU8<'_> {}
 
 #[cfg(test)]
 mod tests {
