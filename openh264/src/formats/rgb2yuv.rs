@@ -1,5 +1,5 @@
-use crate::formats::RGBSource;
 use crate::formats::rgb::RGB8Source;
+use crate::formats::{RGBSource, arch};
 
 /// Writes an RGB source into 420 Y, U and V buffers.
 #[allow(clippy::needless_pass_by_value)]
@@ -48,52 +48,71 @@ pub fn write_yuv_by_pixel(rgb: impl RGBSource, dimensions: (usize, usize), y_buf
     }
 }
 
-/// Writes an RGB8 source into 420 Y, U and V buffers.
+/// Writes a contiguous RGB8-compatible source into 420 Y, U, and V buffers.
 ///
-/// TODO: We want a faster SIMD version of this.
+/// Uses the fastest supported conversion implementation.
 #[allow(clippy::needless_pass_by_value)]
-pub fn write_yuv_scalar(rgb: impl RGB8Source, dimensions: (usize, usize), y_buf: &mut [u8], u_buf: &mut [u8], v_buf: &mut [u8]) {
+pub fn write_yuv(rgb: impl RGB8Source, dimensions: (usize, usize), y_buf: &mut [u8], u_buf: &mut [u8], v_buf: &mut [u8]) {
     // Make sure we only attempt to read sources that match our own size.
     assert_eq!(rgb.dimensions(), dimensions);
 
     let dimensions_padded = rgb.dimensions_padded();
-    let width = dimensions.0;
-
-    let half_width = width / 2;
     let rgb8_data = rgb.rgb8_data();
+    let layout = arch::Rgb8SourceLayout {
+        dimensions,
+        dimensions_padded,
+        pixel_stride: rgb.pixel_stride(),
+        rgb_offsets: rgb.rgb_channel_offsets(),
+    };
+    let mut target = arch::Yuv420Planes {
+        y: y_buf,
+        u: u_buf,
+        v: v_buf,
+    };
 
-    let rgb_rows = rgb8_data.chunks_exact(dimensions_padded.0 * 3);
-    let y_rows = y_buf.chunks_exact_mut(width);
-    for (rgb_row, y_row) in rgb_rows.zip(y_rows) {
-        for (pix, y) in rgb_row.chunks_exact(3).take(width).zip(y_row) {
-            *y = (((66 * u32::from(pix[0]) + 129 * u32::from(pix[1]) + 25 * u32::from(pix[2])) >> 8) + 16) as u8;
-        }
-    }
-
-    let r1 = rgb8_data.chunks_exact(dimensions_padded.0 * 3).step_by(2);
-    let r2 = rgb8_data.chunks_exact(dimensions_padded.0 * 3).skip(1).step_by(2);
-
-    let u_rows = u_buf.chunks_exact_mut(half_width);
-    let v_rows = v_buf.chunks_exact_mut(half_width);
-    for (((r1, r2), u), v) in r1.zip(r2).zip(u_rows).zip(v_rows) {
-        for (((pix0, pix1), u), v) in r1.chunks_exact(2 * 3).zip(r2.chunks_exact(2 * 3)).zip(u).zip(v) {
-            let r = (i16::from(pix0[0]) + i16::from(pix0[3]) + i16::from(pix1[0]) + i16::from(pix1[3]) + 2) / 4;
-            let g = (i16::from(pix0[1]) + i16::from(pix0[4]) + i16::from(pix1[1]) + i16::from(pix1[4]) + 2) / 4;
-            let b = (i16::from(pix0[2]) + i16::from(pix0[5]) + i16::from(pix1[2]) + i16::from(pix1[5]) + 2) / 4;
-
-            *u = (((-38 * r + 112 * b - 74 * g) >> 8) + 128) as u8;
-            *v = (((112 * r - 18 * b - 94 * g) >> 8) + 128) as u8;
-        }
-    }
+    arch::write_rgb8_to_yuv420(rgb8_data, layout, &mut target);
 }
 
 #[cfg(test)]
 mod test {
     use crate::OpenH264API;
     use crate::decoder::{Decoder, DecoderConfig};
-    use crate::formats::rgb2yuv::{write_yuv_by_pixel, write_yuv_scalar};
-    use crate::formats::{RgbSliceU8, YUVSource};
+    use crate::formats::arch::{self, Rgb8SourceLayout, Yuv420Planes};
+    use crate::formats::rgb2yuv::{write_yuv, write_yuv_by_pixel};
+    use crate::formats::{RGB8Source, RGBSource, RgbSliceU8, YUVSource};
     use std::iter::zip;
+
+    #[derive(Copy, Clone)]
+    struct PaddedRgbSliceU8<'a> {
+        data: &'a [u8],
+        dimensions: (usize, usize),
+        stride: usize,
+    }
+
+    impl RGBSource for PaddedRgbSliceU8<'_> {
+        fn dimensions(&self) -> (usize, usize) {
+            self.dimensions
+        }
+
+        fn pixel_f32(&self, x: usize, y: usize) -> (f32, f32, f32) {
+            let offset = (y * self.stride + x) * 3;
+            (
+                f32::from(self.data[offset]),
+                f32::from(self.data[offset + 1]),
+                f32::from(self.data[offset + 2]),
+            )
+        }
+    }
+
+    impl RGB8Source for PaddedRgbSliceU8<'_> {
+        fn dimensions_padded(&self) -> (usize, usize) {
+            (self.stride, self.dimensions.1)
+        }
+
+        fn rgb8_data(&self) -> &[u8] {
+            self.data
+        }
+    }
 
     #[test]
     fn write_yuv_by_pixel_matches_scalar() {
@@ -120,12 +139,75 @@ mod test {
         let mut v_scalar = vec![0_u8; dim.0 * dim.1 / 2];
 
         write_yuv_by_pixel(rgb_slice, dim, &mut y_by_pixel, &mut u_by_pixel, &mut v_by_pixel);
-        write_yuv_scalar(rgb_slice, dim, &mut y_scalar, &mut u_scalar, &mut v_scalar);
+        let layout = Rgb8SourceLayout {
+            dimensions: dim,
+            dimensions_padded: rgb_slice.dimensions_padded(),
+            pixel_stride: rgb_slice.pixel_stride(),
+            rgb_offsets: rgb_slice.rgb_channel_offsets(),
+        };
+        let mut target = Yuv420Planes {
+            y: &mut y_scalar,
+            u: &mut u_scalar,
+            v: &mut v_scalar,
+        };
+        arch::scalar::write_rgb8_to_yuv420(rgb_slice.rgb8_data(), layout, &mut target);
 
         let almost_equal = |a: &[u8], b: &[u8]| zip(a, b).map(|(x, y)| u8::abs_diff(*x, *y)).all(|x| x <= 1);
 
         assert!(almost_equal(&y_by_pixel, &y_scalar));
         assert!(almost_equal(&u_by_pixel, &u_scalar));
         assert!(almost_equal(&v_by_pixel, &v_scalar));
+    }
+
+    #[test]
+    fn accelerated_rgb24_matches_scalar_for_packed_and_padded_rows() {
+        const DIMENSIONS: (usize, usize) = (74, 4);
+        const STRIDE: usize = 80;
+        let padded_data = (0..STRIDE * DIMENSIONS.1 * 3)
+            .map(|index| (index.wrapping_mul(47) % 251) as u8)
+            .collect::<Vec<_>>();
+        let packed_data = (0..DIMENSIONS.1)
+            .flat_map(|row| &padded_data[row * STRIDE * 3..row * STRIDE * 3 + DIMENSIONS.0 * 3])
+            .copied()
+            .collect::<Vec<_>>();
+        let packed = RgbSliceU8::new(&packed_data, DIMENSIONS);
+        let padded = PaddedRgbSliceU8 {
+            data: &padded_data,
+            dimensions: DIMENSIONS,
+            stride: STRIDE,
+        };
+
+        let mut y_reference = vec![0; DIMENSIONS.0 * DIMENSIONS.1];
+        let mut u_reference = vec![0; DIMENSIONS.0 * DIMENSIONS.1 / 4];
+        let mut v_reference = vec![0; DIMENSIONS.0 * DIMENSIONS.1 / 4];
+        let layout = Rgb8SourceLayout {
+            dimensions: DIMENSIONS,
+            dimensions_padded: packed.dimensions_padded(),
+            pixel_stride: packed.pixel_stride(),
+            rgb_offsets: packed.rgb_channel_offsets(),
+        };
+        let mut target = Yuv420Planes {
+            y: &mut y_reference,
+            u: &mut u_reference,
+            v: &mut v_reference,
+        };
+        arch::scalar::write_rgb8_to_yuv420(packed.rgb8_data(), layout, &mut target);
+
+        let mut y_packed = vec![0; y_reference.len()];
+        let mut u_packed = vec![0; u_reference.len()];
+        let mut v_packed = vec![0; v_reference.len()];
+        write_yuv(packed, DIMENSIONS, &mut y_packed, &mut u_packed, &mut v_packed);
+
+        let mut y_padded = vec![0; y_reference.len()];
+        let mut u_padded = vec![0; u_reference.len()];
+        let mut v_padded = vec![0; v_reference.len()];
+        write_yuv(padded, DIMENSIONS, &mut y_padded, &mut u_padded, &mut v_padded);
+
+        assert_eq!(y_packed, y_reference);
+        assert_eq!(u_packed, u_reference);
+        assert_eq!(v_packed, v_reference);
+        assert_eq!(y_padded, y_reference);
+        assert_eq!(u_padded, u_reference);
+        assert_eq!(v_padded, v_reference);
     }
 }
