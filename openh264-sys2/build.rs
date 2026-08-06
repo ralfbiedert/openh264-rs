@@ -60,6 +60,7 @@ mod source_build {
         Gnu,
         Msvc,
         Musl,
+        Sim,
         Sgx,
     }
 
@@ -113,6 +114,7 @@ mod source_build {
                 "gnu" => TargetEnv::Gnu,
                 "msvc" => TargetEnv::Msvc,
                 "musl" => TargetEnv::Musl,
+                "sim" => TargetEnv::Sim,
                 "sgx" => TargetEnv::Sgx,
                 _ => panic!("Unknown target env: {env}"),
             };

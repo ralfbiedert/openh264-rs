@@ -10,6 +10,29 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  ios-simulator:
+    strategy:
+      matrix:
+        target:
+          - aarch64-apple-ios-sim
+          - x86_64-apple-ios
+    runs-on: macos-latest
+    env:
+      CARGO_ENCODED_RUSTFLAGS: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.89
+        with:
+          targets: ${{ matrix.target }}
+      - name: LFS Checkout
+        run: git lfs checkout
+      - name: Rust - Build
+        run: cargo build --verbose --package openh264-sys2 --target=${{ matrix.target }}
+
   test:
     strategy:
       fail-fast: false
