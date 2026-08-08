@@ -63,11 +63,11 @@ jobs:
           - target: aarch64-apple-ios-sim
             runs-on: macos-latest
             nasm: no-nasm
-            cross-build: true
+            ios-simulator: true
           - target: x86_64-apple-ios
             runs-on: macos-latest
             nasm: no-nasm
-            cross-build: true
+            ios-simulator: true
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout
@@ -100,10 +100,12 @@ jobs:
       - name: Rust - Version
         run: rustc -Vv
       - name: Rust - Build
-        if: matrix.cross-build != true
+        if: matrix.ios-simulator != true
         run: cargo build --verbose --target=${{ matrix.target }} --tests --all-features
-      - name: Rust - Cross Build
-        if: matrix.cross-build == true
+      # TODO: Build the full workspace once openh264's transitive zune-jpeg
+      # dev-dependency compiles for iOS simulators.
+      - name: Rust - iOS Simulator Build
+        if: matrix.ios-simulator == true
         env:
           CARGO_ENCODED_RUSTFLAGS: ""
         run: cargo build --verbose --package openh264-sys2 --target=${{ matrix.target }}
