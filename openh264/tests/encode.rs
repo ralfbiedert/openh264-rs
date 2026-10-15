@@ -105,8 +105,8 @@ fn encoder_sps_pps() -> Result<(), Error> {
     let raw_sps = layer_0.nal_unit(0).unwrap();
     let raw_pps = layer_0.nal_unit(1).unwrap();
 
-    assert!(!raw_sps.is_empty());
-    assert!(!raw_pps.is_empty());
+    assert_ne!(raw_sps, []);
+    assert_ne!(raw_pps, []);
 
     Ok(())
 }

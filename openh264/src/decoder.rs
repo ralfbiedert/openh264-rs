@@ -521,6 +521,7 @@ impl DecodedYUV<'_> {
     /// Cut the YUV buffer into vertical sections.
     ///
     /// The slices do not overlap. If N does not divide the buffer, then the last YUVSlice has fewer pixel rows.
+    #[expect(clippy::must_use_candidate, reason = "preserve the published method's diagnostic behavior")]
     pub fn split<const N: usize>(&'_ self) -> [YUVSlices<'_>; N] {
         if N == 1 {
             return [YUVSlices::new((self.y, self.u, self.v), self.dimensions(), self.strides()); N];
