@@ -51,6 +51,7 @@ mod source_build {
         Mips,
         Powerpc,
         Powerpc64,
+        Riscv64,
         S390x,
         Wasm32,
     }
@@ -105,6 +106,7 @@ mod source_build {
                 "mips" => TargetArch::Mips,
                 "powerpc" => TargetArch::Powerpc,
                 "powerpc64" => TargetArch::Powerpc64,
+                "riscv64" => TargetArch::Riscv64,
                 "s390x" => TargetArch::S390x,
                 "wasm32" => TargetArch::Wasm32,
                 _ => panic!("Unknown target arch: {arch}"),
