@@ -183,7 +183,7 @@ Special thanks to:
 [license-badge]: https://img.shields.io/badge/license-BSD2-blue.svg
 [docs.rs-badge]: https://docs.rs/openh264/badge.svg
 [docs.rs-url]: https://docs.rs/openh264/
-[rust-version-badge]: https://img.shields.io/badge/rust-1.83%2B-blue.svg?maxAge=3600
+[rust-version-badge]: https://img.shields.io/badge/rust-1.89%2B-blue.svg?maxAge=3600
 [rust-version-url]: https://github.com/ralfbiedert/openh264
 [rust-build-badge]: https://github.com/ralfbiedert/openh264/actions/workflows/rust.yml/badge.svg
 [rust-build-url]: https://github.com/ralfbiedert/openh264/actions/workflows/rust.yml
