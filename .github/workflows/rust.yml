@@ -89,11 +89,10 @@ jobs:
         with:
           version: 2.15.05
       - name: Install Additional packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         if: matrix.packages != ''
-        with:
-          packages: ${{ matrix.packages }}
-          version: 1.0
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ${{ matrix.packages }}
       - name: Set up MinGW
         uses: egor-tensin/setup-mingw@v2
         if: matrix.mingw != ''
