@@ -172,8 +172,10 @@ impl DynamicAPI {
 
         // Check all known hashes if we should load this library.
         // TODO: We might also want to verify this matches our architecture, but then again libloading should catch that.
-        let hash_is_well_known = include_str!("blobs/hashes.txt")
-            .lines()
+        let hash_files = [include_str!("blobs/hashes-2.6.0.txt"), include_str!("blobs/hashes-2.7.0.txt")];
+        let hash_is_well_known = hash_files
+            .iter()
+            .flat_map(|file| file.lines())
             .filter_map(|line| line.split_whitespace().next())
             .any(|x| x == sha256);
 
@@ -274,9 +276,9 @@ impl API for DynamicAPI {
 }
 
 /// Helper function that should always give the name of the latest supported and
-/// included DLL file, used by unit tests.
+/// included shared library, used by unit tests.
 #[doc(hidden)]
-#[cfg(all(target_os = "windows", target_arch = "x86_64", feature = "libloading"))]
-pub fn reference_dll_name() -> &'static str {
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "libloading"))]
+pub fn reference_library_name() -> &'static str {
     include_str!("../tests/reference/reference.txt")
 }

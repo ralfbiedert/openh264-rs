@@ -1,9 +1,12 @@
 #![allow(clippy::bool_assert_comparison)]
 
+#[cfg(feature = "source")]
+use openh264::Timestamp;
 use openh264::decoder::{Decoder, DecoderConfig};
 use openh264::encoder::{Encoder, EncoderConfig, FrameType};
+#[cfg(feature = "source")]
 use openh264::formats::{RgbSliceU8, YUVBuffer, YUVSource};
-use openh264::{Error, OpenH264API, Timestamp};
+use openh264::{Error, OpenH264API};
 use openh264_sys2::DynamicAPI;
 
 #[test]
@@ -111,18 +114,15 @@ fn encoder_sps_pps() -> Result<(), Error> {
     Ok(())
 }
 
-fn can_encode_decoded(api: DynamicAPI) -> Result<(), Error> {
-    use openh264::decoder::{Decoder, DecoderConfig};
-
+fn can_encode_decoded(decoder_api: DynamicAPI, encoder_api: DynamicAPI) -> Result<(), Error> {
     let src = include_bytes!("data/single_512x512_cavlc.h264");
 
     let config = DecoderConfig::default();
-    let mut decoder = Decoder::with_api_config(api, config)?;
+    let mut decoder = Decoder::with_api_config(decoder_api, config)?;
     let yuv = decoder.decode(src)?.ok_or_else(|| Error::msg("Must have image"))?;
 
-    let api = OpenH264API::from_source();
     let config = EncoderConfig::new();
-    let mut encoder = Encoder::with_api_config(api, config)?;
+    let mut encoder = Encoder::with_api_config(encoder_api, config)?;
 
     let stream = encoder.encode(&yuv)?;
 
@@ -152,16 +152,18 @@ fn can_encode_decoded(api: DynamicAPI) -> Result<(), Error> {
 #[test]
 #[cfg(feature = "source")]
 fn can_encode_decoded_via_source() -> Result<(), Error> {
-    let api = OpenH264API::from_source();
-    can_encode_decoded(api)
+    can_encode_decoded(OpenH264API::from_source(), OpenH264API::from_source())
 }
 
 #[test]
-#[cfg(all(target_os = "windows", target_arch = "x86_64", feature = "libloading"))]
-fn can_encode_decoded_via_dll() -> Result<(), Error> {
-    let dll = format!("../openh264-sys2/tests/reference/{}", openh264_sys2::reference_dll_name());
-    let api = OpenH264API::from_blob_path(dll)?;
-    can_encode_decoded(api)
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "libloading"))]
+fn can_encode_decoded_via_libloading() -> Result<(), Error> {
+    let library = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../openh264-sys2/tests/reference")
+        .join(openh264_sys2::reference_library_name());
+    let decoder_api = OpenH264API::from_blob_path(&library)?;
+    let encoder_api = OpenH264API::from_blob_path(&library)?;
+    can_encode_decoded(decoder_api, encoder_api)
 }
 
 #[test]

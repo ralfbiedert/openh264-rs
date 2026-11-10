@@ -12,7 +12,8 @@ rust-version.workspace = true
 version.workspace = true
 
 exclude = [
-    "**/*.dll"
+    "**/*.dll",
+    "**/*.so"
 ]
 
 [features]
