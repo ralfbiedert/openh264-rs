@@ -53,6 +53,7 @@ Test results on various platforms:
 | `i686-unknown-linux-gnu`        | ✅              | ✅           |
 | `i686-pc-windows-msvc`          | ✅              | ✅           |
 | `i686-pc-windows-gnu`           | ✅              | ✅           |
+| `riscv64gc-unknown-linux-gnu`   | ✅              | ✅           |
 | `armv7-unknown-linux-gnueabihf` | ✅              | -           |
 | `aarch64-unknown-linux-gnu`     | ✅              | -           |
 | `aarch64-apple-darwin`          | ✅              | -           |
