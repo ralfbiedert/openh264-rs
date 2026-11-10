@@ -20,7 +20,7 @@ impl APILoader {
     where
         P: AsRef<::std::ffi::OsStr>,
     {
-        let library = unsafe { ::libloading::Library::new(path) }?;
+        let library = unsafe { ::libloading::Library::new(path.as_ref()) }?;
         unsafe { Self::from_library(library) }
     }
     pub unsafe fn from_library<L>(library: L) -> Result<Self, ::libloading::Error>
